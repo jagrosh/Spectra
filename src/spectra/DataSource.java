@@ -13,6 +13,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  *
@@ -21,46 +23,32 @@ import java.util.Arrays;
 public abstract class DataSource {
     final protected ArrayList<String[]> data = new ArrayList<>();
     protected String filename = "discordbot.null";
-    protected boolean save = false;
+    protected boolean save = true;
     protected int size;
     
+    ExecutorService filewriting = Executors.newSingleThreadExecutor();
+    boolean writeScheduled = false;
     
-    protected boolean changed;
+    protected DataSource(){}
     
-    /*public synchronized void remove(String[] item)
+    public void setToWrite()
     {
-        data.remove(item);
-        changed=true;
+        if(!writeScheduled)
+        {
+            writeScheduled = true;
+            filewriting.submit(new Thread(){
+                @Override
+                public void run()
+                {
+                    try {
+                        Thread.sleep(30000);
+                    } catch (InterruptedException ex) {}
+                    write();
+                    writeScheduled=false;
+                }
+            });
+        }
     }
-    
-    public synchronized String[] get(int index)
-    {
-        return data.get(index).clone();
-    }
-    
-    public synchronized ArrayList<String[]> getCopy()
-    {
-        return new ArrayList<>(data);
-    }
-    
-    public synchronized void add(String[] item)
-    {
-        data.add(item);
-        changed = true;
-    }
-    
-    public synchronized void removeAll(Collection<String[]> items)
-    {
-        data.removeAll(items);
-        changed = true;
-    }
-    
-    public synchronized boolean contains(String[] item)
-    {
-        return data.contains(item);
-    }*/
-    
-    
     
     public boolean read()
     {
@@ -95,15 +83,14 @@ public abstract class DataSource {
         return false;
     }
     
-    public boolean write()
+    private boolean write()
     {
         ArrayList<String[]> copy;
         synchronized(data)
         {
             copy = new ArrayList<>(data);
         }
-        try{
-            BufferedWriter writer = new BufferedWriter(new FileWriter(filename));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             for(String[] s: copy)
             {
                 String str = s[0];
@@ -117,9 +104,12 @@ public abstract class DataSource {
                 writer.newLine();
             }
             writer.flush();
-            writer.close();
-            }catch(IOException e){System.err.println("Error writing to "+filename); return false;}
+        }catch(IOException e){System.err.println("Error writing to "+filename); return false;}
         return true;
     }
     
+    public void shutdown()
+    {
+        filewriting.shutdown();
+    }
 }

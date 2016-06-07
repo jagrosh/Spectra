@@ -1,6 +1,8 @@
 package spectra;
 
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.utils.FormatUtil;
 
 /*
@@ -32,6 +34,12 @@ public abstract class Command {
         {
             String text = "**Available help for `"+command+"` "+(event.isPrivate() ? "via Direct Message" : "in <#"+event.getTextChannel().getId()+">")+"**:\n";
             text += "Usage: `"+SpConst.PREFIX + command +"`"+(arguments==null ? "" : " `"+arguments+"`");
+            if(aliases.length>0)
+            {
+                text += "\nAliases:";
+                for(String alias: aliases)
+                    text+=" `"+alias+"`";
+            }
             text += "\n*"+ longhelp+"*\n";
             if(children.length>0)
             {
@@ -39,14 +47,28 @@ public abstract class Command {
                 for(Command child: children)
                     text+="\n`"+SpConst.PREFIX+command+" "+child.command+"`"+(child.arguments==null ? "" : " `"+child.arguments+"`")+" - "+child.help;
             }
+            Sender.sendPrivate(text, event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId()); 
             return true;
         }
-        if(args!=null)
+        if(args!=null)//run child command if possible
         {
             String[] argv = FormatUtil.cleanSplit(args);
             for(Command child: children)
                 if(child.isCommandFor(argv[0]))
                     return child.run(args, event, settings, perm, ignore);
+        }
+        if(level==PermLevel.JAGROSH && perm!=PermLevel.JAGROSH)
+            return false;
+        if(level==PermLevel.ADMIN && (perm!=PermLevel.ADMIN && perm!=PermLevel.JAGROSH))
+            return false;
+        if(level==PermLevel.MODERATOR && perm==PermLevel.EVERYONE)
+            return false;
+        if(ignore && (perm==PermLevel.EVERYONE || perm==PermLevel.MODERATOR))
+            return false;
+        if(!event.isPrivate() && !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, event.getTextChannel()))
+        {
+            Sender.sendPrivate(SpConst.CANT_SEND_+event.getTextChannel().getAsMention(), event.getAuthor().getPrivateChannel());
+            return false;
         }
         return execute(args,event);
     }

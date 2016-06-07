@@ -14,8 +14,20 @@ import net.dv8tion.jda.entities.Message;
  */
 public class CallDepend {
     
-    private final ArrayList<DepMessage> messages = new ArrayList<>();
-    private final int maxSize = 200;
+    private final ArrayList<DepMessage> messages;
+    private final int maxSize;
+    private static final CallDepend callDepend = new CallDepend();
+    
+    private CallDepend()
+    {
+        messages = new ArrayList<>();
+        maxSize = 300;
+    }
+    
+    public static CallDepend getInstance()
+    {
+        return callDepend;
+    }
     
     public synchronized void add(String dependency, Message message)
     {

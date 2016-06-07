@@ -7,18 +7,24 @@ package spectra.datasources;
 
 import java.util.Arrays;
 import spectra.DataSource;
+import spectra.SpConst;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Settings extends DataSource {
+    private static final Settings settings = new Settings();
     
-    public Settings()
+    private Settings()
     {
         filename = "discordbot.serversettings";
         size = 11;
-        save = true;
+    }
+    
+    public static Settings getInstance()
+    {
+        return settings;
     }
     
     public String[] getSettingsForGuild(String id)
@@ -35,20 +41,30 @@ public class Settings extends DataSource {
     public String[] makeNewSettingsForGuild(String id)
     {
         String[] newSettings = new String[]{
-            id,"","0","speakerphone room","","false","","/","",
+            id,"","0","speakerphone room","","false","",SpConst.ALTPREFIX,"",
             "hug hi5 pat punch btth 8ball choose meme","global"
         };
         synchronized(data)
         {
             data.add(newSettings);
+            setToWrite();
             return Arrays.copyOf(newSettings, size);
         }
-        
+    }
+    
+    public static String[] restrCmdsFromList(String restrictedCommands)
+    {
+        if(restrictedCommands==null)
+            return new String[0];
+        restrictedCommands = restrictedCommands.trim();
+        if(restrictedCommands.equals(""))
+            return new String[0];
+        return restrictedCommands.split("\\s+");
     }
     
     public static String[] prefixesFromList(String prefixList)
     {
-        String[] list = (prefixList+(char)20+"%").split((char)29+"+");
+        String[] list = (prefixList+(char)29+SpConst.PREFIX).split((char)29+"+");
         Arrays.parallelSort(list);
         return list;
     }

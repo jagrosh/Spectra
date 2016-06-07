@@ -5,9 +5,11 @@
  */
 package spectra.commands;
 
+import java.time.temporal.ChronoUnit;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Command;
 import spectra.SpConst;
+import spectra.tempdata.CallDepend;
 
 /**
  *
@@ -26,7 +28,15 @@ public class Ping extends Command{
     
     @Override
     protected boolean execute(String args, MessageReceivedEvent event) {
-        
+        String vowel = "aeiou".charAt((int)(Math.random()*5))+"";
+        event.getChannel().sendMessageAsync("P"+vowel+"ng: ...", m -> {
+            if(m!=null)
+            {
+                m.updateMessageAsync("P"+vowel+"ng: "+event.getMessage().getTime().until(m.getTime(), ChronoUnit.MILLIS)+"ms", null);
+                CallDepend.getInstance().add(event.getMessage().getId(), m);
+            }
+        });
+        return true;
     }
     
 }

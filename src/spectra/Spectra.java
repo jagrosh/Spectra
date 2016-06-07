@@ -5,6 +5,7 @@
  */
 package spectra;
 
+import java.util.Arrays;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDABuilder;
 import net.dv8tion.jda.Permission;
@@ -15,6 +16,8 @@ import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
+import spectra.utils.FileReadingUtil;
+import spectra.utils.FormatUtil;
 
 /**
  *
@@ -25,14 +28,13 @@ public class Spectra extends ListenerAdapter {
     Command[] commands;
     DataSource[] sources;
     final Settings settings;
-
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         //get the settings for the server
         //settings will be null for private messages
         //make default settings if no settings exist for a server
-        String[] currentSettings = settings.getSettingsForGuild(event.getGuild().getId());
+        String[] currentSettings = (event.isPrivate() ? null : settings.getSettingsForGuild(event.getGuild().getId()));
         if(currentSettings==null && !event.isPrivate())
             currentSettings = settings.makeNewSettingsForGuild(event.getGuild().getId());
         
@@ -44,12 +46,14 @@ public class Spectra extends ListenerAdapter {
         //compare against each prefix
         String strippedMessage=null;
         for(int i=prefixes.length-1;i>=0;i--)
+        {
             if(event.getMessage().getRawContent().toLowerCase().startsWith(prefixes[i].toLowerCase()))
             {
-                strippedMessage = event.getMessage().getRawContent().substring(prefixes[i].length());
-                break;
+                strippedMessage = event.getMessage().getRawContent().substring(prefixes[i].length()).trim();
+                break; 
             }
-        
+        }
+        //find permission level
         PermLevel perm = PermLevel.EVERYONE;//start with everyone
         if(event.getAuthor().getId().equals(SpConst.JAGROSH_ID))
             perm = PermLevel.JAGROSH;
@@ -73,10 +77,13 @@ public class Spectra extends ListenerAdapter {
             }
         }
         
+        //check if should ignore
         boolean ignore = false;
         if(!event.isPrivate())
         {
             if( currentSettings[Settings.IGNORELIST].contains("u"+event.getAuthor().getId()) || currentSettings[Settings.IGNORELIST].contains("c"+event.getTextChannel().getId()) )
+                ignore = true;
+            else if(currentSettings[Settings.IGNORELIST].contains("r"+event.getGuild().getId()) && event.getGuild().getRolesForUser(event.getAuthor()).isEmpty())
                 ignore = true;
             else
                 for(Role r: event.getGuild().getRolesForUser(event.getAuthor()))
@@ -90,8 +97,8 @@ public class Spectra extends ListenerAdapter {
         if(strippedMessage!=null)//potential command right here
         {
             strippedMessage = strippedMessage.trim();
-            if(strippedMessage.equalsIgnoreCase("help"))//send full help message (based on access level)
-            {
+            if(strippedMessage.toLowerCase().startsWith("help"))//send full help message (based on access level)
+            {//we don't worry about ignores for help
                 String helpmsg = "**Available help "+(event.isPrivate() ? "via Direct Message" : "in <#"+event.getTextChannel().getId()+">")+"**:";
                 for(Command com: commands)
                 {
@@ -101,22 +108,26 @@ public class Spectra extends ListenerAdapter {
                             (com.level == PermLevel.JAGROSH && perm==PermLevel.JAGROSH))
                         helpmsg += "\n`"+SpConst.PREFIX+com.command+"`"+(com.arguments == null ? "" : " `"+com.arguments+"`")+" - "+com.help;
                 }
-                helpmsg+="\n\nFor more information, call "+SpConst.PREFIX+"<command> help. For example, `"+SpConst.PREFIX+"tag help";
+                helpmsg+="\n\nFor more information, call "+SpConst.PREFIX+"<command> help. For example, `"+SpConst.PREFIX+"tag help`";
                 helpmsg+="\nFor commands, `<argument>` refers to a required argument, while `[argument]` is optional";
                 helpmsg+="\nDo not add <> or [] to your arguments, nor quotation marks";
-                helpmsg+="\nFor more help, contact **jagrosh** (<@"+SpConst.JAGROSH_ID+">) or join "+SpConst.JAGZONE_INVITE;
-                
-                //SEND HELP MESSAGE HERE
+                helpmsg+="\nFor more help, contact **@jagrosh** (<@"+SpConst.JAGROSH_ID+">) or join "+SpConst.JAGZONE_INVITE;
+                Sender.sendPrivate(helpmsg, event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId());
             }
-            else
+            else//didn't start with help
             {
-                if (strippedMessage.startsWith("help"))//send warning to try %help
+                Command toRun = null;
+                String[] args = FormatUtil.cleanSplit(strippedMessage);
+                for(Command com: commands)
+                    if(com.isCommandFor(args[0]))
+                    {
+                        toRun = com;
+                        break;
+                    }
+                if(toRun!=null)
                 {
-                    
+                    boolean success = toRun.run(args[1], event, currentSettings, perm, ignore);
                 }
-                
-                
-                
             }
         }
         
@@ -135,7 +146,7 @@ public class Spectra extends ListenerAdapter {
     
     public Spectra()
     {
-        settings = new Settings();
+        settings = Settings.getInstance();
     }
     
     public void init()
@@ -152,7 +163,7 @@ public class Spectra extends ListenerAdapter {
             source.read();
         
         try {
-            new JDABuilder().addListener(this).setBotToken(null).buildAsync();
+            new JDABuilder().addListener(this).setBotToken(FileReadingUtil.readFile("discordbot.login").get(1)).buildAsync();
         } catch (LoginException | IllegalArgumentException ex) {
             System.err.println("ERROR - Building JDA : "+ex.toString());
             System.exit(1);

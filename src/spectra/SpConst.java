@@ -13,8 +13,8 @@ public class SpConst {
     //bot items
     final public static String BOTNAME = "Spectra";
     final public static String VERSION = "3.0";
-    final public static String PREFIX = "%";
-    final public static String ALTPREFIX = "/";
+    final public static String PREFIX = "%%";
+    final public static String ALTPREFIX = "//";
     
     
     //discord items
@@ -26,10 +26,12 @@ public class SpConst {
     final public static String WARNING = ""+(char)9888;
     final public static String ERROR   = ""+(char)9940;
     
-    final public static String NEED_PERMISSION     = ERROR+" **I do not have the proper permissions to do that!**\nPlease make sure I have the following permissions:\n";
+    final public static String NEED_PERMISSION_     = ERROR+" **I do not have the proper permissions to do that!**\nPlease make sure I have the following permissions:\n";
     final public static String BANNED_COMMAND      = ERROR+" **That command is banned on this server!**";
     final public static String BANNED_COMMAND_S    = "To toggle this command on/off on this server, use `"+PREFIX+"toggle ";
     final public static String NOT_VIA_DM          = ERROR+" **That command is not available via Direct Message!**";
-    final public static String ARGUMENT_ERROR      = ERROR+" **Insufficient or incorrect arguments**:\n";
-    final public static String INVALID             = ERROR+" **Invalid command**\n";
+    final public static String ARGUMENT_ERROR_      = ERROR+" **Insufficient or incorrect arguments**:\n";
+    final public static String INVALID_             = ERROR+" **Invalid command**\n";
+    final public static String CANT_HELP           = WARNING+" Help could not be sent because you are blocking Direct Messages!";
+    final public static String CANT_SEND_           = WARNING+" The command could not be completed because I cannot send messages in ";
 }
