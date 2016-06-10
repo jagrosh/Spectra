@@ -6,6 +6,7 @@
 package spectra;
 
 import java.util.ArrayList;
+import net.dv8tion.jda.entities.MessageChannel;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
@@ -19,10 +20,13 @@ public class Sender {
     
     
     
-    public static void sendResponse(String message, TextChannel tchan, User caller, String dependency)
+    public static void sendResponse(String message, MessageChannel chan, String dependency)
     {
         ArrayList<String> bits = splitMessage(message);
-        
+        for(String bit: bits)
+            chan.sendMessageAsync(bit, m -> {
+                CallDepend.getInstance().add(dependency, m);
+            });
     }
     
     public static void sendPrivate(String message, PrivateChannel pchan, TextChannel fallback, String dependency)//dependency for fallback

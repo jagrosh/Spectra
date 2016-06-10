@@ -24,4 +24,5 @@ public class FormatUtil {
     {
         return Arrays.copyOf(input.split(regex, size), size);
     }
+    
 }
