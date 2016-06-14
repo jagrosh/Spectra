@@ -10,5 +10,16 @@ package spectra;
  * @author John Grosh (jagrosh)
  */
 public enum PermLevel {
-    EVERYONE, MODERATOR, ADMIN, JAGROSH
+    EVERYONE(0), MODERATOR(1), ADMIN(2), JAGROSH(3);
+    
+    final int value;
+    private PermLevel(int value)
+    {
+        this.value = value;
+    }
+    
+    public boolean isAtLeast(PermLevel other)
+    {
+        return value >= other.value;
+    }
 }

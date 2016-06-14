@@ -23,11 +23,11 @@ public class Ping extends Command{
     this.help = "check the bot's latency";
     this.longhelp = "This command checks the difference in time between when discord "
             + "recieves the command and when discord receives "+SpConst.BOTNAME+"'s "
-            + "response. The response is then editted to reflect the difference.";
+            + "response. The response is then edited to reflect the difference.";
     }
     
     @Override
-    protected boolean execute(String args, MessageReceivedEvent event) {
+    protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String vowel = "aeiou".charAt((int)(Math.random()*5))+"";
         event.getChannel().sendMessageAsync("P"+vowel+"ng: ...", m -> {
             if(m!=null)

@@ -16,7 +16,7 @@ import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
-import spectra.utils.FileReadingUtil;
+import spectra.utils.OtherUtil;
 import spectra.utils.FormatUtil;
 
 /**
@@ -102,11 +102,8 @@ public class Spectra extends ListenerAdapter {
                 String helpmsg = "**Available help "+(event.isPrivate() ? "via Direct Message" : "in <#"+event.getTextChannel().getId()+">")+"**:";
                 for(Command com: commands)
                 {
-                    if(     (com.level == PermLevel.EVERYONE) || 
-                            (com.level == PermLevel.MODERATOR && (perm==PermLevel.MODERATOR || perm==PermLevel.ADMIN || perm==PermLevel.JAGROSH)) ||
-                            (com.level == PermLevel.ADMIN && (perm==PermLevel.ADMIN || perm==PermLevel.JAGROSH)) ||
-                            (com.level == PermLevel.JAGROSH && perm==PermLevel.JAGROSH))
-                        helpmsg += "\n`"+SpConst.PREFIX+com.command+"`"+(com.arguments == null ? "" : " `"+com.arguments+"`")+" - "+com.help;
+                    if( perm.isAtLeast(com.level) )
+                        helpmsg += "\n`"+SpConst.PREFIX+com.command+"`"+Argument.arrayToString(com.arguments)+" - "+com.help;
                 }
                 helpmsg+="\n\nFor more information, call "+SpConst.PREFIX+"<command> help. For example, `"+SpConst.PREFIX+"tag help`";
                 helpmsg+="\nFor commands, `<argument>` refers to a required argument, while `[argument]` is optional";
@@ -152,6 +149,9 @@ public class Spectra extends ListenerAdapter {
     public void init()
     {
         commands = new Command[]{
+            new About(),
+            new Archive(),
+            new Info(),
             new Ping()
         };
         
@@ -163,7 +163,7 @@ public class Spectra extends ListenerAdapter {
             source.read();
         
         try {
-            new JDABuilder().addListener(this).setBotToken(FileReadingUtil.readFile("discordbot.login").get(1)).buildAsync();
+            new JDABuilder().addListener(this).setBotToken(OtherUtil.readFile("discordbot.login").get(1)).buildAsync();
         } catch (LoginException | IllegalArgumentException ex) {
             System.err.println("ERROR - Building JDA : "+ex.toString());
             System.exit(1);

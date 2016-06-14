@@ -5,8 +5,10 @@
  */
 package spectra.commands;
 
+import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
@@ -28,38 +30,32 @@ public class Archive extends Command{
                 + " optionally a channel to archive in. If you do not include a channel name, the"
                 + " archive will be of the current channel. You may only create archives where you"
                 + " can see the channel contents.";
-        this.arguments="<numposts> [channel]";
+        this.arguments= new Argument[]{
+            new Argument("numposts",Argument.Type.INTEGER,true,1,1000), 
+            new Argument("channel",Argument.Type.TEXTCHANNEL,false)};//<numposts> [channel]
         this.cooldown=120;
     }
     
     @Override
-    protected boolean execute(String args, MessageReceivedEvent event) {
-        if(args==null)
+    protected boolean execute(Object[] args, MessageReceivedEvent event) {
+        int numposts = (int)(args[0]);
+        TextChannel channel = (TextChannel)(args[1]);
+        
+        if(event.isPrivate())
         {
-            Sender.sendResponse(SpConst.ARGUMENT_ERROR_+"Please include a number of posts, and optionally a channel", event.getChannel(), event.getMessage().getId());
-            return false;
-        }
-        String[] argv = FormatUtil.cleanSplit(args);//int, and optional channel
-        int numPosts=-1;
-        try{
-            numPosts = Integer.parseInt(argv[0]);
-        } catch (NumberFormatException e) {}
-        if(numPosts<1 || numPosts > 1000)
-        {
-            Sender.sendResponse(SpConst.ARGUMENT_ERROR_+"Please enter a valid number of posts (1 to 1000)", event.getChannel(), event.getMessage().getId());
-            return false;
-        }
-        TextChannel target = event.getTextChannel();
-        if(argv[1]!=null)//channel search
-        {
-            if(event.isPrivate())
-            {
-                Sender.sendResponse(SpConst.WARNING+" You cannot archive a different channel from a Direct Message!", event.getChannel(), event.getMessage().getId());
-                return false;
-            }
+            MessageHistory mh = new MessageHistory(event.getPrivateChannel());
             
         }
-        
+        else
+        {
+            if(channel == null)
+                channel = event.getTextChannel();
+            //check permission of user
+            
+            //check permission of bot
+            
+            MessageHistory mh = new MessageHistory(channel);
+        }
     }
     
 }

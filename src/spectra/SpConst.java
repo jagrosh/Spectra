@@ -22,16 +22,25 @@ public class SpConst {
     final public static String JAGZONE_INVITE = "https://discord.gg/0p9LSGoRLu6Pet0k";
     
     //command responses
-    final public static String SUCCESS = ""+(char)9989;
-    final public static String WARNING = ""+(char)9888;
-    final public static String ERROR   = ""+(char)9940;
+    final public static String SUCCESS = (char)9989+" ";
+    final public static String WARNING = (char)9888+" ";
+    final public static String ERROR   = (char)9940+" ";
     
-    final public static String NEED_PERMISSION_     = ERROR+" **I do not have the proper permissions to do that!**\nPlease make sure I have the following permissions:\n";
-    final public static String BANNED_COMMAND      = ERROR+" **That command is banned on this server!**";
-    final public static String BANNED_COMMAND_S    = "To toggle this command on/off on this server, use `"+PREFIX+"toggle ";
-    final public static String NOT_VIA_DM          = ERROR+" **That command is not available via Direct Message!**";
-    final public static String ARGUMENT_ERROR_      = ERROR+" **Insufficient or incorrect arguments**:\n";
-    final public static String INVALID_             = ERROR+" **Invalid command**\n";
-    final public static String CANT_HELP           = WARNING+" Help could not be sent because you are blocking Direct Messages!";
-    final public static String CANT_SEND_           = WARNING+" The command could not be completed because I cannot send messages in ";
+    final public static String NEED_PERMISSION          = ERROR + "**I do not have the proper permissions to do that!**\n"
+                                                                + "Please make sure I have the following permissions:\n{0}";
+    final public static String BANNED_COMMAND           = ERROR + "**That command is unavailable here!**";
+    final public static String BANNED_COMMAND_IFADMIN   = "\nTo toggle this command on/off on this server, use `"+PREFIX+"toggle {0}`\n"
+                                                                + "Alternatively, add `{{0}}` to a channel's topic to make it available there";
+    final public static String NOT_VIA_DM               = ERROR + "**That command is not available via Direct Message!**";
+    final public static String TOO_FEW_ARGS             = ERROR + "**Too few arguments provided**\nTry using `"+PREFIX+"{0} help` for more information.";
+    
+    final public static String INVALID_VALUE            = ERROR + "**Invalid Value:**\n";
+    final public static String INVALID_INTEGER          = INVALID_VALUE + "`{0}` must be an integer between {1} and {2}";
+    final public static String INVALID_TIME             = INVALID_VALUE + "`{0}` must be a measure of time";
+
+    //final public static String ARGUMENT_ERROR_  = ERROR+"**Insufficient or incorrect arguments**:\n";
+    //final public static String INVALID_VALUE_   = ERROR+"**Invalid command**\n";
+    
+    final public static String CANT_HELP                = WARNING + "Help could not be sent because you are blocking Direct Messages!";
+    final public static String CANT_SEND                = WARNING + "The command could not be completed because I cannot send messages in {0}";
 }

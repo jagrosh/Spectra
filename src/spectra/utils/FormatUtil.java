@@ -6,6 +6,10 @@
 package spectra.utils;
 
 import java.util.Arrays;
+import java.util.List;
+import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.entities.User;
 
 /**
  *
@@ -23,6 +27,21 @@ public class FormatUtil {
     public static String[] cleanSplit(String input, String regex, int size)
     {
         return Arrays.copyOf(input.split(regex, size), size);
+    }
+    
+    public static String listOfUsers(List<User> users)
+    {
+        
+    }
+    
+    public static String listOfChannels(List<TextChannel> tchans)
+    {
+        
+    }
+    
+    public static String listOfRoles(List<Role> roles)
+    {
+        
     }
     
 }

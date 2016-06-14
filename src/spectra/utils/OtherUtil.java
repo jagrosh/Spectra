@@ -15,7 +15,7 @@ import java.util.ArrayList;
  *
  * @author John Grosh (jagrosh)
  */
-public class FileReadingUtil {
+public class OtherUtil {
     
     public static ArrayList<String> readFile(String filename)
     {

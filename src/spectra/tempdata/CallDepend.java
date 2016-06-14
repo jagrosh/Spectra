@@ -32,18 +32,18 @@ public class CallDepend {
     public synchronized void add(String dependency, Message message)
     {
         messages.add(new DepMessage(dependency,message));
-        while(messages.size()>150)
+        while(messages.size()>maxSize)
             messages.remove(0);
     }
     
     public synchronized void delete(String dependency)
     {
-        for(DepMessage msg: messages)
-            if(msg.dependency.equals(dependency))
-                try{
-                    msg.message.deleteMessage();
-                }catch(Exception e){}// ratelimits, or message already gone
-                                     // either way, we just want to move on
+        messages.stream().filter((msg) -> (msg.dependency.equals(dependency))).forEach((msg) -> {
+            try{
+                msg.message.deleteMessage();
+            }catch(Exception e){}// ratelimits, or message already gone
+            // either way, we just want to move on
+        });
     }
     
     private class DepMessage

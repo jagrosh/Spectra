@@ -25,7 +25,7 @@ public class About extends Command{
     }
     
     @Override
-    protected boolean execute(String args, MessageReceivedEvent event) {
+    protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String aboutText =
             "Hello! I am **"+SpConst.BOTNAME+"**, a bot built by **jagrosh**!"+
             "\nI was written for Discord in Java, using the JDA library."+
