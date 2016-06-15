@@ -1,8 +1,13 @@
 package spectra;
 
+import java.util.List;
 import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
+import spectra.utils.FinderUtil;
 import spectra.utils.FormatUtil;
 
 /*
@@ -26,6 +31,7 @@ public abstract class Command {
     protected PermLevel level = PermLevel.EVERYONE;
     protected boolean availableInDM = true;
     protected int cooldown = 0; //seconds
+    protected String separatorRegex = null;
     
     protected abstract boolean execute(Object[] args, MessageReceivedEvent event);
     
@@ -55,7 +61,7 @@ public abstract class Command {
                 for(Command child: children)
                     builder.append("\n`" + SpConst.PREFIX).append(parentChain).append(command).append(" ").append(child.command).append("`").append(Argument.arrayToString(child.arguments)).append(" - ").append(child.help);
             }
-            Sender.sendPrivate(builder.toString(), event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId()); 
+            Sender.sendHelp(builder.toString(), event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId()); 
             return true;
         }
         
@@ -98,7 +104,7 @@ public abstract class Command {
             }
             switch(arguments[i].type)
             {
-                case INTEGER:
+                case INTEGER:{
                     String[] parts = FormatUtil.cleanSplit(workingSet);
                     int num;
                     boolean invalid = false;
@@ -116,21 +122,118 @@ public abstract class Command {
                     }
                     parsedArgs[i] = num;
                     workingSet = parts[1];
-                    break;
-                case SHORTSTRING:
-                    break;
-                case LONGSTRING:
-                    break;
-                case TIME:
-                    break;
-                case USER:
-                    break;
-                case LOCALUSER:
-                    break;
-                case TEXTCHANNEL:
-                    break;
-                case ROLE:
-                    break;
+                    break;}
+                case SHORTSTRING:{
+                    String[] parts = FormatUtil.cleanSplit(workingSet);
+                    parsedArgs[i] = parts[0];
+                    workingSet = parts[1];
+                    break;}
+                case LONGSTRING:{
+                    String[] parts;
+                    if(separatorRegex==null)
+                        parts = new String[]{workingSet,null};
+                    else
+                        parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    parsedArgs[i] = parts[0];
+                    workingSet = parts[1];
+                    break;}
+                case TIME:{
+                    break;}
+                case USER:{
+                    String[] parts;
+                    if(separatorRegex==null)
+                        parts = new String[]{workingSet,null};
+                    else
+                        parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    List<User> ulist = null;
+                    if(!event.isPrivate())
+                        ulist = FinderUtil.findUsers(parts[0], event.getGuild());
+                    if(ulist==null || ulist.isEmpty())
+                        ulist = FinderUtil.findUsers(parts[0], event.getJDA().getUsers());
+                    if(ulist.isEmpty())
+                    {
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    else if (ulist.size()>1)
+                    {
+                        Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    parsedArgs[i] = ulist.get(0);
+                    workingSet = parts[1];
+                    break;}
+                case LOCALUSER:{
+                    if(event.isPrivate())
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    String[] parts;
+                    if(separatorRegex==null)
+                        parts = new String[]{workingSet,null};
+                    else
+                        parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    List<User> ulist = FinderUtil.findUsers(parts[0], event.getGuild());
+                    if(ulist.isEmpty())
+                    {
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    else if (ulist.size()>1)
+                    {
+                        Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    parsedArgs[i] = ulist.get(0);
+                    workingSet = parts[1];
+                    break;}
+                case TEXTCHANNEL:{
+                    if(event.isPrivate())
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    String[] parts = FormatUtil.cleanSplit(workingSet);
+                    List<TextChannel> tclist = FinderUtil.findTextChannel(parts[0], event.getGuild().getTextChannels());
+                    if(tclist.isEmpty())
+                    {
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "text channels", parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    else if (tclist.size()>1)
+                    {
+                        Sender.sendResponse(FormatUtil.listOfChannels(tclist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    parsedArgs[i] = tclist.get(0);
+                    workingSet = parts[1];
+                    break;}
+                case ROLE:{
+                    if(event.isPrivate())
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    String[] parts;
+                    if(separatorRegex==null)
+                        parts = new String[]{workingSet,null};
+                    else
+                        parts = FormatUtil.cleanSplit(workingSet,separatorRegex);
+                    List<Role> rlist = FinderUtil.findRole(parts[0], event.getGuild().getRoles());
+                    if(rlist.isEmpty())
+                    {
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "roles", parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    else if (rlist.size()>1)
+                    {
+                        Sender.sendResponse(FormatUtil.listOfRoles(rlist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        return false;
+                    }
+                    parsedArgs[i] = rlist.get(0);
+                    workingSet = parts[1];
+                    break;}
             }
         }
         return execute(parsedArgs,event);

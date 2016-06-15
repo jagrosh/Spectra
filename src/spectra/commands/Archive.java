@@ -5,14 +5,21 @@
  */
 package spectra.commands;
 
+import java.io.File;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import net.dv8tion.jda.MessageHistory;
+import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.utils.FormatUtil;
+import spectra.utils.OtherUtil;
 
 /**
  *
@@ -40,10 +47,10 @@ public class Archive extends Command{
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         int numposts = (int)(args[0]);
         TextChannel channel = (TextChannel)(args[1]);
-        
+        MessageHistory mh;
         if(event.isPrivate())
         {
-            MessageHistory mh = new MessageHistory(event.getPrivateChannel());
+            mh = new MessageHistory(event.getPrivateChannel());
             
         }
         else
@@ -51,11 +58,33 @@ public class Archive extends Command{
             if(channel == null)
                 channel = event.getTextChannel();
             //check permission of user
-            
+            if(!PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_HISTORY, channel) || !PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_READ, channel))
+            {
+                Sender.sendResponse(SpConst.ERROR+"You can only archive channels in which you can see the Message History!",event.getChannel(),event.getMessage().getId());
+                return false;
+            }
             //check permission of bot
-            
-            MessageHistory mh = new MessageHistory(channel);
+            if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_HISTORY, channel))
+            {
+                Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_HISTORY), event.getChannel(), event.getMessage().getId());
+                return false;
+            }
+            mh = new MessageHistory(channel);
         }
+        List<Message> messages = mh.retrieve(numposts);
+        StringBuilder builder = new StringBuilder("--Archive--\n");
+        for(int i=messages.size()-1;i>=0;i--)
+        {
+        Message m = messages.get(i);
+        builder.append("[").append(m.getTime()==null ? "UNKNOWN TIME" : m.getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME)).append("] ");
+        builder.append( m.getAuthor() == null ? "????" : m.getAuthor().getUsername() ).append(" : ");
+        builder.append(m.getContent()).append("\n\n");
+        }
+        
+        String message = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages:";
+        File file = OtherUtil.writeArchive(builder.toString(), "archive "+event.getMessage().getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME).replace(":", ""));
+        Sender.sendFileResponse(message, file, event.getChannel(), event.getMessage().getId());
+        return true;
     }
     
 }

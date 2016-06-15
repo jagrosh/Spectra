@@ -109,7 +109,7 @@ public class Spectra extends ListenerAdapter {
                 helpmsg+="\nFor commands, `<argument>` refers to a required argument, while `[argument]` is optional";
                 helpmsg+="\nDo not add <> or [] to your arguments, nor quotation marks";
                 helpmsg+="\nFor more help, contact **@jagrosh** (<@"+SpConst.JAGROSH_ID+">) or join "+SpConst.JAGZONE_INVITE;
-                Sender.sendPrivate(helpmsg, event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId());
+                Sender.sendHelp(helpmsg, event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId());
             }
             else//didn't start with help
             {
@@ -163,7 +163,7 @@ public class Spectra extends ListenerAdapter {
             source.read();
         
         try {
-            new JDABuilder().addListener(this).setBotToken(OtherUtil.readFile("discordbot.login").get(1)).buildAsync();
+            new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).buildAsync();
         } catch (LoginException | IllegalArgumentException ex) {
             System.err.println("ERROR - Building JDA : "+ex.toString());
             System.exit(1);

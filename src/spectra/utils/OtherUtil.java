@@ -6,8 +6,11 @@
 package spectra.utils;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -17,7 +20,7 @@ import java.util.ArrayList;
  */
 public class OtherUtil {
     
-    public static ArrayList<String> readFile(String filename)
+    public static ArrayList<String> readFileLines(String filename)
     {
         BufferedReader reader;
         try{
@@ -37,5 +40,20 @@ public class OtherUtil {
         }catch(IOException e){
             return null;
         }
+    }
+    
+    public static File writeArchive(String text, String txtname)
+    {
+        File f = new File("WrittenFiles"+File.separatorChar+txtname+".txt");
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(f))) 
+        {
+                String lines[] = text.split("\n");
+                for(String line: lines)
+                {
+                    writer.write(line+"\r\n");
+                }
+                writer.flush();
+        }catch(IOException e){System.err.println("ERROR saving file: "+e);}
+        return f;
     }
 }

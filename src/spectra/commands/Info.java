@@ -15,10 +15,18 @@
  */
 package spectra.commands;
 
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import net.dv8tion.jda.entities.Game;
+import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.utils.MiscUtil;
 import spectra.Argument;
 import spectra.Command;
+import spectra.Sender;
 
 /**
  *
@@ -42,9 +50,64 @@ public class Info extends Command{
     
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
-        User u = (User)(args[0]);
-        if(u==null)
-            u = event.getAuthor();
+        User user = (User)(args[0]);
+        if(user==null)
+            user = event.getAuthor();
+        
+        boolean here = (!event.isPrivate() && event.getGuild().getUsers().contains(user));
+        
+        String str = "Information about **"+user.getUsername()+"** #"+user.getDiscriminator()+":\nDiscord ID: "+user.getId();
+        if(here){
+            String nick = event.getGuild().getNicknameForUser(user);
+            if(nick!=null)
+                str+="\nNickname: "+nick;
+            String roles="";
+            for(Role rol: event.getGuild().getRolesForUser(user)){
+                String r = rol.getName();
+                if(!r.equalsIgnoreCase("@everyone"))
+                    roles+=", "+r;}
+            if(roles.equals(""))
+                roles=" None";
+            else
+                roles=roles.substring(2);
+            str+="\nRoles: "+roles;
+        }
+        str+="\nStatus: "+user.getOnlineStatus().name();
+        Game game = user.getCurrentGame();
+        if(game!=null)
+            str+=" ("+(game.getType()==Game.GameType.TWITCH ? "Streaming" : "Playing")+" *"+game+"*)";
+        str+="\nAccount Creation: "+MiscUtil.getDateTimeString(MiscUtil.getCreationTime(user));
+        
+        if(here){
+        List<User> joins = new ArrayList<>(event.getGuild().getUsers());
+        Collections.sort(joins, (User a, User b) -> event.getGuild().getJoinDateForUser(a).compareTo(event.getGuild().getJoinDateForUser(b)));
+        int index = joins.indexOf(user);
+        str+="\nGuild Join Date: "+event.getGuild().getJoinDateForUser(user).format(DateTimeFormatter.RFC_1123_DATE_TIME) + " (#"+(index+1)+")";
+        index-=3;
+        if(index<0)
+            index=0;
+        str+="\nJoin Order: ";
+        if(joins.get(index).equals(user))
+            str+="**"+joins.get(index).getUsername()+"**";
+        else
+            str+=joins.get(index).getUsername();
+        for(int i=index+1;i<index+7;i++)
+        {
+            if(i>=joins.size())
+                break;
+            User u = joins.get(i);
+            String name = u.getUsername();
+            if(u.equals(user))
+                name="**"+name+"**";
+            str+=" > "+name;
+        }
+        }
+        String url = user.getAvatarUrl();
+        if(url!=null)
+            str+="\nAvatar: "+url;
+        
+        Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+        return true;
     }
     
 }

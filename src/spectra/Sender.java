@@ -5,11 +5,15 @@
  */
 package spectra;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Objects;
+import net.dv8tion.jda.MessageBuilder;
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.MessageChannel;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.tempdata.CallDepend;
 
 /**
@@ -18,18 +22,45 @@ import spectra.tempdata.CallDepend;
  */
 public class Sender { 
     
-    
-    
+    //for replying to commands
     public static void sendResponse(String message, MessageChannel chan, String dependency)
     {
+        Objects.requireNonNull(dependency);
         ArrayList<String> bits = splitMessage(message);
-        for(String bit: bits)
+        bits.stream().forEach((bit) -> {
             chan.sendMessageAsync(bit, m -> {
-                CallDepend.getInstance().add(dependency, m);
+                if(chan instanceof TextChannel)
+                    CallDepend.getInstance().add(dependency, m);
+            });
+        });
+    }
+    
+    //reply with a file (or permission error)
+    public static void sendFileResponse(String message, File file, MessageChannel chan, String dependency)
+    {
+        sendFileResponseWithAlternate(message, file, null, chan, dependency);
+    }
+    
+    //reply with a file, or text if a file can't be sent
+    public static void sendFileResponseWithAlternate(String message, File file, String alternate, MessageChannel chan, String dependency)
+    {
+        Objects.requireNonNull(dependency);
+        if(chan instanceof TextChannel)
+        {
+            if(!PermissionUtil.checkPermission(((TextChannel)chan).getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, (TextChannel)chan))
+            {
+                sendResponse(alternate==null ? String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_ATTACH_FILES) : alternate , chan, dependency);
+                return;
+            }
+        }
+        chan.sendFileAsync(file, new MessageBuilder().appendString((message.length() > 2000 ? message.substring(0, 2000) : message)).build(), m -> {
+                if(chan instanceof TextChannel)
+                    CallDepend.getInstance().add(dependency, m);
             });
     }
     
-    public static void sendPrivate(String message, PrivateChannel pchan, TextChannel fallback, String dependency)//dependency for fallback
+    //send help (warn if can't send)
+    public static void sendHelp(String message, PrivateChannel pchan, TextChannel fallback, String dependency)//dependency for fallback
     {
         ArrayList<String> bits = splitMessage(message);
         for(int i=0; i<bits.size(); i++)
@@ -39,20 +70,19 @@ public class Sender {
             {
                 if(m==null && first && fallback!=null)//failed to send
                 {
-                    fallback.sendMessageAsync(SpConst.CANT_HELP, m2 -> {
-                        if(m2 != null)
-                            CallDepend.getInstance().add(dependency, m2);
-                    });
+                    sendResponse(SpConst.CANT_HELP, fallback, dependency);
                 }
             });
         }
     }
     
+    //send private message, silent fail
     public static void sendPrivate(String message, PrivateChannel pchan)
     {
         ArrayList<String> bits = splitMessage(message);
-        for(String bit: bits)
+        bits.stream().forEach((bit) -> {
             pchan.sendMessageAsync(bit, null);
+        });
     }
     
     
