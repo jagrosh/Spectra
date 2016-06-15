@@ -13,23 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package spectra;
+package spectra.datasources;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
-public enum PermLevel {
-    EVERYONE(0), MODERATOR(1), ADMIN(2), JAGROSH(3);
+public class Tags {
     
-    final int value;
-    private PermLevel(int value)
-    {
-        this.value = value;
-    }
-    
-    public boolean isAtLeast(PermLevel other)
-    {
-        return value >= other.value;
-    }
 }

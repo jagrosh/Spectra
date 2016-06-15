@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 jagrosh.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package spectra;
 
 import java.util.List;
@@ -35,12 +50,12 @@ public abstract class Command {
     
     protected abstract boolean execute(Object[] args, MessageReceivedEvent event);
     
-    public boolean run(String args, MessageReceivedEvent event, String[] settings, PermLevel perm, boolean ignore)
+    public boolean run(String args, MessageReceivedEvent event, String[] settings, PermLevel perm, boolean ignore, boolean banned)
     {
-        return run(args, event, settings, perm, ignore, "");
+        return run(args, event, settings, perm, ignore, banned, "");
     }
     
-    public boolean run(String args, MessageReceivedEvent event, String[] settings, PermLevel perm, boolean ignore, String parentChain)
+    public boolean run(String args, MessageReceivedEvent event, String[] settings, PermLevel perm, boolean ignore, boolean banned, String parentChain)
     {
         if("help".equalsIgnoreCase(args))//display help text if applicable
         {
@@ -70,7 +85,7 @@ public abstract class Command {
             String[] argv = FormatUtil.cleanSplit(args);
             for(Command child: children)
                 if(child.isCommandFor(argv[0]))
-                    return child.run(argv[1], event, settings, perm, ignore, parentChain+command+" ");
+                    return child.run(argv[1], event, settings, perm, ignore, banned, parentChain+command+" ");
         }
         
         if(!availableInDM && event.isPrivate())//can't use in dm
@@ -82,6 +97,11 @@ public abstract class Command {
             return false;
         if(ignore && (perm==PermLevel.EVERYONE || perm==PermLevel.MODERATOR))//ignore commands by non-admins
             return false;
+        if(banned)
+        {
+            Sender.sendResponse(SpConst.BANNED_COMMAND + (perm.isAtLeast(PermLevel.ADMIN) ? String.format(SpConst.BANNED_COMMAND_IFADMIN, command, command) : ""), event.getChannel(), event.getMessage().getId());
+            return false;
+        }
         if(!event.isPrivate() && !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, event.getTextChannel()))
         {
             Sender.sendPrivate(String.format(SpConst.CANT_SEND, event.getTextChannel().getAsMention()), event.getAuthor().getPrivateChannel());
