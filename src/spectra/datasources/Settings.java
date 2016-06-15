@@ -79,7 +79,6 @@ public class Settings extends DataSource {
         return list;
     }
     
-    //public final String[] PRIVATESETTINGS;
     
     final public static int SERVERID   = 0;
     final public static int WELCOMEMSG = 1;

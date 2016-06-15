@@ -130,8 +130,7 @@ public class FinderUtil {
         ArrayList<TextChannel> wrongcase = new ArrayList<>();
         ArrayList<TextChannel> startswith = new ArrayList<>();
         ArrayList<TextChannel> contains = new ArrayList<>();
-        for(TextChannel tc: channels)
-        {
+        channels.stream().forEach((tc) -> {
             if(tc.getName().equals(query))
                 exact.add(tc);
             else if (tc.getName().equalsIgnoreCase(query) && exact.isEmpty())
@@ -140,7 +139,7 @@ public class FinderUtil {
                 startswith.add(tc);
             else if (tc.getName().toLowerCase().contains(query) && startswith.isEmpty())
                 contains.add(tc);
-        }
+        });
         if(!exact.isEmpty())
             return exact;
         if(!wrongcase.isEmpty())
@@ -171,8 +170,7 @@ public class FinderUtil {
         ArrayList<Role> wrongcase = new ArrayList<>();
         ArrayList<Role> startswith = new ArrayList<>();
         ArrayList<Role> contains = new ArrayList<>();
-        for(Role role: roles)
-        {
+        roles.stream().forEach((role) -> {
             if(role.getName().equals(query))
                 exact.add(role);
             else if (role.getName().equalsIgnoreCase(query) && exact.isEmpty())
@@ -181,7 +179,7 @@ public class FinderUtil {
                 startswith.add(role);
             else if (role.getName().toLowerCase().contains(query) && startswith.isEmpty())
                 contains.add(role);
-        }
+        });
         if(!exact.isEmpty())
             return exact;
         if(!wrongcase.isEmpty())

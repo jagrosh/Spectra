@@ -48,7 +48,7 @@ public abstract class Command {
     protected int cooldown = 0; //seconds
     protected String separatorRegex = null;
     
-    protected abstract boolean execute(Object[] args, MessageReceivedEvent event);
+    protected abstract boolean execute(Object[] args, String[] settings, MessageReceivedEvent event);
     
     public boolean run(String args, MessageReceivedEvent event, String[] settings, PermLevel perm, boolean ignore, boolean banned)
     {
@@ -256,7 +256,7 @@ public abstract class Command {
                     break;}
             }
         }
-        return execute(parsedArgs,event);
+        return execute(parsedArgs,settings,event);
     }
 
     public boolean isCommandFor(String string)

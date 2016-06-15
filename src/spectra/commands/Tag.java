@@ -19,7 +19,10 @@ import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
+import spectra.Sender;
 import spectra.SpConst;
+import spectra.datasources.Settings;
+import spectra.datasources.Tags;
 
 /**
  *
@@ -38,19 +41,37 @@ public class Tag extends Command{
             new Argument("tag arguments",Argument.Type.LONGSTRING,false)
         };
         this.children = new Command[]{
-            new Create()
+            new TagCreate(),
+            new TagList()
         };
     }
     
     @Override
-    protected boolean execute(Object[] args, MessageReceivedEvent event) {
+    protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event) 
+    {
         String tagname = (String)(args[0]);
         String tagargs = (String)(args[1]);
+        boolean local = false;
+        boolean nsfw = true;
+        if(!event.isPrivate())
+        {
+            local = "local".equalsIgnoreCase(settings[Settings.TAGMODE]);
+            nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
+        }
+        String[] tag = Tags.getInstance().findTag(tagname, event.getGuild(), local, nsfw);
+        if(tag==null)
+        {
+            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+            return false;
+        }
+        Sender.sendResponse("\u180E"+Tags.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event.getChannel(), event.getMessage().getId());
+        return true;
     }
     
     //subcommands
-    private class Create extends Command{
-        private Create()
+    private class TagCreate extends Command
+    {
+        private TagCreate()
         {
             this.command = "create";
             this.help = "";
@@ -62,15 +83,16 @@ public class Tag extends Command{
             this.cooldown = 60;
         }
         @Override
-        protected boolean execute(Object[] args, MessageReceivedEvent event)
+        protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event)
         {
             String tagname = (String)(args[0]);
             String contents = (String)(args[1]);
         }
     }
     
-    private class List extends Command{
-        private List()
+    private class TagList extends Command
+    {
+        private TagList()
         {
             this.command = "list";
             this.help = "";
@@ -81,7 +103,7 @@ public class Tag extends Command{
             this.cooldown = 10;
         }
         @Override
-        protected boolean execute(Object[] args, MessageReceivedEvent event)
+        protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event)
         {
             User user = (User)(args[0]);
             if(user==null)

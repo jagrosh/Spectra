@@ -35,17 +35,17 @@ import spectra.utils.FormatUtil;
 public class Spectra extends ListenerAdapter {
     
     Command[] commands;
-    DataSource[] sources;
-    final Settings settings;
+    //DataSource[] sources;
+    //final Settings settings;
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         //get the settings for the server
         //settings will be null for private messages
         //make default settings if no settings exist for a server
-        String[] currentSettings = (event.isPrivate() ? null : settings.getSettingsForGuild(event.getGuild().getId()));
+        String[] currentSettings = (event.isPrivate() ? null : Settings.getInstance().getSettingsForGuild(event.getGuild().getId()));
         if(currentSettings==null && !event.isPrivate())
-            currentSettings = settings.makeNewSettingsForGuild(event.getGuild().getId());
+            currentSettings = Settings.getInstance().makeNewSettingsForGuild(event.getGuild().getId());
         
         //get a sorted list of prefixes
         String[] prefixes = event.isPrivate() ?
@@ -138,7 +138,7 @@ public class Spectra extends ListenerAdapter {
                     boolean banned = false;
                     if(!event.isPrivate())
                     {
-                        for(String bannedCmd : currentSettings[Settings.BANNEDCMDS].split("\\s+"))
+                        for(String bannedCmd : Settings.restrCmdsFromList(currentSettings[Settings.BANNEDCMDS]))
                             if(bannedCmd.equalsIgnoreCase(toRun.command))
                                 banned = true;
                         if(banned)
@@ -165,7 +165,7 @@ public class Spectra extends ListenerAdapter {
     
     public Spectra()
     {
-        settings = Settings.getInstance();
+        //settings = Settings.getInstance();
     }
     
     public void init()
@@ -174,15 +174,13 @@ public class Spectra extends ListenerAdapter {
             new About(),
             new Archive(),
             new Info(),
-            new Ping()
+            new Ping(),
+            new Tag()
         };
         
-        sources = new DataSource[]{
-            settings
-        };
-        
-        for(DataSource source: sources)
-            source.read();
+        Settings.getInstance().read();
+        Tags.getInstance().read();
+        Overrides.getInstance().read();
         
         try {
             new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).buildAsync();
