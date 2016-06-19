@@ -18,10 +18,12 @@ package spectra.utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.entities.impl.GuildImpl;
 
 /**
  *
@@ -29,16 +31,16 @@ import net.dv8tion.jda.entities.User;
  */
 public class FinderUtil {
     
-    public static List<User> findUsers(String query, List<User> users)
+    public static List<User> findUsers(String query, JDA jda)
     {
         String id;
         String discrim = null;
         if(query.matches("<@!?\\d+>"))
         {
             id = query.replaceAll("<@!?(\\d+)>", "$1");
-            for(User u: users)
-                if(u.getId().equals(id))
-                    return Collections.singletonList(u);
+            User u = jda.getUserById(id);
+            if(u!=null)
+                return Collections.singletonList(u);
         }
         else if(query.matches("^.*#\\d{4}$"))
         {
@@ -50,7 +52,7 @@ public class FinderUtil {
         ArrayList<User> startswith = new ArrayList<>();
         ArrayList<User> contains = new ArrayList<>();
         String lowerQuery = query.toLowerCase();
-        for(User u: users)
+        for(User u: jda.getUsers())
         {
             if(discrim!=null && !u.getDiscriminator().equals(discrim))
                 continue;
@@ -79,9 +81,9 @@ public class FinderUtil {
         if(query.matches("<@!?\\d+>"))
         {
             id = query.replaceAll("<@!?(\\d+)>", "$1");
-            for(User u: guild.getUsers())
-                if(u.getId().equals(id))
-                    return Collections.singletonList(u);
+            User u = guild.getJDA().getUserById(id);
+            if(((GuildImpl)guild).getUserRoles().get(u)!=null)
+                return Collections.singletonList(u);
         }
         else if(query.matches("^.*#\\d{4}$"))
         {
@@ -116,21 +118,21 @@ public class FinderUtil {
         return contains;
     }
     
-    public static List<TextChannel> findTextChannel(String query, List<TextChannel> channels)
+    public static List<TextChannel> findTextChannel(String query, Guild guild)
     {
         String id;
         if(query.matches("<#\\d+>"))
         {
             id = query.replaceAll("<#(\\d+)>", "$1");
-            for(TextChannel tc: channels)
-                if(tc.getId().equals(id))
-                    return Collections.singletonList(tc);
+            TextChannel tc = guild.getJDA().getTextChannelById(id);
+            if(tc!=null && tc.getGuild().equals(tc))
+                return Collections.singletonList(tc);
         }
         ArrayList<TextChannel> exact = new ArrayList<>();
         ArrayList<TextChannel> wrongcase = new ArrayList<>();
         ArrayList<TextChannel> startswith = new ArrayList<>();
         ArrayList<TextChannel> contains = new ArrayList<>();
-        channels.stream().forEach((tc) -> {
+        guild.getTextChannels().stream().forEach((tc) -> {
             if(tc.getName().equals(query))
                 exact.add(tc);
             else if (tc.getName().equalsIgnoreCase(query) && exact.isEmpty())

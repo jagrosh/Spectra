@@ -35,16 +35,19 @@ public class Overrides extends DataSource{
     {
         return overrides;
     }
+
+    @Override
+    protected String generateKey(String[] item) {
+        return item[OWNERID]+"|"+item[TAGNAME].toLowerCase();
+    }
+    
     
     public String[] findTag(Guild guild, String name)
     {
         synchronized(data)
         {
-            for(String[] tag : data)
-                if(tag[OWNERID].equals("g"+guild.getId()) && tag[TAGNAME].equalsIgnoreCase(name))
-                    return tag;
+            return data.get("g"+guild.getId()+"|"+name.toLowerCase());
         }
-        return null;
     }
     
     final public static int OWNERID   = 0;

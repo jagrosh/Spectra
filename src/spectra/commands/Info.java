@@ -49,7 +49,7 @@ public class Info extends Command{
     }
     
     @Override
-    protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event) {
+    protected boolean execute(Object[] args, MessageReceivedEvent event) {
         User user = (User)(args[0]);
         if(user==null)
             user = event.getAuthor();

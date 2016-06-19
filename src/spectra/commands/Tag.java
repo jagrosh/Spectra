@@ -47,7 +47,7 @@ public class Tag extends Command{
     }
     
     @Override
-    protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event) 
+    protected boolean execute(Object[] args, MessageReceivedEvent event) 
     {
         String tagname = (String)(args[0]);
         String tagargs = (String)(args[1]);
@@ -55,7 +55,7 @@ public class Tag extends Command{
         boolean nsfw = true;
         if(!event.isPrivate())
         {
-            local = "local".equalsIgnoreCase(settings[Settings.TAGMODE]);
+            local = "local".equalsIgnoreCase(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
         }
         String[] tag = Tags.getInstance().findTag(tagname, event.getGuild(), local, nsfw);
@@ -83,7 +83,7 @@ public class Tag extends Command{
             this.cooldown = 60;
         }
         @Override
-        protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event)
+        protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
             String tagname = (String)(args[0]);
             String contents = (String)(args[1]);
@@ -103,7 +103,7 @@ public class Tag extends Command{
             this.cooldown = 10;
         }
         @Override
-        protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event)
+        protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
             User user = (User)(args[0]);
             if(user==null)

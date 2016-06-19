@@ -36,16 +36,19 @@ public class Settings extends DataSource {
     {
         return settings;
     }
+
+    @Override
+    protected String generateKey(String[] item) {
+        return item[SERVERID];
+    }
+    
     
     public String[] getSettingsForGuild(String id)
     {
         synchronized(data)
         {
-            for(String[] setting: data)
-                if(setting[0].equals(id))
-                    return setting.clone();
+            return data.get(id).clone();
         }
-        return null;
     }
     
     public String[] makeNewSettingsForGuild(String id)
@@ -56,7 +59,7 @@ public class Settings extends DataSource {
         };
         synchronized(data)
         {
-            data.add(newSettings);
+            data.put(id,newSettings);
             setToWrite();
             return Arrays.copyOf(newSettings, size);
         }

@@ -23,6 +23,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -31,7 +32,8 @@ import java.util.concurrent.Executors;
  * @author John Grosh (jagrosh)
  */
 public abstract class DataSource {
-    final protected ArrayList<String[]> data = new ArrayList<>();
+    final protected HashMap<String,String[]> data = new HashMap<>();
+    //final protected ArrayList<String[]> data = new ArrayList<>();
     protected String filename = "discordbot.null";
     protected boolean save = true;
     protected int size;
@@ -40,6 +42,8 @@ public abstract class DataSource {
     boolean writeScheduled = false;
     
     protected DataSource(){}
+    
+    protected abstract String generateKey(String[] item);
     
     public void setToWrite()
     {
@@ -85,7 +89,7 @@ public abstract class DataSource {
                 synchronized(data)
                 {
                     data.clear();
-                    data.addAll(newData);
+                    newData.stream().forEach((item) -> { data.put(generateKey(item), item); });
                 }
                 return true;
             }catch(IOException e){}
@@ -95,13 +99,13 @@ public abstract class DataSource {
     
     private boolean write()
     {
-        ArrayList<String[]> copy;
+        HashMap<String,String[]> copy;
         synchronized(data)
         {
-            copy = new ArrayList<>(data);
+            copy = new HashMap<>(data);
         }
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            for(String[] s: copy)
+            for(String[] s: copy.values())
             {
                 String str = s[0];
                 for(int i=1;i<s.length;i++)

@@ -25,12 +25,6 @@ import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.utils.FinderUtil;
 import spectra.utils.FormatUtil;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
  *
  * @author John Grosh (jagrosh)
@@ -48,14 +42,14 @@ public abstract class Command {
     protected int cooldown = 0; //seconds
     protected String separatorRegex = null;
     
-    protected abstract boolean execute(Object[] args, String[] settings, MessageReceivedEvent event);
+    protected abstract boolean execute(Object[] args, MessageReceivedEvent event);
     
-    public boolean run(String args, MessageReceivedEvent event, String[] settings, PermLevel perm, boolean ignore, boolean banned)
+    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned)
     {
-        return run(args, event, settings, perm, ignore, banned, "");
+        return run(args, event, perm, ignore, banned, "");
     }
     
-    public boolean run(String args, MessageReceivedEvent event, String[] settings, PermLevel perm, boolean ignore, boolean banned, String parentChain)
+    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, String parentChain)
     {
         if("help".equalsIgnoreCase(args))//display help text if applicable
         {
@@ -85,7 +79,7 @@ public abstract class Command {
             String[] argv = FormatUtil.cleanSplit(args);
             for(Command child: children)
                 if(child.isCommandFor(argv[0]))
-                    return child.run(argv[1], event, settings, perm, ignore, banned, parentChain+command+" ");
+                    return child.run(argv[1], event, perm, ignore, banned, parentChain+command+" ");
         }
         
         if(!availableInDM && event.isPrivate())//can't use in dm
@@ -169,7 +163,7 @@ public abstract class Command {
                     if(!event.isPrivate())
                         ulist = FinderUtil.findUsers(parts[0], event.getGuild());
                     if(ulist==null || ulist.isEmpty())
-                        ulist = FinderUtil.findUsers(parts[0], event.getJDA().getUsers());
+                        ulist = FinderUtil.findUsers(parts[0], event.getJDA());
                     if(ulist.isEmpty())
                     {
                         Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event.getChannel(), event.getMessage().getId());
@@ -215,7 +209,7 @@ public abstract class Command {
                         return false;
                     }
                     String[] parts = FormatUtil.cleanSplit(workingSet);
-                    List<TextChannel> tclist = FinderUtil.findTextChannel(parts[0], event.getGuild().getTextChannels());
+                    List<TextChannel> tclist = FinderUtil.findTextChannel(parts[0], event.getGuild());
                     if(tclist.isEmpty())
                     {
                         Sender.sendResponse(String.format(SpConst.NONE_FOUND, "text channels", parts[0]), event.getChannel(), event.getMessage().getId());
@@ -256,7 +250,7 @@ public abstract class Command {
                     break;}
             }
         }
-        return execute(parsedArgs,settings,event);
+        return execute(parsedArgs,event);
     }
 
     public boolean isCommandFor(String string)

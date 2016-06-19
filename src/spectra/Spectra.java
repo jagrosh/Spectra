@@ -145,7 +145,7 @@ public class Spectra extends ListenerAdapter {
                             if(event.getTextChannel().getTopic().contains("{"+toRun.command+"}"))
                                 banned = false;
                     }
-                    success = toRun.run(args[1], event, currentSettings, perm, ignore, banned);
+                    success = toRun.run(args[1], event, perm, ignore, banned);
                 }
             }
         }

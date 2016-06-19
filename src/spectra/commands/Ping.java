@@ -37,13 +37,15 @@ public class Ping extends Command{
     }
     
     @Override
-    protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event) {
+    protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String vowel = "aeiou".charAt((int)(Math.random()*5))+"";
         event.getChannel().sendMessageAsync("P"+vowel+"ng: ...", m -> {
             if(m!=null)
             {
-                m.updateMessageAsync("P"+vowel+"ng: "+event.getMessage().getTime().until(m.getTime(), ChronoUnit.MILLIS)+"ms", null);
-                CallDepend.getInstance().add(event.getMessage().getId(), m);
+                m.updateMessageAsync("P"+vowel+"ng: "+event.getMessage().getTime().until(m.getTime(), ChronoUnit.MILLIS)+"ms", m2 -> {
+                    CallDepend.getInstance().add(event.getMessage().getId(), m2);
+                });
+                
             }
         });
         return true;

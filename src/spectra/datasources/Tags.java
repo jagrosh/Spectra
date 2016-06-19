@@ -19,6 +19,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.OnlineStatus;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.MessageChannel;
@@ -47,6 +48,11 @@ public class Tags extends DataSource{
     {
         return tags;
     }
+
+    @Override
+    protected String generateKey(String[] item) {
+        return item[TAGNAME].toLowerCase();
+    }
     
     public String[] findTag(String name, Guild guild, boolean local, boolean nsfw)
     {
@@ -58,24 +64,24 @@ public class Tags extends DataSource{
         }
         synchronized(data)
         {
-            for(String[] tag : data)
-                if(tag[TAGNAME].equalsIgnoreCase(name))
-                {
-                    if(!nsfw && tag[CONTENTS].toLowerCase().contains("{nsfw}"))
+            String[] tag = data.get(name.toLowerCase());
+            if(tag!=null)
+            {
+                if(!nsfw && tag[CONTENTS].toLowerCase().contains("{nsfw}"))
                         return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag has been marked as **Not Safe For Work** and is not available in this channel."};
                     else
                     {
                         if(local && guild!=null)
                         {
-                            for(User u: guild.getUsers())
-                                if(u.getId().equals(tag[OWNERID]))
-                                    return tag;
+                            User u = guild.getJDA().getUserById(tag[OWNERID]);
+                            if(u!=null && guild.isMember(u))
+                                return tag;
                             return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag does not belong to a user on this server."};
                         }
                         else
                             return tag;
                     }
-                }
+            }
         }
         return null;
     }
@@ -114,14 +120,14 @@ public class Tags extends DataSource{
                 .replace("{avatar}",(user.getAvatarUrl()==null?"":user.getAvatarUrl()))
                 ;
         
-        List<User> allUsers = (channel instanceof TextChannel ? ((TextChannel)channel).getJDA().getUsers() : ((PrivateChannel)channel).getJDA().getUsers());
+        JDA jda = (channel instanceof TextChannel ? ((TextChannel)channel).getJDA() : ((PrivateChannel)channel).getJDA());
                 
         //random replacements
         int ind;
         
         while( (ind = output.indexOf("{randuser}")) != -1)
             output = output.substring(0, ind)+
-                    ( (guild==null) ? allUsers.get((int)(allUsers.size()*Math.random())).getUsername() : guild.getUsers().get((int)(guild.getUsers().size()*Math.random())).getUsername())
+                    ( (guild==null) ? jda.getUsers().get((int)(jda.getUsers().size()*Math.random())).getUsername() : guild.getUsers().get((int)(guild.getUsers().size()*Math.random())).getUsername())
                     +output.substring(ind+10);
         
         List<User> onlines = new ArrayList<>();
@@ -131,7 +137,7 @@ public class Tags extends DataSource{
             });
         while( (ind = output.indexOf("{randonline}")) != -1)
             output = output.substring(0, ind)+
-                    ((guild==null) ? allUsers.get((int)(allUsers.size()*Math.random())).getUsername() : onlines.get((int)(onlines.size()*Math.random())).getUsername())
+                    ((guild==null) ? jda.getUsers().get((int)(jda.getUsers().size()*Math.random())).getUsername() : onlines.get((int)(onlines.size()*Math.random())).getUsername())
                     +output.substring(ind+12);
         
         while( (ind = output.indexOf("{randchannel}")) != -1)
@@ -252,7 +258,7 @@ public class Tags extends DataSource{
                         if(guild!=null)
                             users = FinderUtil.findUsers(in, guild);
                         if(users==null || users.isEmpty())
-                            users = FinderUtil.findUsers(in, allUsers);
+                            users = FinderUtil.findUsers(in, jda);
                         if(users.isEmpty())
                         {
                             return String.format(SpConst.NONE_FOUND, "users", in);
@@ -275,7 +281,7 @@ public class Tags extends DataSource{
                         if(guild!=null)
                             users = FinderUtil.findUsers(in, guild);
                         if(users==null || users.isEmpty())
-                            users = FinderUtil.findUsers(in, allUsers);
+                            users = FinderUtil.findUsers(in, jda);
                         if(users.isEmpty())
                         {
                             return String.format(SpConst.NONE_FOUND, "users", in);

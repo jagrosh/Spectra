@@ -53,7 +53,7 @@ public class Archive extends Command{
     }
     
     @Override
-    protected boolean execute(Object[] args, String[] settings, MessageReceivedEvent event) {
+    protected boolean execute(Object[] args, MessageReceivedEvent event) {
         int numposts = (int)(args[0]);
         TextChannel channel = (TextChannel)(args[1]);
         MessageHistory mh;
