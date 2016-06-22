@@ -51,6 +51,10 @@ public class Archive extends Command{
             new Argument("channel",Argument.Type.TEXTCHANNEL,false)};//<numposts> [channel]
         this.cooldown=120;
     }
+
+    @Override
+    protected String cooldownKey(MessageReceivedEvent event) {
+        return event.getAuthor()+"|"+(event.isPrivate() ? "PC" : event.getTextChannel().getId()+"|archive");}
     
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {

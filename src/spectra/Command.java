@@ -22,6 +22,7 @@ import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
+import spectra.tempdata.Cooldowns;
 import spectra.utils.FinderUtil;
 import spectra.utils.FormatUtil;
 
@@ -41,6 +42,7 @@ public abstract class Command {
     protected boolean availableInDM = true;
     protected int cooldown = 0; //seconds
     protected String separatorRegex = null;
+    protected String cooldownKey(MessageReceivedEvent event){return null;}
     
     protected abstract boolean execute(Object[] args, MessageReceivedEvent event);
     
@@ -102,6 +104,20 @@ public abstract class Command {
             return false;
         }
         
+        //check cooldown and apply
+        //if the command is on cooldown, say that and exit with failure
+        //if the command is ready, apply the cooldown now
+        //then, remove the cooldown later if execute returns false
+        //we do this now (as opposed to at command compltetion) to support multi-thread cooldowns
+        String cooldownKey = cooldownKey(event);
+        long seconds = Cooldowns.getInstance().checkAndApply(cooldownKey,cooldown);
+        if(seconds > 0)
+        {
+            Sender.sendResponse(String.format(SpConst.ON_COOLDOWN, FormatUtil.secondsToTime(seconds)), event.getChannel(), event.getMessage().getId());
+            return false;
+        }
+        
+        
         //parse arguments
         Object[] parsedArgs = new Object[arguments.length];
         String workingSet = args;
@@ -112,6 +128,7 @@ public abstract class Command {
                 if (arguments[i].required)
                 {
                     Sender.sendResponse(String.format(SpConst.TOO_FEW_ARGS,parentChain+command), event.getChannel(), event.getMessage().getId());
+                    Cooldowns.getInstance().resetCooldown(cooldownKey);
                     return false;
                 }
                 else continue;
@@ -121,17 +138,18 @@ public abstract class Command {
                 case INTEGER:{
                     String[] parts = FormatUtil.cleanSplit(workingSet);
                     int num;
-                    boolean invalid = false;
                     try{
                         num = Integer.parseInt(parts[0]);
                         if(num < arguments[i].min || num > arguments[i].max)
                         {
                             Sender.sendResponse(String.format(SpConst.INVALID_INTEGER, arguments[i].name, arguments[i].min, arguments[i].max), event.getChannel(), event.getMessage().getId());
+                            Cooldowns.getInstance().resetCooldown(cooldownKey);
                             return false;
                         }
                     } catch(NumberFormatException e)
                     {
                         Sender.sendResponse(String.format(SpConst.INVALID_INTEGER, arguments[i].name, arguments[i].min, arguments[i].max), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     parsedArgs[i] = num;
@@ -167,11 +185,13 @@ public abstract class Command {
                     if(ulist.isEmpty())
                     {
                         Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     else if (ulist.size()>1)
                     {
                         Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     parsedArgs[i] = ulist.get(0);
@@ -181,6 +201,7 @@ public abstract class Command {
                     if(event.isPrivate())
                     {
                         Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     String[] parts;
@@ -192,11 +213,13 @@ public abstract class Command {
                     if(ulist.isEmpty())
                     {
                         Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     else if (ulist.size()>1)
                     {
                         Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     parsedArgs[i] = ulist.get(0);
@@ -206,6 +229,7 @@ public abstract class Command {
                     if(event.isPrivate())
                     {
                         Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     String[] parts = FormatUtil.cleanSplit(workingSet);
@@ -213,11 +237,13 @@ public abstract class Command {
                     if(tclist.isEmpty())
                     {
                         Sender.sendResponse(String.format(SpConst.NONE_FOUND, "text channels", parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     else if (tclist.size()>1)
                     {
                         Sender.sendResponse(FormatUtil.listOfChannels(tclist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     parsedArgs[i] = tclist.get(0);
@@ -227,6 +253,7 @@ public abstract class Command {
                     if(event.isPrivate())
                     {
                         Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     String[] parts;
@@ -238,11 +265,13 @@ public abstract class Command {
                     if(rlist.isEmpty())
                     {
                         Sender.sendResponse(String.format(SpConst.NONE_FOUND, "roles", parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     else if (rlist.size()>1)
                     {
                         Sender.sendResponse(FormatUtil.listOfRoles(rlist, parts[0]), event.getChannel(), event.getMessage().getId());
+                        Cooldowns.getInstance().resetCooldown(cooldownKey);
                         return false;
                     }
                     parsedArgs[i] = rlist.get(0);
@@ -250,7 +279,11 @@ public abstract class Command {
                     break;}
             }
         }
-        return execute(parsedArgs,event);
+        
+        boolean result = execute(parsedArgs,event);
+        if(!result)
+            Cooldowns.getInstance().resetCooldown(cooldownKey);
+        return result;
     }
 
     public boolean isCommandFor(String string)

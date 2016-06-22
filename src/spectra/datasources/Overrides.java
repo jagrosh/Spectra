@@ -15,8 +15,10 @@
  */
 package spectra.datasources;
 
+import java.util.ArrayList;
 import net.dv8tion.jda.entities.Guild;
 import spectra.DataSource;
+import spectra.SpConst;
 
 /**
  *
@@ -42,12 +44,30 @@ public class Overrides extends DataSource{
     }
     
     
-    public String[] findTag(Guild guild, String name)
+    public String[] findTag(Guild guild, String name, boolean nsfw)
     {
         synchronized(data)
         {
-            return data.get("g"+guild.getId()+"|"+name.toLowerCase());
+            String[] tag = data.get("g"+guild.getId()+"|"+name.toLowerCase());
+            if(tag==null)
+                return null;
+            if(!nsfw && Tags.isNSFW(tag))
+                return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag has been marked as **Not Safe For Work** and is not available in this channel."};
+            return tag.clone();
         }
+    }
+    
+    public ArrayList<String[]> findGuildTags(Guild guild, boolean nsfw)
+    {
+        ArrayList<String[]> results = new ArrayList<>();
+        synchronized(data)
+        {
+            data.values().stream().filter((tag) -> (tag[OWNERID].equals("g"+guild.getId()) && (nsfw || !Tags.isNSFW(tag))))
+                .forEach((tag) -> {
+                results.add(tag.clone());
+            });
+        }
+        return results;
     }
     
     final public static int OWNERID   = 0;

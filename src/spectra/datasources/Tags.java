@@ -54,43 +54,98 @@ public class Tags extends DataSource{
         return item[TAGNAME].toLowerCase();
     }
     
+    public String[] findTag(String name)
+    {
+        return findTag(name,null,false,true);
+    }
+    
     public String[] findTag(String name, Guild guild, boolean local, boolean nsfw)
     {
-        if(guild!=null)
-        {
-            String[] tag = Overrides.getInstance().findTag(guild, name);
-            if(tag!=null)
-                return tag;
-        }
         synchronized(data)
         {
             String[] tag = data.get(name.toLowerCase());
             if(tag!=null)
             {
-                if(!nsfw && tag[CONTENTS].toLowerCase().contains("{nsfw}"))
-                        return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag has been marked as **Not Safe For Work** and is not available in this channel."};
-                    else
-                    {
-                        if(local && guild!=null)
-                        {
-                            User u = guild.getJDA().getUserById(tag[OWNERID]);
-                            if(u!=null && guild.isMember(u))
-                                return tag;
-                            return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag does not belong to a user on this server."};
-                        }
-                        else
-                            return tag;
-                    }
+                if(!nsfw && isNSFW(tag))
+                    return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag has been marked as **Not Safe For Work** and is not available in this channel."};
+                if(local && guild!=null)
+                {
+                    User u = guild.getJDA().getUserById(tag[OWNERID]);
+                    if(u!=null && guild.isMember(u))
+                        return tag;
+                    return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag does not belong to a user on this server."};
+                }
+                return tag.clone();
             }
         }
         return null;
+    }
+    
+    public ArrayList<String[]> findTags(String search, Guild guild, boolean local, boolean nsfw)
+    {
+        if(search==null)
+            search="";
+        ArrayList<String[]> results = new ArrayList<>();
+        search = search.toLowerCase();
+        synchronized(data)
+        {
+            for(String[] tag: data.values())
+            {
+                if(tag[TAGNAME].toLowerCase().contains(search) && (nsfw || !isNSFW(tag)))
+                {
+                    if(local && guild!=null)
+                    {
+                        User owner = guild.getJDA().getUserById(tag[OWNERID]);
+                        if(owner!=null && guild.isMember(owner))
+                            results.add(tag.clone());
+                    }
+                    else results.add(tag.clone());
+                }
+            }
+        }
+                    
+        return results;
+    }
+    
+    public ArrayList<String[]> findTagsByOwner(User owner, boolean nsfw)
+    {
+        ArrayList<String[]> results = new ArrayList<>();
+        synchronized(data)
+        {
+            data.values().stream().filter((tag) -> (tag[OWNERID].equals(owner.getId()) && (nsfw || !isNSFW(tag))))
+                .forEach((tag) -> {
+                results.add(tag.clone());
+            });
+        }
+        return results;
+    }
+    
+    public void setTag(String[] newTag)
+    {
+        synchronized(data)
+        {
+            data.put(newTag[TAGNAME].toLowerCase(), newTag);
+        }
+        setToWrite();
+    }
+    
+    public void removeTag(String name)
+    {
+        synchronized(data)
+        {
+            data.remove(name.toLowerCase());
+        }
+        setToWrite();
     }
     
     final public static int OWNERID   = 0;
     final public static int TAGNAME   = 1;
     final public static int CONTENTS  = 2;
     
-    
+    public static boolean isNSFW(String[] tag)
+    {
+        return tag[CONTENTS].toLowerCase().contains("{nsfw}");
+    }
     
     public static String convertText(String input, String arguments, User user, Guild guild, MessageChannel channel)
     {
@@ -113,6 +168,7 @@ public class Tags extends DataSource{
                 .replace("{discrim}",user.getDiscriminator())
                 .replace("{server}",(guild==null)?"Direct Message":guild.getName())
                 .replace("{serverid}",(guild==null)?"0":guild.getId())
+                .replace("{servercount}",(guild==null)?"1":guild.getUsers().size()+"")
                 .replace("{channel}",(guild==null)?"#Direct Message":((TextChannel)channel).getName())
                 .replace("{channelid}",(guild==null)?"0":((TextChannel)channel).getId())
                 .replace("{args}",arguments)
@@ -162,13 +218,14 @@ public class Tags extends DataSource{
                 String toEval = output.substring(i2+1,i1);
                 if(toEval.startsWith("arg:"))
                 {
-                    if(args.length>0){
-                        String num = toEval.substring(4);
-                        try{
-                            int argnum = Integer.parseInt(num);
+                    String num = toEval.substring(4);
+                    try{
+                        int argnum = Integer.parseInt(num);
+                        if(args.length>0)
                             toEval = args[argnum % args.length];
-                        } catch(NumberFormatException e){}
-                    }
+                        else
+                            toEval = "";
+                    } catch(NumberFormatException e){}
                 }
                 else if (toEval.startsWith("choose:"))
                 {

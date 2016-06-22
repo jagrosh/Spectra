@@ -43,9 +43,34 @@ public class FormatUtil {
         return Arrays.copyOf(input.split(regex, size), size);
     }
     
-    public String demention(String input)
+    public static String demention(String input)
     {
         return input.replace("<@", "<@\u180E");
+    }
+    
+    public static String secondsToTime(long timeseconds)
+    {
+        StringBuilder builder = new StringBuilder();
+        int days = (int)(timeseconds / (60*60*24));
+        if(days>0)
+        {
+            builder.append("**").append(days).append("** days, ");
+            timeseconds = timeseconds % (60*60*24);
+        }
+        int hours = (int)(timeseconds / (60*60));
+        if(days>0 || hours>0)
+        {
+            builder.append("**").append(hours).append("** hours, ");
+            timeseconds = timeseconds % (60*60);
+        }
+        int minutes = (int)(timeseconds / (60));
+        if(days>0 || hours>0 || minutes>0)
+        {
+            builder.append("**").append(minutes).append("** minutes, ");
+            timeseconds = timeseconds % (60);
+        }
+        builder.append("**").append(timeseconds).append("** seconds");
+        return builder.toString();
     }
     
     public static String listOfUsers(List<User> list, String query)

@@ -15,27 +15,47 @@
  */
 package spectra.tempdata;
 
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Cooldowns {
     
-    private static final Cooldowns callDepend = new Cooldowns();
+    private static final Cooldowns cooldownsInstance = new Cooldowns();
+    private final HashMap<String,OffsetDateTime> cooldowns;
     
     private Cooldowns()
     {
-        
+        cooldowns = new HashMap<>();
     }
     
     public static Cooldowns getInstance()
     {
-        return callDepend;
+        return cooldownsInstance;
     }
     
-    
-    public enum CDType
+    public synchronized long checkAndApply(String key, int newseconds)
     {
-        OVERALL, PERGUILD, PERCHANNEL
+        if(key==null || newseconds==0)
+            return 0;
+        OffsetDateTime time = cooldowns.get(key);
+        long seconds = 0;
+        if(time!=null)
+            seconds = OffsetDateTime.now().until(time, ChronoUnit.SECONDS);
+        if(seconds <= 0)
+        {
+            cooldowns.put(key, OffsetDateTime.now().plusSeconds(newseconds));
+            return 0;
+        }
+        return seconds;
+    }
+    
+    public synchronized void resetCooldown(String key)
+    {
+        cooldowns.remove(key);
     }
 }

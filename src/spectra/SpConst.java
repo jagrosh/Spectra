@@ -58,4 +58,5 @@ public class SpConst {
     final public static String MULTIPLE_FOUND           = WARNING + "**Multiple %s found matching \"%s\":**";
     final public static String NONE_FOUND               = WARNING + "**No %s found matching \"%s\"**";
     
+    final public static String ON_COOLDOWN              = WARNING + "That command is on cooldown for another %s";
 }
