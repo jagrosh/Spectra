@@ -16,6 +16,8 @@ a {
     text-decoration: underline; }
   a:link {
     color: #738bd7; }
+  a:visited {
+    color: #607bd2; }
   a:active {
     color: blue; }
 
