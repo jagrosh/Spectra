@@ -54,14 +54,32 @@ public class Settings extends DataSource {
     public String[] makeNewSettingsForGuild(String id)
     {
         String[] newSettings = new String[]{
-            id,"","0","speakerphone room","","false","",SpConst.ALTPREFIX,"",
-            "hug hi5 pat punch btth 8ball choose meme","global"
+            id, //serverid
+            "", //welcome message
+            "0", //talk level
+            "speakerphone room", //restricted commands
+            "", // mod ids
+            "false", //mhroles
+            "", // leave message
+            SpConst.ALTPREFIX, //prefixes
+            "", // ignore list
+            "hug hi5 pat punch btth 8ball choose meme rate ship", // tag commands
+            "global" // tag mode
         };
         synchronized(data)
         {
             data.put(id,newSettings);
             setToWrite();
             return Arrays.copyOf(newSettings, size);
+        }
+    }
+    
+    public void setSetting(String guildid, int settingNum, String value)
+    {
+        synchronized(data)
+        {
+            data.get(guildid)[settingNum] = value;
+            setToWrite();
         }
     }
     
@@ -82,6 +100,12 @@ public class Settings extends DataSource {
         return list;
     }
     
+    public static String[] tagCommandsFromList(String tagCommandList)
+    {
+        if(tagCommandList==null || tagCommandList.trim().equals(""))
+            return new String[0];
+        return tagCommandList.trim().split("\\s+");
+    }
     
     final public static int SERVERID   = 0;
     final public static int WELCOMEMSG = 1;

@@ -57,17 +57,35 @@ public class Overrides extends DataSource{
         }
     }
     
-    public ArrayList<String[]> findGuildTags(Guild guild, boolean nsfw)
+    public ArrayList<String> findGuildTags(Guild guild)
     {
-        ArrayList<String[]> results = new ArrayList<>();
+        ArrayList<String> results = new ArrayList<>();
         synchronized(data)
         {
-            data.values().stream().filter((tag) -> (tag[OWNERID].equals("g"+guild.getId()) && (nsfw || !Tags.isNSFW(tag))))
+            data.values().stream().filter((tag) -> (tag[OWNERID].equals("g"+guild.getId())))
                 .forEach((tag) -> {
-                results.add(tag.clone());
+                results.add(tag[TAGNAME]);
             });
         }
         return results;
+    }
+    
+    public void setTag(String[] newTag)
+    {
+        synchronized(data)
+        {
+            data.put(generateKey(newTag), newTag);
+        }
+        setToWrite();
+    }
+    
+    public void removeTag(String[] tag)
+    {
+        synchronized(data)
+        {
+            data.remove(generateKey(tag));
+        }
+        setToWrite();
     }
     
     final public static int OWNERID   = 0;

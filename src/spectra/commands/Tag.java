@@ -16,11 +16,14 @@
 package spectra.commands;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
+import spectra.JagTag;
+import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.datasources.Overrides;
@@ -54,14 +57,18 @@ public class Tag extends Command{
             new TagRandom(),
             new TagRaw(),
             new TagRaw2(),
-            new TagSearch()
+            new TagSearch(),
+            new TagOverride(),
+            new TagRestore(),
+            new TagImport(),
+            new TagUnimport()
         };
     }
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) 
     {
         String tagname = (String)(args[0]);
-        String tagargs = (String)(args[1]);
+        String tagargs = args[1]==null?null:(String)(args[1]);
         boolean local = false;
         boolean nsfw = true;
         if(!event.isPrivate())
@@ -79,7 +86,8 @@ public class Tag extends Command{
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
             return false;
         }
-        Sender.sendResponse("\u180E"+Tags.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), 
+                event.getChannel(), event.getMessage().getId());
         return true;
     }
     
@@ -191,10 +199,10 @@ public class Tag extends Command{
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
                 return false;
             }
-            else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()))
+            else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
                 Tags.getInstance().setTag(new String[]{
-                event.getAuthor().getId(),
+                tag[Tags.OWNERID],
                 tag[Tags.TAGNAME],
                 contents
                 });
@@ -240,11 +248,12 @@ public class Tag extends Command{
             boolean nsfw = true;
             if(!event.isPrivate())
                 nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
-            ArrayList<String[]> tags = Tags.getInstance().findTagsByOwner(user, nsfw);
+            ArrayList<String> tags = Tags.getInstance().findTagsByOwner(user, nsfw);
+            Collections.sort(tags);
             StringBuilder builder;
             builder = new StringBuilder(SpConst.SUCCESS+tags.size()+" tags owned by **"+user.getUsername()+"**: \n");
             tags.stream().forEach((tag) -> {
-                builder.append(tag[Tags.TAGNAME]).append(" ");
+                builder.append(tag).append(" ");
             });
             Sender.sendResponse(builder.toString(), event.getChannel(), event.getMessage().getId());
             return true;
@@ -303,7 +312,7 @@ public class Tag extends Command{
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
-            String tagargs = (String)(args[0]);
+            String tagargs = args[0]==null?null:(String)(args[0]);
             boolean local = false;
             boolean nsfw = true;
             if(!event.isPrivate())
@@ -319,7 +328,7 @@ public class Tag extends Command{
             }
             String[] tag = tags.get((int)(Math.random()*tags.size()));
             Sender.sendResponse("Tag \""+tag[Tags.TAGNAME]+"\":\n"
-                    +Tags.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()),
+                    +JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()),
                     event.getChannel(), event.getMessage().getId());
             return true;
         }
@@ -408,12 +417,15 @@ public class Tag extends Command{
             //this.longhelp = "";
             this.arguments = new Argument[]{
             new Argument("query",Argument.Type.SHORTSTRING,false)
-        };
+            };
+            this.cooldown = 10;
         }
+        @Override
+        protected String cooldownKey(MessageReceivedEvent event) {return event.getAuthor().getId()+"tagsearch";}
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
-            String query = (String)(args[0]);
+            String query = args[0]==null?null:(String)(args[0]);
             boolean local = false;
             boolean nsfw = true;
             if(!event.isPrivate())
@@ -436,6 +448,184 @@ public class Tag extends Command{
             });
             Sender.sendResponse(builder.toString(),event.getChannel(), event.getMessage().getId());
             return true;
+        }
+    }
+    
+    private class TagOverride extends Command
+    {
+        private TagOverride()
+        {
+            this.command = "override";
+            this.help = "creates an override for the current server";
+            //this.longhelp = "";
+            this.arguments = new Argument[]{
+                new Argument("tagname",Argument.Type.SHORTSTRING,true),
+                new Argument("new contents",Argument.Type.LONGSTRING,false)
+            };
+            this.level = PermLevel.MODERATOR;
+            this.availableInDM = false;
+            this.children = new Command[]{
+                new TagOverrideList()
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event)
+        {
+            String tagname = (String)(args[0]);
+            String contents = args[1]==null?null:(String)(args[1]);
+            if(contents==null)
+                contents = "This tag was removed by **"+event.getAuthor().getUsername()+"**";
+            String[] tag = Overrides.getInstance().findTag(event.getGuild(), tagname, true);
+            if(tag==null)
+                tag = Tags.getInstance().findTag(tagname);
+            if(tag==null)//nothing to edit
+            {
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                return false;
+            }
+            else
+            {
+                Overrides.getInstance().setTag(new String[]{"g"+event.getGuild().getId(),tag[Overrides.TAGNAME],contents});
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event.getChannel(), event.getMessage().getId());
+                return true;
+            }
+        }
+        
+        private class TagOverrideList extends Command
+        {
+            private TagOverrideList()
+            {
+                this.command = "list";
+                this.help = "lists tag overrides on the current server";
+                this.level = PermLevel.MODERATOR;
+                this.availableInDM = false;
+            }
+            @Override
+            protected boolean execute(Object[] args, MessageReceivedEvent event)
+            {
+                List<String> list = Overrides.getInstance().findGuildTags(event.getGuild());
+                if(list.isEmpty())
+                    Sender.sendResponse(SpConst.WARNING+"No tags have been overriden on **"+event.getGuild().getName()+"**", event.getChannel(), event.getMessage().getId());
+                else
+                {
+                    Collections.sort(list);
+                    StringBuilder builder = new StringBuilder(SpConst.SUCCESS+list.size()+" tag overrides on **"+event.getGuild().getName()+"**:\n");
+                    list.stream().forEach((tag) -> {
+                        builder.append(tag).append(" ");
+                    });
+                    Sender.sendResponse(builder.toString(), event.getChannel(), event.getMessage().getId());
+                }
+                return true;
+            }
+        }
+    }
+    
+    private class TagRestore extends Command
+    {
+        private TagRestore()
+            {
+                this.command = "restore";
+                this.help = "restores a tag from overriden state";
+                this.arguments = new Argument[]{
+                    new Argument("tagname",Argument.Type.SHORTSTRING,true),
+                };
+                this.level = PermLevel.MODERATOR;
+                this.availableInDM = false;
+            }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String tagname = (String)(args[0]);
+            String[] tag = Overrides.getInstance().findTag(event.getGuild(), tagname, true);
+            if(tag==null)
+            {
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently overriden", event.getChannel(), event.getMessage().getId());
+                return false;
+            }
+            else
+            {
+                Overrides.getInstance().removeTag(tag);
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" restored successfully.", event.getChannel(), event.getMessage().getId());
+                return true;
+            }
+        }
+    }
+    
+    private class TagImport extends Command
+    {
+        private TagImport()
+            {
+                this.command = "import";
+                this.help = "imports a tag from a tag command";
+                this.arguments = new Argument[]{
+                    new Argument("tagname",Argument.Type.SHORTSTRING,true),
+                };
+                this.level = PermLevel.ADMIN;
+                this.availableInDM = false;
+            }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String tagname = (String)(args[0]);
+            String[] imports = Settings.tagCommandsFromList(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
+            boolean found = false;
+            for(String tag : imports)
+                if(tag.equalsIgnoreCase(tagname))
+                    found = true;
+            if(!found)
+            {
+                String[] tag = Overrides.getInstance().findTag(event.getGuild(), tagname, true);
+                if(tag==null)
+                    tag = Tags.getInstance().findTag(tagname);
+                if(tag==null)//nothing to import
+                {
+                    Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                    return false;
+                }
+                else
+                {
+                    String cmds = Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
+                    Settings.getInstance().setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds==null?tag[Tags.TAGNAME]:cmds+" "+tag[Tags.TAGNAME]);
+                    Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" has been added a tag command", event.getChannel(), event.getMessage().getId());
+                    return true;
+                }
+            }
+            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is already a tag command!", event.getChannel(), event.getMessage().getId());
+            return false;
+        }
+    }
+    
+    private class TagUnimport extends Command
+    {
+        private TagUnimport()
+            {
+                this.command = "unimport";
+                this.help = "un-imports a tag from a tag command";
+                this.arguments = new Argument[]{
+                    new Argument("tagname",Argument.Type.SHORTSTRING,true),
+                };
+                this.level = PermLevel.ADMIN;
+                this.availableInDM = false;
+            }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String tagname = (String)(args[0]);
+            String[] imports = Settings.tagCommandsFromList(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
+            boolean found = false;
+            StringBuilder builder = new StringBuilder();
+            for(String tag : imports)
+            {
+                if(tag.equalsIgnoreCase(tagname))
+                    found = true;
+                else
+                    builder.append(tag).append(" ");
+            }
+            if(found)
+            {
+                Settings.getInstance().setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, builder.toString().trim());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" is no longer a tag command", event.getChannel(), event.getMessage().getId());
+                return true;
+            }
+            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently a tag command!", event.getChannel(), event.getMessage().getId());
+            return false;
         }
     }
 }

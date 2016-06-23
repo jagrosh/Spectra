@@ -69,8 +69,26 @@ public abstract class Command {
             if(children.length>0)
             {
                 builder.append("\n**Subcommands**:");
+                PermLevel current = level;
                 for(Command child: children)
-                    builder.append("\n`" + SpConst.PREFIX).append(parentChain).append(command).append(" ").append(child.command).append("`").append(Argument.arrayToString(child.arguments)).append(" - ").append(child.help);
+                {
+                    if(child.level!=current)
+                    {
+                        current = child.level;
+                        switch(current)
+                        {
+                            case MODERATOR:
+                                builder.append("\n**Mod Commands**:");
+                                break;
+                            case ADMIN:
+                                builder.append("\n**Admin Commands**:");
+                                break;
+                        }
+                    }
+                    builder.append("\n`" + SpConst.PREFIX).append(parentChain).append(command)
+                            .append(" ").append(child.command).append("`").append(Argument.arrayToString(child.arguments))
+                            .append(" - ").append(child.help);
+                }
             }
             Sender.sendHelp(builder.toString(), event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId()); 
             return true;

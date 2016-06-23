@@ -36,6 +36,8 @@ public class SpConst {
     final public static String WARNING = (char)9888+" ";
     final public static String ERROR   = (char)9940+" ";
     
+    final public static String LINESTART = "  ➣  ";
+    
     final public static String NEED_PERMISSION          = ERROR + "**I do not have the proper permissions to do that!**\n"
                                                                 + "Please make sure I have the following permissions:\n%s";
     final public static String BANNED_COMMAND           = ERROR + "**That command is unavailable here!**";

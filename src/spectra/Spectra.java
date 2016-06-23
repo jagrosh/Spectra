@@ -147,6 +147,27 @@ public class Spectra extends ListenerAdapter {
                     }
                     success = toRun.run(args[1], event, perm, ignore, banned);
                 }
+                else if (!event.isPrivate() && (!ignore || perm.isAtLeast(PermLevel.ADMIN)))
+                {
+                    String[] tagCommands = Settings.tagCommandsFromList(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
+                    for(String cmd : tagCommands)
+                        if(cmd.equalsIgnoreCase(args[0]))
+                        {
+                            boolean nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
+                            String[] tag = Overrides.getInstance().findTag(event.getGuild(), cmd, nsfw);
+                            if(tag==null)
+                                tag = Tags.getInstance().findTag(cmd, null, false, nsfw);
+                            if(tag==null)
+                            {
+                                Sender.sendResponse(SpConst.ERROR+"Tag \""+cmd+"\" no longer exists!", event.getChannel(), event.getMessage().getId());
+                            }
+                            else
+                            {
+                                Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], args[1], event.getAuthor(), event.getGuild(), event.getChannel()), 
+                                    event.getChannel(), event.getMessage().getId());
+                            }
+                        }
+                }
             }
         }
         
@@ -173,6 +194,8 @@ public class Spectra extends ListenerAdapter {
         commands = new Command[]{
             new About(),
             new Archive(),
+            new Avatar(),
+            new Channel(),
             new Info(),
             new Ping(),
             new Tag()
