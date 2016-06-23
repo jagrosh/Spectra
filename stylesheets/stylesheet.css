@@ -7,8 +7,8 @@ body {
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  color: #606c71; }
-
+  color: #fff; }
+1
 a {
   color: #1e6bb8;
   text-decoration: none; }
@@ -112,7 +112,7 @@ a {
   margin-top: 2rem;
   margin-bottom: 1rem;
   font-weight: normal;
-  color: #159957; }
+  color: #1cca73; }
 .main-content p {
   margin-bottom: 1em; }
 .main-content code {
