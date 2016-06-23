@@ -81,29 +81,30 @@ public class Info extends Command{
             str+=" ("+(game.getType()==Game.GameType.TWITCH ? "Streaming" : "Playing")+" *"+game+"*)";
         str+="\n"+SpConst.LINESTART+"Account Creation: **"+MiscUtil.getDateTimeString(MiscUtil.getCreationTime(user))+"**";
         
-        if(here){
-        List<User> joins = new ArrayList<>(event.getGuild().getUsers());
-        Collections.sort(joins, (User a, User b) -> event.getGuild().getJoinDateForUser(a).compareTo(event.getGuild().getJoinDateForUser(b)));
-        int index = joins.indexOf(user);
-        str+="\n"+SpConst.LINESTART+"Guild Join Date: **"+event.getGuild().getJoinDateForUser(user).format(DateTimeFormatter.RFC_1123_DATE_TIME) + "** `(#"+(index+1)+")`";
-        index-=3;
-        if(index<0)
-            index=0;
-        str+="\n"+SpConst.LINESTART+"Join Order: ";
-        if(joins.get(index).equals(user))
-            str+="**"+joins.get(index).getUsername()+"**";
-        else
-            str+=joins.get(index).getUsername();
-        for(int i=index+1;i<index+7;i++)
+        if(here)
         {
-            if(i>=joins.size())
-                break;
-            User u = joins.get(i);
-            String name = u.getUsername();
-            if(u.equals(user))
-                name="**"+name+"**";
-            str+=" > "+name;
-        }
+            List<User> joins = new ArrayList<>(event.getGuild().getUsers());
+            Collections.sort(joins, (User a, User b) -> event.getGuild().getJoinDateForUser(a).compareTo(event.getGuild().getJoinDateForUser(b)));
+            int index = joins.indexOf(user);
+            str+="\n"+SpConst.LINESTART+"Guild Join Date: **"+event.getGuild().getJoinDateForUser(user).format(DateTimeFormatter.RFC_1123_DATE_TIME) + "** `(#"+(index+1)+")`";
+            index-=3;
+            if(index<0)
+                index=0;
+            str+="\n"+SpConst.LINESTART+"Join Order: ";
+            if(joins.get(index).equals(user))
+                str+="**"+joins.get(index).getUsername()+"**";
+            else
+                str+=joins.get(index).getUsername();
+            for(int i=index+1;i<index+7;i++)
+            {
+                if(i>=joins.size())
+                    break;
+                User u = joins.get(i);
+                String name = u.getUsername();
+                if(u.equals(user))
+                    name="**"+name+"**";
+                str+=" > "+name;
+            }
         }
         String url = user.getAvatarUrl();
         if(url!=null)

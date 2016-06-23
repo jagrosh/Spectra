@@ -53,9 +53,7 @@ public class Avatar extends Command {
         String str = "Avatar for **"+user.getUsername()+"**:";
         BufferedImage bi = OtherUtil.imageFromUrl(url);
         if(bi==null)
-        {
             Sender.sendResponse(str+"\n"+url, event.getChannel(), event.getMessage().getId());
-        }
         else
         {
             File f = new File("avatar"+(int)(Math.random()*10)+".png");

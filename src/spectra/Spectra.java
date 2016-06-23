@@ -198,7 +198,10 @@ public class Spectra extends ListenerAdapter {
             new Channel(),
             new Info(),
             new Ping(),
-            new Tag()
+            new Server(),
+            new Tag(),
+            
+            new BotScan()
         };
         
         Settings.getInstance().read();
