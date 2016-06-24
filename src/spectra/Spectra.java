@@ -196,6 +196,7 @@ public class Spectra extends ListenerAdapter {
             new Archive(),
             new Avatar(),
             new Channel(),
+            new Draw(),
             new Info(),
             new Ping(),
             new Server(),

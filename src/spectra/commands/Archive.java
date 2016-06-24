@@ -18,6 +18,7 @@ package spectra.commands;
 import java.io.File;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.function.Function;
 import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Message;
@@ -28,6 +29,7 @@ import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.entities.Tuple;
 import spectra.utils.OtherUtil;
 
 /**
@@ -50,11 +52,8 @@ public class Archive extends Command{
             new Argument("numposts",Argument.Type.INTEGER,true,1,1000), 
             new Argument("channel",Argument.Type.TEXTCHANNEL,false)};//<numposts> [channel]
         this.cooldown=120;
+        this.cooldownKey = (event) -> {return event.getAuthor()+"|"+(event.isPrivate() ? "PC" : event.getTextChannel().getId()+"|archive");};
     }
-
-    @Override
-    protected String cooldownKey(MessageReceivedEvent event) {
-        return event.getAuthor()+"|"+(event.isPrivate() ? "PC" : event.getTextChannel().getId()+"|archive");}
     
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
@@ -82,22 +81,30 @@ public class Archive extends Command{
                 Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_HISTORY), event.getChannel(), event.getMessage().getId());
                 return false;
             }
+            
+            if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, event.getTextChannel()))
+            {
+                Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_ATTACH_FILES), event.getChannel(), event.getMessage().getId());
+                return false;
+            }
+            
             mh = new MessageHistory(channel);
         }
-        List<Message> messages = mh.retrieve(numposts);
-        StringBuilder builder = new StringBuilder("--Archive--\n");
-        for(int i=messages.size()-1;i>=0;i--)
-        {
-        Message m = messages.get(i);
-        builder.append("[").append(m.getTime()==null ? "UNKNOWN TIME" : m.getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME)).append("] ");
-        builder.append( m.getAuthor() == null ? "????" : m.getAuthor().getUsername() ).append(" : ");
-        builder.append(m.getContent()).append("\n\n");
-        }
         
-        String message = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages:";
-        File file = OtherUtil.writeArchive(builder.toString(), "archive "+event.getMessage().getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME).replace(":", ""));
-        Sender.sendFileResponse(message, file, event.getChannel(), event.getMessage().getId());
+        Sender.sendFileResponse(() -> {
+            List<Message> messages = mh.retrieve(numposts);
+            StringBuilder builder = new StringBuilder("--Archive--\n");
+            for(int i=messages.size()-1;i>=0;i--)
+            {
+                Message m = messages.get(i);
+                builder.append("[").append(m.getTime()==null ? "UNKNOWN TIME" : m.getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME)).append("] ");
+                builder.append( m.getAuthor() == null ? "????" : m.getAuthor().getUsername() ).append(" : ");
+                builder.append(m.getContent()).append("\n\n");
+            }
+            String str = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages:";
+            File f = OtherUtil.writeArchive(builder.toString(), "archive "+event.getMessage().getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME).replace(":", ""));
+            return new Tuple<>(str,f);
+        },event.getChannel(),event.getMessage().getId());
         return true;
     }
-    
 }

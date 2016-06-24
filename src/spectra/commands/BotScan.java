@@ -39,11 +39,7 @@ public class BotScan extends Command{
         this.availableInDM = false;
         this.level = PermLevel.MODERATOR;
         this.cooldown = 300;
-    }
-
-    @Override
-    protected String cooldownKey(MessageReceivedEvent event) {
-        return event.getGuild().getId();
+        this.cooldownKey = (event) -> {return event.getGuild().getId();};
     }
     
     @Override

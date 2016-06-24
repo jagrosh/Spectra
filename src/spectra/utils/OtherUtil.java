@@ -15,6 +15,12 @@
  */
 package spectra.utils;
 
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.MultipleGradientPaint;
+import java.awt.RadialGradientPaint;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -86,5 +92,46 @@ public class OtherUtil {
             System.err.println("[ERROR] Retrieving image: "+e);
         }
         return null;
+    }
+    
+    public static BufferedImage makeWave(Color c)
+    {
+        BufferedImage bi = new BufferedImage(128,128,BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics2D g2d = bi.createGraphics();
+        g2d.setComposite(AlphaComposite.SrcOver);
+        g2d.setColor(Color.black);
+        g2d.fillRect(0, 0, 128, 128);
+        
+        float radius = 28+(float)(Math.random()*4);
+        float[] dist = {0.0f,.03f, .08f,.3f, 1.0f};
+        Color[] colors = {new Color(255,255,255,255),new Color(255,255,255,255), 
+            new Color(c.getRed(),c.getGreen(),c.getBlue(),15),new Color(c.getRed(),
+                    c.getGreen(),c.getBlue(),5), new Color(c.getRed(),c.getGreen(),c.getBlue(),0)};
+        int times = 2+(int)(Math.random()*3);
+        for(int j=0;j<times;j++)
+        {
+            double accel=0;
+            int height = 64;
+            for(int i=-(int)radius;i<128+(int)radius;i++)
+            {
+                accel+=(Math.random()*2)-1;
+                if(accel>2.1)
+                    accel-=.3;
+                if(accel<-2.1)
+                    accel+=.3;
+                if(height<48)
+                    accel+=.7;
+                if(height>80)
+                    accel-=.7;
+                height+=(int)accel;
+                Point2D center = new Point2D.Float(i, height);
+
+
+                RadialGradientPaint p =new RadialGradientPaint(center, radius, dist, colors,MultipleGradientPaint.CycleMethod.NO_CYCLE);
+                g2d.setPaint(p);
+                g2d.fillRect(0, 0, 128, 128);
+            }
+        }
+        return bi;
     }
 }

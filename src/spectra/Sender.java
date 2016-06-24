@@ -18,12 +18,14 @@ package spectra;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.function.Supplier;
 import net.dv8tion.jda.MessageBuilder;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.MessageChannel;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.utils.PermissionUtil;
+import spectra.entities.Tuple;
 import spectra.tempdata.CallDepend;
 
 /**
@@ -46,13 +48,13 @@ public class Sender {
     }
     
     //reply with a file (or permission error)
-    public static void sendFileResponse(String message, File file, MessageChannel chan, String dependency)
+    public static void sendFileResponse(Supplier<Tuple<String,File>> message, MessageChannel chan, String dependency)
     {
-        sendFileResponseWithAlternate(message, file, null, chan, dependency);
+        sendFileResponseWithAlternate(message, null, chan, dependency);
     }
     
     //reply with a file, or text if a file can't be sent
-    public static void sendFileResponseWithAlternate(String message, File file, String alternate, MessageChannel chan, String dependency)
+    public static void sendFileResponseWithAlternate(Supplier<Tuple<String,File>> message, String alternate, MessageChannel chan, String dependency)
     {
         Objects.requireNonNull(dependency);
         if(chan instanceof TextChannel)
@@ -63,7 +65,11 @@ public class Sender {
                 return;
             }
         }
-        chan.sendFileAsync(file, new MessageBuilder().appendString((message.length() > 2000 ? message.substring(0, 2000) : message)).build(), m -> {
+        chan.sendTyping();
+        Tuple<String,File> tuple = message.get();
+        String msg = tuple.getFirst();
+        File file = tuple.getSecond();
+        chan.sendFileAsync(file, msg==null ? null : new MessageBuilder().appendString(msg.length() > 2000 ? msg.substring(0, 2000) : msg).build(), m -> {
                 if(chan instanceof TextChannel)
                     CallDepend.getInstance().add(dependency, m);
             });

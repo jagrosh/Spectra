@@ -18,12 +18,14 @@ package spectra.commands;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Supplier;
 import javax.imageio.ImageIO;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
+import spectra.entities.Tuple;
 import spectra.utils.OtherUtil;
 
 /**
@@ -56,13 +58,14 @@ public class Avatar extends Command {
             Sender.sendResponse(str+"\n"+url, event.getChannel(), event.getMessage().getId());
         else
         {
-            File f = new File("avatar"+(int)(Math.random()*10)+".png");
-            try {
-                ImageIO.write(bi, "png", f);
-            } catch (IOException ex) {
-                System.out.println("[ERROR] Could not save avatar");
-            }
-            Sender.sendFileResponseWithAlternate(str, f, str+"\n"+url, event.getChannel(), event.getMessage().getId());
+            
+            Sender.sendFileResponseWithAlternate(() -> {
+                File f = new File("avatar"+(int)(Math.random()*10)+".png");//random just in case 2 people use at the exact same time, but I don't want to store a ton
+                try {
+                    ImageIO.write(bi, "png", f);
+                } catch (IOException ex) {System.out.println("[ERROR] Could not save avatar");}
+                return new Tuple<>(str,f);
+            }, str+"\n"+url, event.getChannel(), event.getMessage().getId());
         }
         return true;
     }

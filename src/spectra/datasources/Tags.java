@@ -15,23 +15,11 @@
  */
 package spectra.datasources;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import net.dv8tion.jda.JDA;
-import net.dv8tion.jda.OnlineStatus;
 import net.dv8tion.jda.entities.Guild;
-import net.dv8tion.jda.entities.MessageChannel;
-import net.dv8tion.jda.entities.PrivateChannel;
-import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
 import spectra.DataSource;
 import spectra.SpConst;
-import spectra.utils.FinderUtil;
-import spectra.utils.FormatUtil;
 
 /**
  *
@@ -69,7 +57,7 @@ public class Tags extends DataSource{
             if(tag!=null)
             {
                 if(!nsfw && isNSFW(tag))
-                    return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag has been marked as **Not Safe For Work** and is not available in this channel."};
+                    return new String[]{tag[OWNERID],tag[TAGNAME],"\uD83D\uDD1E This tag has been marked as **Not Safe For Work** and is not available in this channel."};
                 if(local && guild!=null)
                 {
                     User u = guild.getJDA().getUserById(tag[OWNERID]);

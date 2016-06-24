@@ -125,7 +125,7 @@ public class FinderUtil {
         {
             id = query.replaceAll("<#(\\d+)>", "$1");
             TextChannel tc = guild.getJDA().getTextChannelById(id);
-            if(tc!=null && tc.getGuild().equals(tc))
+            if(tc!=null && tc.getGuild().equals(guild))
                 return Collections.singletonList(tc);
         }
         ArrayList<TextChannel> exact = new ArrayList<>();

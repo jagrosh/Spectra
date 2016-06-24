@@ -52,7 +52,7 @@ public class Overrides extends DataSource{
             if(tag==null)
                 return null;
             if(!nsfw && Tags.isNSFW(tag))
-                return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag has been marked as **Not Safe For Work** and is not available in this channel."};
+                return new String[]{tag[OWNERID],tag[TAGNAME],"\uD83D\uDD1E This tag has been marked as **Not Safe For Work** and is not available in this channel."};
             return tag.clone();
         }
     }

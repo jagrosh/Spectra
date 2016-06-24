@@ -105,9 +105,8 @@ public class Tag extends Command{
                 new Argument("tag contents",Argument.Type.LONGSTRING,true)
             };
             this.cooldown = 60;
+            this.cooldownKey = (event) -> {return event.getAuthor().getId()+"tagcreate";};
         }
-        @Override
-        protected String cooldownKey(MessageReceivedEvent event) {return event.getAuthor().getId()+"tagcreate";}
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
@@ -236,9 +235,8 @@ public class Tag extends Command{
                 new Argument("username",Argument.Type.USER,false)
             };
             this.cooldown = 10;
+            this.cooldownKey = (event) -> {return event.getAuthor().getId()+"taglist";};
         }
-        @Override
-        protected String cooldownKey(MessageReceivedEvent event) {return event.getAuthor().getId()+"taglist";}
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
@@ -419,9 +417,8 @@ public class Tag extends Command{
             new Argument("query",Argument.Type.SHORTSTRING,false)
             };
             this.cooldown = 10;
+            this.cooldownKey = (event) -> {return event.getAuthor().getId()+"tagsearch";};
         }
-        @Override
-        protected String cooldownKey(MessageReceivedEvent event) {return event.getAuthor().getId()+"tagsearch";}
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
@@ -443,6 +440,8 @@ public class Tag extends Command{
             if(query!=null)
                 builder.append(" containing \"").append(query).append("\"");
             builder.append(":\n");
+            if(tags.size()<100)
+                Collections.sort(tags, (a,b)->{return a[Tags.TAGNAME].compareTo(b[Tags.TAGNAME]);});
             tags.stream().forEach((tag) -> {
                 builder.append(tag[Tags.TAGNAME]).append(" ");
             });
