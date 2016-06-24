@@ -19,12 +19,17 @@ import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDABuilder;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.events.ReadyEvent;
+import net.dv8tion.jda.events.message.MessageBulkDeleteEvent;
+import net.dv8tion.jda.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.events.message.MessageUpdateEvent;
+import net.dv8tion.jda.events.user.UserNameUpdateEvent;
 import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
+import spectra.tempdata.CallDepend;
 import spectra.utils.OtherUtil;
 import spectra.utils.FormatUtil;
 
@@ -37,9 +42,20 @@ public class Spectra extends ListenerAdapter {
     Command[] commands;
     //DataSource[] sources;
     //final Settings settings;
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        event.getJDA().getAccountManager().setGame("Type "+SpConst.PREFIX+"help");
+    }
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+        
+        PermLevel perm;
+        boolean ignore;
+        boolean isCommand;
+        boolean successful;
+        
         //get the settings for the server
         //settings will be null for private messages
         //make default settings if no settings exist for a server
@@ -63,7 +79,7 @@ public class Spectra extends ListenerAdapter {
             }
         }
         //find permission level
-        PermLevel perm = PermLevel.EVERYONE;//start with everyone
+        perm = PermLevel.EVERYONE;//start with everyone
         if(event.getAuthor().getId().equals(SpConst.JAGROSH_ID))
             perm = PermLevel.JAGROSH;
         else if(!event.isPrivate())//we're in a guild
@@ -87,7 +103,7 @@ public class Spectra extends ListenerAdapter {
         }
         
         //check if should ignore
-        boolean ignore = false;
+        ignore = false;
         if(!event.isPrivate())
         {
             if( currentSettings[Settings.IGNORELIST].contains("u"+event.getAuthor().getId()) || currentSettings[Settings.IGNORELIST].contains("c"+event.getTextChannel().getId()) )
@@ -106,8 +122,10 @@ public class Spectra extends ListenerAdapter {
         if(strippedMessage!=null)//potential command right here
         {
             strippedMessage = strippedMessage.trim();
-            if(strippedMessage.toLowerCase().startsWith("help"))//send full help message (based on access level)
+            if(strippedMessage.equalsIgnoreCase("help"))//send full help message (based on access level)
             {//we don't worry about ignores for help
+                isCommand = true;
+                successful = true;
                 String helpmsg = "**Available help "+(event.isPrivate() ? "via Direct Message" : "in <#"+event.getTextChannel().getId()+">")+"**:";
                 for(Command com: commands)
                 {
@@ -120,20 +138,24 @@ public class Spectra extends ListenerAdapter {
                 helpmsg+="\nFor more help, contact **@jagrosh** (<@"+SpConst.JAGROSH_ID+">) or join "+SpConst.JAGZONE_INVITE;
                 Sender.sendHelp(helpmsg, event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId());
             }
-            else//didn't start with help
+            else//wasn't base help command
             {
                 Command toRun = null;
                 String[] args = FormatUtil.cleanSplit(strippedMessage);
+                if(args[0].equalsIgnoreCase("help"))
+                {
+                    String endhelp = args[1]+" "+args[0];
+                    args = FormatUtil.cleanSplit(endhelp);
+                }
                 for(Command com: commands)
                     if(com.isCommandFor(args[0]))
                     {
                         toRun = com;
                         break;
                     }
-                
                 if(toRun!=null)
                 {
-                    boolean success;
+                    isCommand = true;
                     //check if banned
                     boolean banned = false;
                     if(!event.isPrivate())
@@ -145,14 +167,15 @@ public class Spectra extends ListenerAdapter {
                             if(event.getTextChannel().getTopic().contains("{"+toRun.command+"}"))
                                 banned = false;
                     }
-                    success = toRun.run(args[1], event, perm, ignore, banned);
+                    successful = toRun.run(args[1], event, perm, ignore, banned);
                 }
                 else if (!event.isPrivate() && (!ignore || perm.isAtLeast(PermLevel.ADMIN)))
                 {
-                    String[] tagCommands = Settings.tagCommandsFromList(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
+                    String[] tagCommands = Settings.tagCommandsFromList(currentSettings[Settings.TAGIMPORTS]);
                     for(String cmd : tagCommands)
                         if(cmd.equalsIgnoreCase(args[0]))
                         {
+                            isCommand=true;
                             boolean nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
                             String[] tag = Overrides.getInstance().findTag(event.getGuild(), cmd, nsfw);
                             if(tag==null)
@@ -174,19 +197,35 @@ public class Spectra extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+    public void onMessageUpdate(MessageUpdateEvent event) {
         
     }
+
     
+    @Override
+    public void onMessageDelete(MessageDeleteEvent event) {
+        CallDepend.getInstance().delete(event.getMessageId());
+    }
+
+    @Override
+    public void onMessageBulkDelete(MessageBulkDeleteEvent event) {
+        event.getMessageIds().stream().forEach((id) -> {
+            CallDepend.getInstance().delete(id);
+        });
+    }
+
     
-    
+    @Override
+    public void onUserNameUpdate(UserNameUpdateEvent event) {
+        SavedNames.getInstance().addName(event.getUser().getId(), event.getPreviousUsername());
+    }
     
     
     
     
     public Spectra()
     {
-        //settings = Settings.getInstance();
+        
     }
     
     public void init()
@@ -198,6 +237,7 @@ public class Spectra extends ListenerAdapter {
             new Channel(),
             new Draw(),
             new Info(),
+            new Names(),
             new Ping(),
             new Server(),
             new Tag(),
@@ -205,9 +245,11 @@ public class Spectra extends ListenerAdapter {
             new BotScan()
         };
         
+        Overrides.getInstance().read();
+        SavedNames.getInstance().read();
         Settings.getInstance().read();
         Tags.getInstance().read();
-        Overrides.getInstance().read();
+        
         
         try {
             new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).setBulkDeleteSplittingEnabled(false).buildAsync();

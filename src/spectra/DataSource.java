@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 /**
  *
@@ -35,15 +36,13 @@ public abstract class DataSource {
     final protected HashMap<String,String[]> data = new HashMap<>();
     //final protected ArrayList<String[]> data = new ArrayList<>();
     protected String filename = "discordbot.null";
-    protected boolean save = true;
     protected int size;
+    protected Function<String[],String> generateKey;
     
     ExecutorService filewriting = Executors.newSingleThreadExecutor();
     boolean writeScheduled = false;
     
     protected DataSource(){}
-    
-    protected abstract String generateKey(String[] item);
     
     public void setToWrite()
     {
@@ -89,10 +88,10 @@ public abstract class DataSource {
                 synchronized(data)
                 {
                     data.clear();
-                    newData.stream().forEach((item) -> { data.put(generateKey(item), item); });
+                    newData.stream().forEach((item) -> { data.put(generateKey.apply(item), item); });
                 }
                 return true;
-            }catch(IOException e){}
+            }catch(IOException e){System.err.println("ERROR - Could not read from "+filename+" : "+e.toString());}
         }
         return false;
     }

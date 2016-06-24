@@ -18,7 +18,6 @@ package spectra.datasources;
 import java.util.ArrayList;
 import net.dv8tion.jda.entities.Guild;
 import spectra.DataSource;
-import spectra.SpConst;
 
 /**
  *
@@ -31,16 +30,12 @@ public class Overrides extends DataSource{
     {
         filename = "discordbot.overrides";
         size = 3;
+        generateKey = (item) -> {return item[OWNERID]+"|"+item[TAGNAME].toLowerCase();};
     }
     
     public static Overrides getInstance()
     {
         return overrides;
-    }
-
-    @Override
-    protected String generateKey(String[] item) {
-        return item[OWNERID]+"|"+item[TAGNAME].toLowerCase();
     }
     
     
@@ -74,7 +69,7 @@ public class Overrides extends DataSource{
     {
         synchronized(data)
         {
-            data.put(generateKey(newTag), newTag);
+            data.put(generateKey.apply(newTag), newTag);
         }
         setToWrite();
     }
@@ -83,7 +78,7 @@ public class Overrides extends DataSource{
     {
         synchronized(data)
         {
-            data.remove(generateKey(tag));
+            data.remove(generateKey.apply(tag));
         }
         setToWrite();
     }

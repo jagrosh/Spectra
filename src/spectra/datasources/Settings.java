@@ -30,6 +30,7 @@ public class Settings extends DataSource {
     {
         filename = "discordbot.serversettings";
         size = 11;
+        generateKey = (item) -> {return item[SERVERID];};
     }
     
     public static Settings getInstance()
@@ -37,12 +38,6 @@ public class Settings extends DataSource {
         return settings;
     }
 
-    @Override
-    protected String generateKey(String[] item) {
-        return item[SERVERID];
-    }
-    
-    
     public String[] getSettingsForGuild(String id)
     {
         synchronized(data)

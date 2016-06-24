@@ -32,16 +32,12 @@ public class Tags extends DataSource{
     {
         filename = "discordbot.tags";
         size = 3;
+        generateKey = (item) -> {return item[TAGNAME].toLowerCase();};
     }
     
     public static Tags getInstance()
     {
         return tags;
-    }
-
-    @Override
-    protected String generateKey(String[] item) {
-        return item[TAGNAME].toLowerCase();
     }
     
     public String[] findTag(String name)
@@ -114,7 +110,7 @@ public class Tags extends DataSource{
     {
         synchronized(data)
         {
-            data.put(generateKey(newTag), newTag);
+            data.put(generateKey.apply(newTag), newTag);
         }
         setToWrite();
     }
