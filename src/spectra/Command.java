@@ -17,7 +17,6 @@ package spectra;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;

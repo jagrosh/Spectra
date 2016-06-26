@@ -115,7 +115,7 @@ public class Tag extends Command{
             String[] tag = Tags.getInstance().findTag(tagname);
             if(tag==null)//good to make it
             {
-                Tags.getInstance().setTag(new String[]{
+                Tags.getInstance().set(new String[]{
                 event.getAuthor().getId(),
                 tagname,
                 contents
@@ -200,7 +200,7 @@ public class Tag extends Command{
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
-                Tags.getInstance().setTag(new String[]{
+                Tags.getInstance().set(new String[]{
                 tag[Tags.OWNERID],
                 tag[Tags.TAGNAME],
                 contents

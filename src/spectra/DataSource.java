@@ -44,6 +44,34 @@ public abstract class DataSource {
     
     protected DataSource(){}
     
+    public String[] get(String key)
+    {
+        synchronized(data)
+        {
+            return data.get(key) == null ? null : data.get(key).clone();
+        }
+    }
+    
+    public void set(String[] item)
+    {
+        synchronized(data)
+        {
+            data.put(generateKey.apply(item), item);
+            setToWrite();
+        }
+    }
+    
+    public String[] remove(String key)
+    {
+        synchronized(data)
+        {
+            String[] ret = data.remove(key);
+            if(ret!=null)
+                setToWrite();
+            return ret;
+        }
+    }
+    
     public void setToWrite()
     {
         if(!writeScheduled)

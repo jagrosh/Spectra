@@ -18,7 +18,6 @@ package spectra.commands;
 import java.io.File;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.function.Function;
 import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Message;
@@ -99,7 +98,7 @@ public class Archive extends Command{
                 Message m = messages.get(i);
                 builder.append("[").append(m.getTime()==null ? "UNKNOWN TIME" : m.getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME)).append("] ");
                 builder.append( m.getAuthor() == null ? "????" : m.getAuthor().getUsername() ).append(" : ");
-                builder.append(m.getContent()).append("\n\n");
+                builder.append(m.getContent()).append(m.getAttachments()!=null && m.getAttachments().size()>0 ? " "+m.getAttachments().get(0).getUrl() : "").append("\n\n");
             }
             String str = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages:";
             File f = OtherUtil.writeArchive(builder.toString(), "archive "+event.getMessage().getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME).replace(":", ""));

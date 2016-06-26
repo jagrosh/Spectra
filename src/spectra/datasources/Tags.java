@@ -106,22 +106,9 @@ public class Tags extends DataSource{
         return results;
     }
     
-    public void setTag(String[] newTag)
-    {
-        synchronized(data)
-        {
-            data.put(generateKey.apply(newTag), newTag);
-        }
-        setToWrite();
-    }
-    
     public void removeTag(String name)
     {
-        synchronized(data)
-        {
-            data.remove(name.toLowerCase());
-        }
-        setToWrite();
+        remove(name.toLowerCase());
     }
     
     final public static int OWNERID   = 0;

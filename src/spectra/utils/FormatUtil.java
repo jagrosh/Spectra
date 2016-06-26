@@ -17,6 +17,8 @@ package spectra.utils;
 
 import java.util.Arrays;
 import java.util.List;
+import net.dv8tion.jda.entities.Message;
+import net.dv8tion.jda.entities.Message.Attachment;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
@@ -41,6 +43,14 @@ public class FormatUtil {
     public static String[] cleanSplit(String input, String regex, int size)
     {
         return Arrays.copyOf(input.split(regex, size), size);
+    }
+    
+    public static String appendAttachmentUrls(Message message)
+    {
+        String content = message.getRawContent();
+        if(message.getAttachments()!=null)
+            content = message.getAttachments().stream().map((att) -> " "+att.getUrl()).reduce(content, String::concat);
+        return content;
     }
     
     public static String demention(String input)

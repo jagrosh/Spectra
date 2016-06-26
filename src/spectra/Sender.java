@@ -101,6 +101,41 @@ public class Sender {
         });
     }
     
+    //send automatic message
+    public static boolean sendFeed(String message, TextChannel tchan)
+    {
+        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
+        {
+            ArrayList<String> bits = splitMessage(message);
+            bits.stream().forEach((bit) -> {
+                tchan.sendMessageAsync(bit, null);
+            });
+            return true;
+        }
+        return false;
+    }
+    
+    //send automatic message with file
+    public static boolean sendFeedFile(String message, File file, String alternate, TextChannel tchan)
+    {
+        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
+        {
+            ArrayList<String> bits = splitMessage(message);
+            
+            if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, tchan))
+            {
+                tchan.sendFileAsync(file, bits.isEmpty() ? null : new MessageBuilder().appendString(bits.get(0)).build(), null);
+            }
+            else
+            {
+                bits.stream().forEach((bit) -> {
+                    tchan.sendMessageAsync(bit, null);
+                });
+            }
+            return true;
+        }
+        return false;
+    }
     
     private static ArrayList<String> splitMessage(String stringtoSend)
     {

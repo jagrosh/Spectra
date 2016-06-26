@@ -15,6 +15,13 @@
  */
 package spectra;
 
+import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.utils.PermissionUtil;
+import spectra.datasources.Settings;
+
 /**
  *
  * @author John Grosh (jagrosh)
@@ -31,5 +38,38 @@ public enum PermLevel {
     public boolean isAtLeast(PermLevel other)
     {
         return value >= other.value;
+    }
+    
+    public static PermLevel getPermLevelForUser(User user, Guild guild, String[] currentSettings)
+    {
+        PermLevel perm = EVERYONE;//start with everyone
+        if(user.getId().equals(SpConst.JAGROSH_ID))
+            perm = JAGROSH;
+        if(guild==null)
+            return perm;
+        if(PermissionUtil.checkPermission(user, Permission.MANAGE_SERVER, guild))
+            perm = ADMIN;
+        else
+        {
+            if(currentSettings==null)
+                return perm;
+            if(currentSettings[Settings.MODIDS].contains(user.getId()))
+                perm = MODERATOR;
+            else
+            {
+                for(Role r:guild.getRolesForUser(user))
+                    if(currentSettings[Settings.MODIDS].contains("r"+r.getId()))
+                    {
+                        perm = PermLevel.MODERATOR;
+                        break;
+                    }
+            }
+        }
+        return perm;
+    }
+    
+    public static PermLevel getPermLevelForUser(User user, Guild guild)
+    {
+        return getPermLevelForUser(user,guild,guild!=null ? Settings.getInstance().getSettingsForGuild(guild.getId()) : null);
     }
 }

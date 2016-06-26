@@ -42,7 +42,7 @@ public class Settings extends DataSource {
     {
         synchronized(data)
         {
-            return data.get(id).clone();
+            return data.get(id)==null ? null : data.get(id).clone();
         }
     }
     

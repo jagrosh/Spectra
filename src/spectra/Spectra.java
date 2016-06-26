@@ -15,21 +15,41 @@
  */
 package spectra;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
+import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.JDABuilder;
-import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.events.ReadyEvent;
+import net.dv8tion.jda.events.ReconnectedEvent;
+import net.dv8tion.jda.events.guild.member.GuildMemberBanEvent;
+import net.dv8tion.jda.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.events.guild.member.GuildMemberLeaveEvent;
+import net.dv8tion.jda.events.guild.member.GuildMemberUnbanEvent;
 import net.dv8tion.jda.events.message.MessageBulkDeleteEvent;
 import net.dv8tion.jda.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.events.message.MessageUpdateEvent;
+import net.dv8tion.jda.events.message.guild.GuildMessageDeleteEvent;
+import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.events.message.guild.GuildMessageUpdateEvent;
+import net.dv8tion.jda.events.user.UserAvatarUpdateEvent;
 import net.dv8tion.jda.events.user.UserNameUpdateEvent;
 import net.dv8tion.jda.hooks.ListenerAdapter;
-import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
+import spectra.entities.Tuple;
 import spectra.tempdata.CallDepend;
+import spectra.tempdata.MessageCache;
 import spectra.utils.OtherUtil;
 import spectra.utils.FormatUtil;
 
@@ -39,13 +59,22 @@ import spectra.utils.FormatUtil;
  */
 public class Spectra extends ListenerAdapter {
     
+    JDA jda;
     Command[] commands;
+    Thread feedFlusher;
+    boolean isRunning = true;
     //DataSource[] sources;
     //final Settings settings;
 
     @Override
     public void onReady(ReadyEvent event) {
         event.getJDA().getAccountManager().setGame("Type "+SpConst.PREFIX+"help");
+        feedFlusher.start();
+    }
+
+    @Override
+    public void onReconnect(ReconnectedEvent event) {
+        //do something with game
     }
     
     @Override
@@ -79,28 +108,7 @@ public class Spectra extends ListenerAdapter {
             }
         }
         //find permission level
-        perm = PermLevel.EVERYONE;//start with everyone
-        if(event.getAuthor().getId().equals(SpConst.JAGROSH_ID))
-            perm = PermLevel.JAGROSH;
-        else if(!event.isPrivate())//we're in a guild
-        {
-            if(PermissionUtil.checkPermission(event.getAuthor(), Permission.MANAGE_SERVER, event.getGuild()))
-                perm = PermLevel.ADMIN;
-            else
-            {
-                if(currentSettings[Settings.MODIDS].contains(event.getAuthor().getId()))
-                    perm = PermLevel.MODERATOR;
-                else
-                {
-                    for(Role r: event.getGuild().getRolesForUser(event.getAuthor()))
-                        if(currentSettings[Settings.MODIDS].contains("r"+r.getId()))
-                        {
-                            perm = PermLevel.MODERATOR;
-                            break;
-                        }
-                }
-            }
-        }
+        perm = PermLevel.getPermLevelForUser(event.getAuthor(), event.getGuild(), currentSettings);
         
         //check if should ignore
         ignore = false;
@@ -147,6 +155,8 @@ public class Spectra extends ListenerAdapter {
                     String endhelp = args[1]+" "+args[0];
                     args = FormatUtil.cleanSplit(endhelp);
                 }
+                if(event.getMessage().getAttachments()!=null && !event.getMessage().getAttachments().isEmpty())
+                    args[1]+=" "+event.getMessage().getAttachments().get(0).getUrl();
                 for(Command com: commands)
                     if(com.isCommandFor(args[0]))
                     {
@@ -198,8 +208,72 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onMessageUpdate(MessageUpdateEvent event) {
-        
     }
+
+    
+    @Override
+    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+        if(Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
+            MessageCache.getInstance().addMessage(event.getGuild().getId(), event.getMessage());
+    }
+
+    @Override
+    public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
+        if(Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
+        {
+            Message msg = MessageCache.getInstance().updateMessage(event.getGuild().getId(), event.getMessage());
+            if(msg!=null && !msg.getRawContent().equals(event.getMessage().getRawContent()))
+            {
+                String old = FormatUtil.appendAttachmentUrls(msg);
+                String newmsg = FormatUtil.appendAttachmentUrls(event.getMessage());
+
+                FeedHandler.getInstance().submitText(Feeds.Type.SERVERLOG, event.getGuild(),
+                        "\u26A0 **"+event.getAuthor().getUsername()+"** edited a message in <#"+event.getChannel().getId()+">\n**From:** "
+                        +old+"\n**To:** "+newmsg );
+            }
+        }
+    }
+
+    @Override
+    public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
+        if(Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
+        {
+            Message msg = MessageCache.getInstance().deleteMessage(event.getGuild().getId(), event.getMessageId());
+            if(msg!=null)
+            {
+                String del = FormatUtil.appendAttachmentUrls(msg);
+                FeedHandler.getInstance().submitText(Feeds.Type.SERVERLOG, event.getGuild(),
+                        "\u274C **"+msg.getAuthor().getUsername()
+                        +"**'s message has been deleted from <#"+msg.getChannelId()+">:\n"+del );
+            }
+        }
+    }
+
+    @Override
+    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        FeedHandler.getInstance().submitText(Feeds.Type.SERVERLOG, event.getGuild(), 
+                "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server.");
+    }
+
+    @Override
+    public void onGuildMemberLeave(GuildMemberLeaveEvent event) {
+        FeedHandler.getInstance().submitText(Feeds.Type.SERVERLOG, event.getGuild(),
+                "\uD83D\uDCE4 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") left or was kicked from the server.");
+    }
+
+    @Override
+    public void onGuildMemberBan(GuildMemberBanEvent event) {
+        FeedHandler.getInstance().submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                "\uD83D\uDD28 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was banned from the server.");
+    }
+
+    @Override
+    public void onGuildMemberUnban(GuildMemberUnbanEvent event) {
+        FeedHandler.getInstance().submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                "\uD83D\uDD27 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was unbanned from the server.");
+    }
+    
+    
 
     
     @Override
@@ -209,24 +283,81 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onMessageBulkDelete(MessageBulkDeleteEvent event) {
+        int size = event.getMessageIds().size();
+        boolean servlogon = Feeds.getInstance().feedForGuild(event.getChannel().getGuild(), Feeds.Type.SERVERLOG)!=null;
+        String guildid = event.getChannel().getGuild().getId();
+        String header = "\u274C\u274C "+size+" messages were deleted from <#"+event.getChannel().getId()+">";
+        StringBuilder builder = new StringBuilder("-- deleted messages --\n");
         event.getMessageIds().stream().forEach((id) -> {
             CallDepend.getInstance().delete(id);
+            if(servlogon)
+                {
+                    Message m = MessageCache.getInstance().deleteMessage(guildid, id);
+                    if(m!=null)
+                    {
+                        builder.append("[").append(m.getTime()==null ? "UNKNOWN TIME" : m.getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME)).append("] ");
+                        builder.append( m.getAuthor() == null ? "????" : m.getAuthor().getUsername() ).append(" : ");
+                        builder.append(m.getContent()).append(m.getAttachments()!=null && m.getAttachments().size()>0 ? " "+m.getAttachments().get(0).getUrl() : "").append("\n\n");
+                    }
+                }
         });
+        if(servlogon)
+            FeedHandler.getInstance().submitFile(Feeds.Type.SERVERLOG, event.getChannel().getGuild(), ()->{
+                File f = OtherUtil.writeArchive(builder.toString(), "deleted_messages");
+            return new Tuple<>(header,f);}, header);
     }
 
     
     @Override
     public void onUserNameUpdate(UserNameUpdateEvent event) {
         SavedNames.getInstance().addName(event.getUser().getId(), event.getPreviousUsername());
+        ArrayList<Guild> guilds = new ArrayList<>();
+        jda.getGuilds().stream().filter((g) -> (g.isMember(event.getUser()))).forEach((g) -> {
+            guilds.add(g);
+        });
+        FeedHandler.getInstance().submitText(Feeds.Type.SERVERLOG, guilds, "\uD83D\uDCDB **"+event.getPreviousUsername()+"** (ID:"
+                        +event.getUser().getId()+") has changed names to **"
+                        +event.getUser().getUsername()+"**");
+    }
+
+    @Override
+    public void onUserAvatarUpdate(UserAvatarUpdateEvent event) {
+        if(event.getUser().equals(event.getJDA().getSelfInfo()))
+            return;
+        String oldurl = event.getPreviousAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getPreviousAvatarUrl();
+        String newurl = event.getUser().getAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getUser().getAvatarUrl();
+        ArrayList<Guild> guilds = new ArrayList<>();
+        jda.getGuilds().stream().filter((g) -> (g.isMember(event.getUser()))).forEach((g) -> {
+            guilds.add(g);
+        });
+        FeedHandler.getInstance().submitFile(Feeds.Type.SERVERLOG, guilds, ()->{
+                BufferedImage oldimg = OtherUtil.imageFromUrl(oldurl);
+                BufferedImage newimg = OtherUtil.imageFromUrl(newurl);
+                BufferedImage combo = new BufferedImage(256,128,BufferedImage.TYPE_INT_ARGB_PRE);
+                Graphics2D g2d = combo.createGraphics();
+                g2d.setColor(Color.BLACK);
+                g2d.fillRect(0, 0, 256, 128);
+                if(oldimg!=null)
+                {
+                    g2d.drawImage(oldimg, 0, 0, 128, 128, null);
+                }
+                if(newimg!=null)
+                {
+                    g2d.drawImage(newimg, 128, 0, 128, 128, null);
+                }
+                File f = new File("avatarchange.png");
+                try {
+                    ImageIO.write(combo, "png", f);
+                } catch (IOException ex) {
+                    System.out.println("[ERROR] An error occured drawing the avatar.");
+                }
+                return new Tuple<>("\uD83D\uDDBC **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") has changed avatars:",f);
+                }, 
+                "\uD83D\uDDBC **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") has changed avatars:"
+                    + "\nOld: "+event.getPreviousAvatarUrl()
+                    + "\nNew: "+event.getUser().getAvatarUrl());
     }
     
-    
-    
-    
-    public Spectra()
-    {
-        
-    }
     
     public void init()
     {
@@ -242,9 +373,12 @@ public class Spectra extends ListenerAdapter {
             new Server(),
             new Tag(),
             
-            new BotScan()
+            new BotScan(),
+            
+            new Feed()
         };
         
+        Feeds.getInstance().read();
         Overrides.getInstance().read();
         SavedNames.getInstance().read();
         Settings.getInstance().read();
@@ -252,11 +386,37 @@ public class Spectra extends ListenerAdapter {
         
         
         try {
-            new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).setBulkDeleteSplittingEnabled(false).buildAsync();
+            jda = new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).setBulkDeleteSplittingEnabled(false).buildAsync();
         } catch (LoginException | IllegalArgumentException ex) {
             System.err.println("ERROR - Building JDA : "+ex.toString());
             System.exit(1);
         }
+    }
+    
+    public void shutdown(JDA jda)
+    {
+        jda.shutdown();
+        isRunning=false;
+        Feeds.getInstance().shutdown();
+        Overrides.getInstance().shutdown();
+        SavedNames.getInstance().shutdown();
+        Settings.getInstance().shutdown();
+        Tags.getInstance().shutdown();
+    }
+    
+    public Spectra()
+    {
+        feedFlusher = new Thread(){
+            @Override
+            public void run()
+            {
+                while(isRunning)
+                {
+                    FeedHandler.getInstance().flush(jda);
+                    try{Thread.sleep(20000);}catch(InterruptedException e){}
+                }
+            }
+        };
     }
     
     public static void main(String[] args)
