@@ -30,6 +30,7 @@ public class SpConst {
     //discord items
     final public static String JAGROSH_ID = "113156185389092864";
     final public static String JAGZONE_INVITE = "https://discord.gg/0p9LSGoRLu6Pet0k";
+    final public static String JAGZONE_ID = "147698382092238848";
     
     //command responses
     final public static String SUCCESS = (char)9989+" ";

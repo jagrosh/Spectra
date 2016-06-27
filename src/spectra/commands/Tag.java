@@ -18,14 +18,17 @@ package spectra.commands;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
+import spectra.FeedHandler;
 import spectra.JagTag;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.datasources.Feeds;
 import spectra.datasources.Overrides;
 import spectra.datasources.Settings;
 import spectra.datasources.Tags;
@@ -121,6 +124,13 @@ public class Tag extends Command{
                 contents
                 });
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" created successfully.", event.getChannel(), event.getMessage().getId());
+                ArrayList<Guild> guildlist = new ArrayList<>();
+                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
+                    guildlist.add(g);
+                });
+                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, guildlist, 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") created tag **"+tagname+"** "
+                                +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
             else
@@ -157,6 +167,13 @@ public class Tag extends Command{
             {
                 Tags.getInstance().removeTag(tag[Tags.TAGNAME]);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event.getChannel(), event.getMessage().getId());
+                ArrayList<Guild> guildlist = new ArrayList<>();
+                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
+                    guildlist.add(g);
+                });
+                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, guildlist, 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted tag **"+tagname+"** "
+                                +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
             else
@@ -206,6 +223,13 @@ public class Tag extends Command{
                 contents
                 });
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" edited successfully.", event.getChannel(), event.getMessage().getId());
+                ArrayList<Guild> guildlist = new ArrayList<>();
+                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
+                    guildlist.add(g);
+                });
+                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, guildlist, 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") edited tag **"+tagname+"** "
+                                +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
             else
@@ -486,6 +510,9 @@ public class Tag extends Command{
             {
                 Overrides.getInstance().setTag(new String[]{"g"+event.getGuild().getId(),tag[Overrides.TAGNAME],contents});
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event.getChannel(), event.getMessage().getId());
+                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode tag **"+tagname
+                                +"** on **"+event.getGuild().getName()+"**");
                 return true;
             }
         }
@@ -544,6 +571,9 @@ public class Tag extends Command{
             {
                 Overrides.getInstance().removeTag(tag);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" restored successfully.", event.getChannel(), event.getMessage().getId());
+                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") restored tag **"+tagname
+                                +"** on **"+event.getGuild().getName()+"**");
                 return true;
             }
         }
@@ -584,6 +614,9 @@ public class Tag extends Command{
                     String cmds = Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
                     Settings.getInstance().setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds==null?tag[Tags.TAGNAME]:cmds+" "+tag[Tags.TAGNAME]);
                     Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" has been added a tag command", event.getChannel(), event.getMessage().getId());
+                    FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") imported tag **"+tagname
+                                +"** on **"+event.getGuild().getName()+"**");
                     return true;
                 }
             }
@@ -621,6 +654,9 @@ public class Tag extends Command{
             {
                 Settings.getInstance().setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, builder.toString().trim());
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" is no longer a tag command", event.getChannel(), event.getMessage().getId());
+                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") unimported tag **"+tagname
+                                +"** on **"+event.getGuild().getName()+"**");
                 return true;
             }
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently a tag command!", event.getChannel(), event.getMessage().getId());

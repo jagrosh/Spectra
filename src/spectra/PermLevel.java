@@ -42,30 +42,26 @@ public enum PermLevel {
     
     public static PermLevel getPermLevelForUser(User user, Guild guild, String[] currentSettings)
     {
-        PermLevel perm = EVERYONE;//start with everyone
         if(user.getId().equals(SpConst.JAGROSH_ID))
-            perm = JAGROSH;
+            return JAGROSH;
         if(guild==null)
-            return perm;
+            return EVERYONE;
         if(PermissionUtil.checkPermission(user, Permission.MANAGE_SERVER, guild))
-            perm = ADMIN;
+            return ADMIN;
         else
         {
             if(currentSettings==null)
-                return perm;
+                return EVERYONE;
             if(currentSettings[Settings.MODIDS].contains(user.getId()))
-                perm = MODERATOR;
+                return MODERATOR;
             else
             {
                 for(Role r:guild.getRolesForUser(user))
                     if(currentSettings[Settings.MODIDS].contains("r"+r.getId()))
-                    {
-                        perm = PermLevel.MODERATOR;
-                        break;
-                    }
+                        return PermLevel.MODERATOR;
             }
         }
-        return perm;
+        return EVERYONE;
     }
     
     public static PermLevel getPermLevelForUser(User user, Guild guild)

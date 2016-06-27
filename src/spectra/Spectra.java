@@ -20,7 +20,9 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
@@ -29,11 +31,16 @@ import net.dv8tion.jda.JDABuilder;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.events.DisconnectEvent;
 import net.dv8tion.jda.events.ReadyEvent;
 import net.dv8tion.jda.events.ReconnectedEvent;
+import net.dv8tion.jda.events.ResumedEvent;
+import net.dv8tion.jda.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.events.guild.member.GuildMemberBanEvent;
 import net.dv8tion.jda.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.events.guild.member.GuildMemberLeaveEvent;
+import net.dv8tion.jda.events.guild.member.GuildMemberNickChangeEvent;
 import net.dv8tion.jda.events.guild.member.GuildMemberUnbanEvent;
 import net.dv8tion.jda.events.message.MessageBulkDeleteEvent;
 import net.dv8tion.jda.events.message.MessageDeleteEvent;
@@ -45,6 +52,7 @@ import net.dv8tion.jda.events.message.guild.GuildMessageUpdateEvent;
 import net.dv8tion.jda.events.user.UserAvatarUpdateEvent;
 import net.dv8tion.jda.events.user.UserNameUpdateEvent;
 import net.dv8tion.jda.hooks.ListenerAdapter;
+import net.dv8tion.jda.utils.MiscUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.entities.Tuple;
@@ -63,6 +71,8 @@ public class Spectra extends ListenerAdapter {
     Command[] commands;
     Thread feedFlusher;
     boolean isRunning = true;
+    static final OffsetDateTime start = OffsetDateTime.now();
+    OffsetDateTime lastDisconnect;
     //DataSource[] sources;
     //final Settings settings;
 
@@ -70,11 +80,33 @@ public class Spectra extends ListenerAdapter {
     public void onReady(ReadyEvent event) {
         event.getJDA().getAccountManager().setGame("Type "+SpConst.PREFIX+"help");
         feedFlusher.start();
+        FeedHandler.getInstance().submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
+                SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
+                        + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
+                        + "Started up in "+FormatUtil.secondsToTime(start.until(OffsetDateTime.now(), ChronoUnit.SECONDS)));
     }
 
     @Override
+    public void onDisconnect(DisconnectEvent event) {
+        lastDisconnect = OffsetDateTime.now();
+    }
+    
+    @Override
     public void onReconnect(ReconnectedEvent event) {
-        //do something with game
+        FeedHandler.getInstance().submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
+                SpConst.WARNING+"**"+SpConst.BOTNAME+"** has <@&196723905354924032>\n"
+                        + (lastDisconnect==null ? "No disconnect time recorded." : 
+                        "Downtime: "+FormatUtil.secondsToTime(lastDisconnect.until(OffsetDateTime.now(), ChronoUnit.SECONDS))) );
+        lastDisconnect = null;
+    }
+
+    @Override
+    public void onResume(ResumedEvent event) {
+        FeedHandler.getInstance().submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
+                SpConst.WARNING+"**"+SpConst.BOTNAME+"** has <@&196723649061847040>\n"
+                        + (lastDisconnect==null ? "No disconnect time recorded." : 
+                        "Downtime: "+FormatUtil.secondsToTime(lastDisconnect.until(OffsetDateTime.now(), ChronoUnit.SECONDS))) );
+        lastDisconnect = null;
     }
     
     @Override
@@ -135,10 +167,28 @@ public class Spectra extends ListenerAdapter {
                 isCommand = true;
                 successful = true;
                 String helpmsg = "**Available help "+(event.isPrivate() ? "via Direct Message" : "in <#"+event.getTextChannel().getId()+">")+"**:";
+                PermLevel current = PermLevel.EVERYONE;
                 for(Command com: commands)
                 {
                     if( perm.isAtLeast(com.level) )
+                    {
+                        if(com.level==PermLevel.MODERATOR)
+                        {
+                            current = PermLevel.MODERATOR;
+                            helpmsg+= "\n**Moderator Commands:**";
+                        }
+                        else if(com.level==PermLevel.ADMIN && !current.isAtLeast(PermLevel.ADMIN))
+                        {
+                            current = PermLevel.ADMIN;
+                            helpmsg+= "\n**Admin Commands:**";
+                        }
+                        else if(com.level==PermLevel.JAGROSH && !current.isAtLeast(PermLevel.JAGROSH))
+                        {
+                            current = PermLevel.JAGROSH;
+                            helpmsg+= "\n**jagrosh Commands:**";
+                        }
                         helpmsg += "\n`"+SpConst.PREFIX+com.command+"`"+Argument.arrayToString(com.arguments)+" - "+com.help;
+                    }
                 }
                 helpmsg+="\n\nFor more information, call "+SpConst.PREFIX+"<command> help. For example, `"+SpConst.PREFIX+"tag help`";
                 helpmsg+="\nFor commands, `<argument>` refers to a required argument, while `[argument]` is optional";
@@ -206,10 +256,6 @@ public class Spectra extends ListenerAdapter {
         
     }
 
-    @Override
-    public void onMessageUpdate(MessageUpdateEvent event) {
-    }
-
     
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
@@ -236,6 +282,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
+        CallDepend.getInstance().delete(event.getMessageId());
         if(Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
         {
             Message msg = MessageCache.getInstance().deleteMessage(event.getGuild().getId(), event.getMessageId());
@@ -272,14 +319,6 @@ public class Spectra extends ListenerAdapter {
         FeedHandler.getInstance().submitText(Feeds.Type.MODLOG, event.getGuild(), 
                 "\uD83D\uDD27 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was unbanned from the server.");
     }
-    
-    
-
-    
-    @Override
-    public void onMessageDelete(MessageDeleteEvent event) {
-        CallDepend.getInstance().delete(event.getMessageId());
-    }
 
     @Override
     public void onMessageBulkDelete(MessageBulkDeleteEvent event) {
@@ -304,9 +343,15 @@ public class Spectra extends ListenerAdapter {
         if(servlogon)
             FeedHandler.getInstance().submitFile(Feeds.Type.SERVERLOG, event.getChannel().getGuild(), ()->{
                 File f = OtherUtil.writeArchive(builder.toString(), "deleted_messages");
-            return new Tuple<>(header,f);}, header);
+                return new Tuple<>(header,f);}, header);
     }
 
+    @Override
+    public void onGuildMemberNickChange(GuildMemberNickChangeEvent event) {
+        FeedHandler.getInstance().submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\u270D **"+event.getUser().getUsername()+"** (ID:"
+                        +event.getUser().getId()+") has changed nicknames from "+(event.getPrevNick()==null ? "[none]" : "**"+event.getPrevNick()+"**")+" to "+
+                        (event.getNewNick()==null ? "[none]" : "**"+event.getNewNick()+"**"));
+    }
     
     @Override
     public void onUserNameUpdate(UserNameUpdateEvent event) {
@@ -322,7 +367,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onUserAvatarUpdate(UserAvatarUpdateEvent event) {
-        if(event.getUser().equals(event.getJDA().getSelfInfo()))
+        if(event.getUser().equals(event.getJDA().getSelfInfo()) || event.getUser().getId().equals("135251434445733888"))
             return;
         String oldurl = event.getPreviousAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getPreviousAvatarUrl();
         String newurl = event.getUser().getAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getUser().getAvatarUrl();
@@ -357,6 +402,26 @@ public class Spectra extends ListenerAdapter {
                     + "\nOld: "+event.getPreviousAvatarUrl()
                     + "\nNew: "+event.getUser().getAvatarUrl());
     }
+
+    @Override
+    public void onGuildJoin(GuildJoinEvent event) {
+        Guild guild = event.getGuild();
+        FeedHandler.getInstance().submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
+                "```diff\n+ JOINED : "+guild.getName()
+                + "```Users : **"+guild.getUsers().size()
+                +  "**\nOwner : **"+guild.getOwner().getUsername()+"** (ID:"+guild.getOwnerId()
+                +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
+    }
+
+    @Override
+    public void onGuildLeave(GuildLeaveEvent event) {
+        Guild guild = event.getGuild();
+        FeedHandler.getInstance().submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
+                "```diff\n- LEFT : "+guild.getName()
+                + "```Users : **"+guild.getUsers().size()
+                +  "**\nOwner : **"+guild.getOwner().getUsername()+"** (ID:"+guild.getOwnerId()
+                +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
+    }
     
     
     public void init()
@@ -368,12 +433,15 @@ public class Spectra extends ListenerAdapter {
             new Channel(),
             new Draw(),
             new Info(),
+            new Invite(),
             new Names(),
             new Ping(),
             new Server(),
             new Tag(),
             
             new BotScan(),
+            new Kick(),
+            new Softban(),
             
             new Feed()
         };
