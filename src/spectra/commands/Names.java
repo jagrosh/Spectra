@@ -29,9 +29,10 @@ import spectra.utils.FormatUtil;
  * @author John Grosh (jagrosh)
  */
 public class Names extends Command {
-    
-    public Names()
+    final SavedNames savednames;
+    public Names(SavedNames savednames)
     {
+        this.savednames = savednames;
         this.command = "names";
         this.aliases = new String[]{"pastnames","namehistory"};
         this.help = "shows some previous names for a user";
@@ -45,7 +46,7 @@ public class Names extends Command {
         User user = (User)(args[0]);
         if(user==null)
             user = event.getAuthor();
-        String names = SavedNames.getInstance().getNames(user.getId());
+        String names = savednames.getNames(user.getId());
         if(names==null)
             Sender.sendResponse(SpConst.WARNING+"No previous names recorded for **"+user.getUsername()+"**!", event.getChannel(), event.getMessage().getId());
         else

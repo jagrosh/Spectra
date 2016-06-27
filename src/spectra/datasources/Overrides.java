@@ -24,20 +24,13 @@ import spectra.DataSource;
  * @author John Grosh (jagrosh)
  */
 public class Overrides extends DataSource{
-    private static final Overrides overrides = new Overrides();
     
-    private Overrides()
+    public Overrides()
     {
         filename = "discordbot.overrides";
         size = 3;
         generateKey = (item) -> {return item[OWNERID]+"|"+item[TAGNAME].toLowerCase();};
     }
-    
-    public static Overrides getInstance()
-    {
-        return overrides;
-    }
-    
     
     public String[] findTag(Guild guild, String name, boolean nsfw)
     {

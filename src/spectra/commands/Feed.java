@@ -32,9 +32,10 @@ import spectra.datasources.Feeds;
  * @author John Grosh (jagrosh)
  */
 public class Feed extends Command {
-    
-    public Feed()
+    final Feeds feeds;
+    public Feed(Feeds feeds)
     {
+        this.feeds = feeds;
         this.command = "feed";
         this.help = "sets or removes a feed; `"+SpConst.PREFIX+"feed help` for more";
         this.level = PermLevel.ADMIN;
@@ -88,10 +89,10 @@ public class Feed extends Command {
                 return false;
             }
             String str = "";
-            String[] current = Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.MODLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
-            Feeds.getInstance().set(new String[]{tchan.getId(),Feeds.Type.MODLOG.toString(),event.getGuild().getId(),""});
+            feeds.set(new String[]{tchan.getId(),Feeds.Type.MODLOG.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.MODLOG+" has been added to <#"+tchan.getId()+">";
             Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
             return true;
@@ -122,10 +123,10 @@ public class Feed extends Command {
                 return false;
             }
             String str = "";
-            String[] current = Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
+            String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.SERVERLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
-            Feeds.getInstance().set(new String[]{tchan.getId(),Feeds.Type.SERVERLOG.toString(),event.getGuild().getId(),""});
+            feeds.set(new String[]{tchan.getId(),Feeds.Type.SERVERLOG.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.SERVERLOG+" has been added to <#"+tchan.getId()+">";
             Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
             return true;
@@ -156,10 +157,10 @@ public class Feed extends Command {
                 return false;
             }
             String str = "";
-            String[] current = Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.TAGLOG);
+            String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.TAGLOG);
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.TAGLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
-            Feeds.getInstance().set(new String[]{tchan.getId(),Feeds.Type.TAGLOG.toString(),event.getGuild().getId(),""});
+            feeds.set(new String[]{tchan.getId(),Feeds.Type.TAGLOG.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.TAGLOG+" has been added to <#"+tchan.getId()+">";
             Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
             return true;
@@ -190,10 +191,10 @@ public class Feed extends Command {
                 return false;
             }
             String str = "";
-            String[] current = Feeds.getInstance().feedForGuild(event.getGuild(), Feeds.Type.ANNOUNCEMENTS);
+            String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.ANNOUNCEMENTS);
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.ANNOUNCEMENTS+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
-            Feeds.getInstance().set(new String[]{event.getTextChannel().getId(),Feeds.Type.ANNOUNCEMENTS.toString(),event.getGuild().getId(),""});
+            feeds.set(new String[]{event.getTextChannel().getId(),Feeds.Type.ANNOUNCEMENTS.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.ANNOUNCEMENTS+" has been added to <#"+event.getTextChannel().getId()+">";
             Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
             return true;
@@ -210,14 +211,14 @@ public class Feed extends Command {
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            List<String[]> feeds = Feeds.getInstance().findFeedsForGuild(event.getGuild());
-            if(feeds.isEmpty())
+            List<String[]> feedlist = feeds.findFeedsForGuild(event.getGuild());
+            if(feedlist.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"No feeds found on **"+event.getGuild().getName()+"**", event.getChannel(), event.getMessage().getId());
                 return true;
             }
-            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(feeds.size()).append(" feeds found on **").append(event.getGuild().getName()).append("**:");
-            feeds.stream().forEach((feed) -> {
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(feedlist.size()).append(" feeds found on **").append(event.getGuild().getName()).append("**:");
+            feedlist.stream().forEach((feed) -> {
                 builder.append("\n`").append(feed[Feeds.FEEDTYPE]).append("` - <#").append(feed[Feeds.CHANNELID])
                         .append(">").append((feed[Feeds.DETAILS]!=null && !feed[Feeds.DETAILS].equals("")) ? " : "+feed[Feeds.DETAILS] : "");
             });
@@ -240,16 +241,16 @@ public class Feed extends Command {
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String feedname = (String)(args[0]);
-            List<String[]> feeds = Feeds.getInstance().findFeedsForGuild(event.getGuild());
-            if(feeds.isEmpty())
+            List<String[]> feedlist = feeds.findFeedsForGuild(event.getGuild());
+            if(feedlist.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"No feeds found on **"+event.getGuild().getName()+"**", event.getChannel(), event.getMessage().getId());
                 return true;
             }
-            for(String[] feed : feeds)
+            for(String[] feed : feedlist)
                 if((feed[Feeds.FEEDTYPE]+((feed[Feeds.DETAILS]!=null && !feed[Feeds.DETAILS].equals("")) ? " "+feed[Feeds.DETAILS] : "")).equalsIgnoreCase(feedname))
                 {
-                    Feeds.getInstance().removeFeed(feed);
+                    feeds.removeFeed(feed);
                     Sender.sendResponse(SpConst.SUCCESS+"Removed feed `"+feed[Feeds.FEEDTYPE]+"` from <#"+feed[Feeds.CHANNELID]+">", event.getChannel(), event.getMessage().getId());
                     return true;
                 }

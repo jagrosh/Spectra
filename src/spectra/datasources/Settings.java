@@ -24,18 +24,12 @@ import spectra.SpConst;
  * @author John Grosh (jagrosh)
  */
 public class Settings extends DataSource {
-    private static final Settings settings = new Settings();
     
-    private Settings()
+    public Settings()
     {
         filename = "discordbot.serversettings";
         size = 11;
         generateKey = (item) -> {return item[SERVERID];};
-    }
-    
-    public static Settings getInstance()
-    {
-        return settings;
     }
 
     public String[] getSettingsForGuild(String id)

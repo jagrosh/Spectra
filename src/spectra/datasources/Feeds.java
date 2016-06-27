@@ -25,18 +25,12 @@ import spectra.DataSource;
  * @author John Grosh (jagrosh)
  */
 public class Feeds extends DataSource {
-    private static final Feeds feeds = new Feeds();
     
-    private Feeds()
+    public Feeds()
     {
         filename = "discordbot.feeds";
         size = 4;
         generateKey = (item) -> {return item[GUILDID]+"|"+item[FEEDTYPE];};
-    }
-    
-    public static Feeds getInstance()
-    {
-        return feeds;
     }
     
     public String[] feedForGuild(Guild guild, Type type)

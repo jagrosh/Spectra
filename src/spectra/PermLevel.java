@@ -63,9 +63,4 @@ public enum PermLevel {
         }
         return EVERYONE;
     }
-    
-    public static PermLevel getPermLevelForUser(User user, Guild guild)
-    {
-        return getPermLevelForUser(user,guild,guild!=null ? Settings.getInstance().getSettingsForGuild(guild.getId()) : null);
-    }
 }

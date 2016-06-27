@@ -38,8 +38,16 @@ import spectra.datasources.Tags;
  * @author John Grosh (jagrosh)
  */
 public class Tag extends Command{
-    public Tag()
+    final Tags tags;
+    final Overrides overrides;
+    final Settings settings;
+    final FeedHandler handler;
+    public Tag(Tags tags, Overrides overrides, Settings settings, FeedHandler handler)
     {
+        this.tags = tags;
+        this.overrides = overrides;
+        this.settings = settings;
+        this.handler = handler;
         this.command = "tag";
         this.aliases = new String[]{"t"};
         this.help = "displays a tag; tag commands (try `"+SpConst.PREFIX+"tag help`)";
@@ -76,14 +84,14 @@ public class Tag extends Command{
         boolean nsfw = true;
         if(!event.isPrivate())
         {
-            local = "local".equalsIgnoreCase(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+            local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
         }
         String[] tag = null;
         if(!event.isPrivate())
-            tag = Overrides.getInstance().findTag(event.getGuild(), tagname, nsfw);
+            tag = overrides.findTag(event.getGuild(), tagname, nsfw);
         if(tag==null)
-            tag = Tags.getInstance().findTag(tagname, event.getGuild(), local, nsfw);
+            tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
         if(tag==null)
         {
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -115,10 +123,10 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             String contents = (String)(args[1]);
-            String[] tag = Tags.getInstance().findTag(tagname);
+            String[] tag = tags.findTag(tagname);
             if(tag==null)//good to make it
             {
-                Tags.getInstance().set(new String[]{
+                tags.set(new String[]{
                 event.getAuthor().getId(),
                 tagname,
                 contents
@@ -128,7 +136,7 @@ public class Tag extends Command{
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
                 });
-                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, guildlist, 
+                handler.submitText(Feeds.Type.TAGLOG, guildlist, 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") created tag **"+tagname+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
@@ -157,7 +165,7 @@ public class Tag extends Command{
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
             String tagname = (String)(args[0]);
-            String[] tag = Tags.getInstance().findTag(tagname);
+            String[] tag = tags.findTag(tagname);
             if(tag==null)//nothing to edit
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -165,13 +173,13 @@ public class Tag extends Command{
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()))
             {
-                Tags.getInstance().removeTag(tag[Tags.TAGNAME]);
+                tags.removeTag(tag[Tags.TAGNAME]);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event.getChannel(), event.getMessage().getId());
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
                 });
-                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, guildlist, 
+                handler.submitText(Feeds.Type.TAGLOG, guildlist, 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted tag **"+tagname+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
@@ -209,7 +217,7 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             String contents = (String)(args[1]);
-            String[] tag = Tags.getInstance().findTag(tagname);
+            String[] tag = tags.findTag(tagname);
             if(tag==null)//nothing to edit
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -217,7 +225,7 @@ public class Tag extends Command{
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
-                Tags.getInstance().set(new String[]{
+                tags.set(new String[]{
                 tag[Tags.OWNERID],
                 tag[Tags.TAGNAME],
                 contents
@@ -227,7 +235,7 @@ public class Tag extends Command{
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
                 });
-                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, guildlist, 
+                handler.submitText(Feeds.Type.TAGLOG, guildlist, 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") edited tag **"+tagname+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
@@ -270,11 +278,11 @@ public class Tag extends Command{
             boolean nsfw = true;
             if(!event.isPrivate())
                 nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
-            ArrayList<String> tags = Tags.getInstance().findTagsByOwner(user, nsfw);
-            Collections.sort(tags);
+            ArrayList<String> taglist = tags.findTagsByOwner(user, nsfw);
+            Collections.sort(taglist);
             StringBuilder builder;
-            builder = new StringBuilder(SpConst.SUCCESS+tags.size()+" tags owned by **"+user.getUsername()+"**: \n");
-            tags.stream().forEach((tag) -> {
+            builder = new StringBuilder(SpConst.SUCCESS+taglist.size()+" tags owned by **"+user.getUsername()+"**: \n");
+            taglist.stream().forEach((tag) -> {
                 builder.append(tag).append(" ");
             });
             Sender.sendResponse(builder.toString(), event.getChannel(), event.getMessage().getId());
@@ -299,9 +307,9 @@ public class Tag extends Command{
             String tagname = (String)(args[0]);
             String[] tag = null;
             if(!event.isPrivate())
-                tag = Overrides.getInstance().findTag(event.getGuild(), tagname, true);
+                tag = overrides.findTag(event.getGuild(), tagname, true);
             if(tag==null)
-                tag = Tags.getInstance().findTag(tagname, event.getGuild(), false, true);
+                tag = tags.findTag(tagname, event.getGuild(), false, true);
             if(tag==null)
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -339,16 +347,16 @@ public class Tag extends Command{
             boolean nsfw = true;
             if(!event.isPrivate())
             {
-                local = "local".equalsIgnoreCase(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+                local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
                 nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
             }
-            List<String[]> tags = Tags.getInstance().findTags(null, event.getGuild(), local, nsfw);
-            if(tags.isEmpty())
+            List<String[]> taglist = tags.findTags(null, event.getGuild(), local, nsfw);
+            if(taglist.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"No tags found!", event.getChannel(), event.getMessage().getId());
                 return false;
             }
-            String[] tag = tags.get((int)(Math.random()*tags.size()));
+            String[] tag = taglist.get((int)(Math.random()*taglist.size()));
             Sender.sendResponse("Tag \""+tag[Tags.TAGNAME]+"\":\n"
                     +JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()),
                     event.getChannel(), event.getMessage().getId());
@@ -375,14 +383,14 @@ public class Tag extends Command{
             boolean nsfw = true;
             if(!event.isPrivate())
             {
-                local = "local".equalsIgnoreCase(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+                local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
                 nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
             }
             String[] tag = null;
             if(!event.isPrivate())
-                tag = Overrides.getInstance().findTag(event.getGuild(), tagname, nsfw);
+                tag = overrides.findTag(event.getGuild(), tagname, nsfw);
             if(tag==null)
-                tag = Tags.getInstance().findTag(tagname, event.getGuild(), local, nsfw);
+                tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
             if(tag==null)
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -412,14 +420,14 @@ public class Tag extends Command{
             boolean nsfw = true;
             if(!event.isPrivate())
             {
-                local = "local".equalsIgnoreCase(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+                local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
                 nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
             }
             String[] tag = null;
             if(!event.isPrivate())
-                tag = Overrides.getInstance().findTag(event.getGuild(), tagname, nsfw);
+                tag = overrides.findTag(event.getGuild(), tagname, nsfw);
             if(tag==null)
-                tag = Tags.getInstance().findTag(tagname, event.getGuild(), local, nsfw);
+                tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
             if(tag==null)
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -451,22 +459,22 @@ public class Tag extends Command{
             boolean nsfw = true;
             if(!event.isPrivate())
             {
-                local = "local".equalsIgnoreCase(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+                local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
                 nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
             }
-            List<String[]> tags = Tags.getInstance().findTags(query, event.getGuild(), local, nsfw);
-            if(tags.isEmpty())
+            List<String[]> taglist = tags.findTags(query, event.getGuild(), local, nsfw);
+            if(taglist.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"No tags found matching \""+query+"\"!", event.getChannel(), event.getMessage().getId());
                 return false;
             }
-            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(tags.size()).append(" tags found");
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(taglist.size()).append(" tags found");
             if(query!=null)
                 builder.append(" containing \"").append(query).append("\"");
             builder.append(":\n");
-            if(tags.size()<100)
-                Collections.sort(tags, (a,b)->{return a[Tags.TAGNAME].compareTo(b[Tags.TAGNAME]);});
-            tags.stream().forEach((tag) -> {
+            if(taglist.size()<100)
+                Collections.sort(taglist, (a,b)->{return a[Tags.TAGNAME].compareTo(b[Tags.TAGNAME]);});
+            taglist.stream().forEach((tag) -> {
                 builder.append(tag[Tags.TAGNAME]).append(" ");
             });
             Sender.sendResponse(builder.toString(),event.getChannel(), event.getMessage().getId());
@@ -498,9 +506,9 @@ public class Tag extends Command{
             String contents = args[1]==null?null:(String)(args[1]);
             if(contents==null)
                 contents = "This tag was removed by **"+event.getAuthor().getUsername()+"**";
-            String[] tag = Overrides.getInstance().findTag(event.getGuild(), tagname, true);
+            String[] tag = overrides.findTag(event.getGuild(), tagname, true);
             if(tag==null)
-                tag = Tags.getInstance().findTag(tagname);
+                tag = tags.findTag(tagname);
             if(tag==null)//nothing to edit
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -508,9 +516,9 @@ public class Tag extends Command{
             }
             else
             {
-                Overrides.getInstance().setTag(new String[]{"g"+event.getGuild().getId(),tag[Overrides.TAGNAME],contents});
+                overrides.setTag(new String[]{"g"+event.getGuild().getId(),tag[Overrides.TAGNAME],contents});
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event.getChannel(), event.getMessage().getId());
-                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
                 return true;
@@ -529,7 +537,7 @@ public class Tag extends Command{
             @Override
             protected boolean execute(Object[] args, MessageReceivedEvent event)
             {
-                List<String> list = Overrides.getInstance().findGuildTags(event.getGuild());
+                List<String> list = overrides.findGuildTags(event.getGuild());
                 if(list.isEmpty())
                     Sender.sendResponse(SpConst.WARNING+"No tags have been overriden on **"+event.getGuild().getName()+"**", event.getChannel(), event.getMessage().getId());
                 else
@@ -561,7 +569,7 @@ public class Tag extends Command{
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String tagname = (String)(args[0]);
-            String[] tag = Overrides.getInstance().findTag(event.getGuild(), tagname, true);
+            String[] tag = overrides.findTag(event.getGuild(), tagname, true);
             if(tag==null)
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently overriden", event.getChannel(), event.getMessage().getId());
@@ -569,9 +577,9 @@ public class Tag extends Command{
             }
             else
             {
-                Overrides.getInstance().removeTag(tag);
+                overrides.removeTag(tag);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" restored successfully.", event.getChannel(), event.getMessage().getId());
-                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") restored tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
                 return true;
@@ -594,16 +602,16 @@ public class Tag extends Command{
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String tagname = (String)(args[0]);
-            String[] imports = Settings.tagCommandsFromList(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
+            String[] imports = Settings.tagCommandsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
             boolean found = false;
             for(String tag : imports)
                 if(tag.equalsIgnoreCase(tagname))
                     found = true;
             if(!found)
             {
-                String[] tag = Overrides.getInstance().findTag(event.getGuild(), tagname, true);
+                String[] tag = overrides.findTag(event.getGuild(), tagname, true);
                 if(tag==null)
-                    tag = Tags.getInstance().findTag(tagname);
+                    tag = tags.findTag(tagname);
                 if(tag==null)//nothing to import
                 {
                     Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
@@ -611,10 +619,10 @@ public class Tag extends Command{
                 }
                 else
                 {
-                    String cmds = Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
-                    Settings.getInstance().setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds==null?tag[Tags.TAGNAME]:cmds+" "+tag[Tags.TAGNAME]);
+                    String cmds = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
+                    settings.setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds==null?tag[Tags.TAGNAME]:cmds+" "+tag[Tags.TAGNAME]);
                     Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" has been added a tag command", event.getChannel(), event.getMessage().getId());
-                    FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                    handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") imported tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
                     return true;
@@ -640,7 +648,7 @@ public class Tag extends Command{
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String tagname = (String)(args[0]);
-            String[] imports = Settings.tagCommandsFromList(Settings.getInstance().getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
+            String[] imports = Settings.tagCommandsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS]);
             boolean found = false;
             StringBuilder builder = new StringBuilder();
             for(String tag : imports)
@@ -652,9 +660,9 @@ public class Tag extends Command{
             }
             if(found)
             {
-                Settings.getInstance().setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, builder.toString().trim());
+                settings.setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, builder.toString().trim());
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" is no longer a tag command", event.getChannel(), event.getMessage().getId());
-                FeedHandler.getInstance().submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") unimported tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
                 return true;

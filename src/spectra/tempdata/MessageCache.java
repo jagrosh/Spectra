@@ -25,19 +25,13 @@ import net.dv8tion.jda.entities.Message;
  * @author John Grosh (jagrosh)
  */
 public class MessageCache {
-    private final static MessageCache cache = new MessageCache();
     private final HashMap<String,List<Message>> messages;
     private final int perguildcap;
     
-    private MessageCache()
+    public MessageCache()
     {
         messages = new HashMap<>();
         perguildcap = 1000;
-    }
-    
-    public static MessageCache getInstance()
-    {
-        return cache;
     }
     /*
         adds a message to the message cache

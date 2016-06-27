@@ -22,18 +22,12 @@ import spectra.DataSource;
  * @author John Grosh (jagrosh)
  */
 public class SavedNames extends DataSource{
-    private static final SavedNames savedNames = new SavedNames();
     
-    private SavedNames()
+    public SavedNames()
     {
         this.filename = "discordbot.names";
         this.size = 2;
         this.generateKey = (item) -> {return item[USERID];};
-    }
-    
-    public static SavedNames getInstance()
-    {
-        return savedNames;
     }
     
     public String getNames(String id)

@@ -26,18 +26,12 @@ import spectra.SpConst;
  * @author John Grosh (jagrosh)
  */
 public class Tags extends DataSource{
-    private static final Tags tags = new Tags();
     
-    private Tags()
+    public Tags()
     {
         filename = "discordbot.tags";
         size = 3;
         generateKey = (item) -> {return item[TAGNAME].toLowerCase();};
-    }
-    
-    public static Tags getInstance()
-    {
-        return tags;
     }
     
     public String[] findTag(String name)

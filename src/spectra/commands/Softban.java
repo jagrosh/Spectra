@@ -26,14 +26,19 @@ import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.datasources.Feeds;
+import spectra.datasources.Settings;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Softban extends Command {
-    public Softban()
+    final FeedHandler handler;
+    final Settings settings;
+    public Softban(FeedHandler handler, Settings settings)
     {
+        this.handler = handler;
+        this.settings = settings;
         this.command = "softban";
         this.help = "temporarily bans a user from the server";
         this.arguments = new Argument[]{
@@ -51,7 +56,7 @@ public class Softban extends Command {
         String reason = args[1]==null?null:(String)(args[1]);
         if(reason==null)
             reason = "[no reason specified]";
-        PermLevel targetLevel = PermLevel.getPermLevelForUser(target, event.getGuild());
+        PermLevel targetLevel = PermLevel.getPermLevelForUser(target, event.getGuild(),settings.getSettingsForGuild(event.getGuild().getId()));
         //check perm level of other user
         if(targetLevel.isAtLeast(level))
         {
@@ -78,7 +83,7 @@ public class Softban extends Command {
             String id = target.getId();
             event.getGuild().getManager().ban(id, 1);
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was softbanned from the server \uD83C\uDF4C", event.getChannel(), event.getMessage().getId());
-            FeedHandler.getInstance().submitText(Feeds.Type.MODLOG, event.getGuild(), 
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                     "\uD83C\uDF4C **"+event.getAuthor().getUsername()+"** softbanned **"+target.getUsername()+"** for "+reason);
             new Thread(){
             public void run(){

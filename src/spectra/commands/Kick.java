@@ -26,14 +26,19 @@ import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.datasources.Feeds;
+import spectra.datasources.Settings;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Kick extends Command {
-    public Kick()
+    final FeedHandler handler;
+    final Settings settings;
+    public Kick(FeedHandler handler, Settings settings)
     {
+        this.handler = handler;
+        this.settings = settings;
         this.command = "kick";
         this.help = "kicks a user from the server";
         this.arguments = new Argument[]{
@@ -51,7 +56,7 @@ public class Kick extends Command {
         String reason = args[1]==null?null:(String)(args[1]);
         if(reason==null)
             reason = "[no reason specified]";
-        PermLevel targetLevel = PermLevel.getPermLevelForUser(target, event.getGuild());
+        PermLevel targetLevel = PermLevel.getPermLevelForUser(target, event.getGuild(), settings.getSettingsForGuild(event.getGuild().getId()));
         //check perm level of other user
         if(targetLevel.isAtLeast(level))
         {
@@ -77,7 +82,7 @@ public class Kick extends Command {
         try{
             event.getGuild().getManager().kick(target);
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was kicked from the server \uD83D\uDC62", event.getChannel(), event.getMessage().getId());
-            FeedHandler.getInstance().submitText(Feeds.Type.MODLOG, event.getGuild(), 
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                     "\uD83D\uDC62 **"+event.getAuthor().getUsername()+"** kicked **"+target.getUsername()+"** (ID:"+target.getId()+") for "+reason);
             return true;
         }catch(Exception e)
