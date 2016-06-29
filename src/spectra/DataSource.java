@@ -17,10 +17,13 @@ package spectra;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -146,6 +149,11 @@ public abstract class DataSource {
             }
             writer.flush();
         }catch(IOException e){System.err.println("Error writing to "+filename); return false;}
+        
+        try{
+        Files.copy(new File(filename).toPath(), new File("DataCopies"+File.separatorChar+filename).toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){System.err.println("Error making backup of "+filename);}
+        
         return true;
     }
     

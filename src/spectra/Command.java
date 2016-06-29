@@ -39,6 +39,7 @@ public abstract class Command {
     protected String longhelp = "There is no help information available for this command.\n"
             + "Please contact jagrosh if you see this";
     protected Command[] children = new Command[0];
+    protected Permission[] requiredPermissions = new Permission[0];
     protected PermLevel level = PermLevel.EVERYONE;
     protected boolean availableInDM = true;
     protected int cooldown = 0; //seconds
@@ -91,7 +92,7 @@ public abstract class Command {
                             .append(" - ").append(child.help);
                 }
             }
-            Sender.sendHelp(builder.toString(), event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId()); 
+            Sender.sendHelp(builder.toString(), event.getAuthor().getPrivateChannel(), event); 
             return true;
         }
         
@@ -110,37 +111,40 @@ public abstract class Command {
         }
         if(!perm.isAtLeast(level))//not enough permission
             return false;
-        if(ignore && (perm==PermLevel.EVERYONE || perm==PermLevel.MODERATOR))//ignore commands by non-admins
+        if(ignore && (!perm.isAtLeast(PermLevel.ADMIN)))//ignore commands by non-admins
             return false;
-        if(banned)
-        {
-            Sender.sendResponse(SpConst.BANNED_COMMAND + (perm.isAtLeast(PermLevel.ADMIN) ? String.format(SpConst.BANNED_COMMAND_IFADMIN, command, command) : ""), event.getChannel(), event.getMessage().getId());
-            return false;
-        }
         if(!event.isPrivate())
         {
-            if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, event.getTextChannel()) || !event.getGuild().checkVerification())
+            if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, event.getTextChannel()))
             {
                 Sender.sendPrivate(String.format(SpConst.CANT_SEND, event.getTextChannel().getAsMention()), event.getAuthor().getPrivateChannel());
                 return false;
             }
         }
-        
-        String cdKey = null;
-        if(cooldownKey!=null)// || perm==PermLevel.JAGROSH //no cooldowns for jagrosh
-            cdKey = cooldownKey.apply(event);
-        //check cooldown and apply
-        //if the command is on cooldown, say that and exit with failure
-        //if the command is ready, apply the cooldown now
-        //then, remove the cooldown later if execute returns false
-        //we do this now (as opposed to at command compltetion) to support multi-thread cooldowns
-        long seconds = Cooldowns.getInstance().checkAndApply(cdKey,cooldown);
-        if(seconds > 0)
+        if(banned)
         {
-            Sender.sendResponse(String.format(SpConst.ON_COOLDOWN, FormatUtil.secondsToTime(seconds)), event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.BANNED_COMMAND + (perm.isAtLeast(PermLevel.ADMIN) ? String.format(SpConst.BANNED_COMMAND_IFADMIN, command, command) : ""), event);
             return false;
         }
+        if(!event.isPrivate())
+            for(Permission p : requiredPermissions)
+            {
+                if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), p, event.getTextChannel()))
+                {
+                    Sender.sendResponse(SpConst.NEED_PERMISSION+p ,event);
+                    return false;
+                }
+            }
         
+        String cdKey = null;
+        if(cooldownKey!=null)// || perm==PermLevel.JAGROSH) //no cooldowns for jagrosh
+            cdKey = cooldownKey.apply(event);
+        long seconds = Cooldowns.getInstance().check(cdKey);
+        if(seconds > 0)
+        {
+            Sender.sendResponse(String.format(SpConst.ON_COOLDOWN, FormatUtil.secondsToTime(seconds)), event);
+            return false;
+        }
         
         //parse arguments
         Object[] parsedArgs = new Object[arguments.length];
@@ -151,8 +155,7 @@ public abstract class Command {
             {
                 if (arguments[i].required)
                 {
-                    Sender.sendResponse(String.format(SpConst.TOO_FEW_ARGS,parentChain+command), event.getChannel(), event.getMessage().getId());
-                    Cooldowns.getInstance().resetCooldown(cdKey);
+                    Sender.sendResponse(String.format(SpConst.TOO_FEW_ARGS,parentChain+command), event);
                     return false;
                 }
                 else continue;
@@ -161,19 +164,17 @@ public abstract class Command {
             {
                 case INTEGER:{
                     String[] parts = FormatUtil.cleanSplit(workingSet);
-                    int num;
+                    long num;
                     try{
-                        num = Integer.parseInt(parts[0]);
+                        num = Long.parseLong(parts[0]);
                         if(num < arguments[i].min || num > arguments[i].max)
                         {
-                            Sender.sendResponse(String.format(SpConst.INVALID_INTEGER, arguments[i].name, arguments[i].min, arguments[i].max), event.getChannel(), event.getMessage().getId());
-                            Cooldowns.getInstance().resetCooldown(cdKey);
+                            Sender.sendResponse(String.format(SpConst.INVALID_INTEGER, arguments[i].name, arguments[i].min, arguments[i].max), event);
                             return false;
                         }
                     } catch(NumberFormatException e)
                     {
-                        Sender.sendResponse(String.format(SpConst.INVALID_INTEGER, arguments[i].name, arguments[i].min, arguments[i].max), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.INVALID_INTEGER, arguments[i].name, arguments[i].min, arguments[i].max), event);
                         return false;
                     }
                     parsedArgs[i] = num;
@@ -194,6 +195,46 @@ public abstract class Command {
                     workingSet = parts[1];
                     break;}
                 case TIME:{
+                    String[] parts;
+                    if(separatorRegex==null)
+                        parts = new String[]{workingSet,null};
+                    else
+                        parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    String timestr = parts[0].replaceAll("(?i)^((\\s*\\d+\\s*(d(ays?)?|h((ou)?rs?)?|m(in(ute)?s?)?|s(ec(ond)?s?)?)\\s?,?)*).*", "$1");
+                    if(timestr.equals(""))
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_TIME, parts[0]), event);
+                        return false;
+                    }
+                    if(timestr.length() < parts[0].length())
+                    {
+                        parts[1] = workingSet.substring(timestr.length()).trim();
+                        if(parts[1].equals(""))
+                            parts[1] = null;
+                    }
+                    
+                    timestr = timestr.replaceAll("(?i)(\\d)([a-z])", "$1 $2").replaceAll("(?i)([a-z])(\\d)", "$1 $2").trim();
+                    String[] vals = timestr.split("\\s+");
+                    long timeinseconds = 0;
+                    try{
+                    for(int j=0; j<vals.length; j+=2)
+                    {
+                        long num = Long.parseLong(vals[j]);
+                        if(vals[j+1].startsWith("m"))
+                            num*=60;
+                        else if(vals[j+1].startsWith("h"))
+                            num*=60*60;
+                        else if(vals[j+1].startsWith("d"))
+                            num*=60*60*24;
+                        timeinseconds+=num;
+                    }
+                    }catch(Exception e){
+                        System.out.println("Failed parsing time:\ntimestr="+timestr);
+                        Sender.sendResponse(String.format(SpConst.INVALID_TIME, parts[0]), event);
+                        return false;
+                    }
+                    parsedArgs[i] = timeinseconds;
+                    workingSet = parts[1];
                     break;}
                 case USER:{
                     String[] parts;
@@ -208,14 +249,12 @@ public abstract class Command {
                         ulist = FinderUtil.findUsers(parts[0], event.getJDA());
                     if(ulist.isEmpty())
                     {
-                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event);
                         return false;
                     }
                     else if (ulist.size()>1)
                     {
-                        Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event);
                         return false;
                     }
                     parsedArgs[i] = ulist.get(0);
@@ -224,8 +263,7 @@ public abstract class Command {
                 case LOCALUSER:{
                     if(event.isPrivate())
                     {
-                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event);
                         return false;
                     }
                     String[] parts;
@@ -236,14 +274,12 @@ public abstract class Command {
                     List<User> ulist = FinderUtil.findUsers(parts[0], event.getGuild());
                     if(ulist.isEmpty())
                     {
-                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event);
                         return false;
                     }
                     else if (ulist.size()>1)
                     {
-                        Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event);
                         return false;
                     }
                     parsedArgs[i] = ulist.get(0);
@@ -252,22 +288,19 @@ public abstract class Command {
                 case TEXTCHANNEL:{
                     if(event.isPrivate())
                     {
-                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event);
                         return false;
                     }
                     String[] parts = FormatUtil.cleanSplit(workingSet);
                     List<TextChannel> tclist = FinderUtil.findTextChannel(parts[0], event.getGuild());
                     if(tclist.isEmpty())
                     {
-                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "text channels", parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "text channels", parts[0]), event);
                         return false;
                     }
                     else if (tclist.size()>1)
                     {
-                        Sender.sendResponse(FormatUtil.listOfChannels(tclist, parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(FormatUtil.listOfChannels(tclist, parts[0]), event);
                         return false;
                     }
                     parsedArgs[i] = tclist.get(0);
@@ -276,8 +309,7 @@ public abstract class Command {
                 case ROLE:{
                     if(event.isPrivate())
                     {
-                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event);
                         return false;
                     }
                     String[] parts;
@@ -288,20 +320,26 @@ public abstract class Command {
                     List<Role> rlist = FinderUtil.findRole(parts[0], event.getGuild().getRoles());
                     if(rlist.isEmpty())
                     {
-                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "roles", parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "roles", parts[0]), event);
                         return false;
                     }
                     else if (rlist.size()>1)
                     {
-                        Sender.sendResponse(FormatUtil.listOfRoles(rlist, parts[0]), event.getChannel(), event.getMessage().getId());
-                        Cooldowns.getInstance().resetCooldown(cdKey);
+                        Sender.sendResponse(FormatUtil.listOfRoles(rlist, parts[0]), event);
                         return false;
                     }
                     parsedArgs[i] = rlist.get(0);
                     workingSet = parts[1];
                     break;}
             }
+        }
+        
+        
+        seconds = Cooldowns.getInstance().checkAndApply(cdKey,cooldown);
+        if(seconds > 0)
+        {
+            Sender.sendResponse(String.format(SpConst.ON_COOLDOWN, FormatUtil.secondsToTime(seconds)), event);
+            return false;
         }
         
         boolean result = execute(parsedArgs,event);

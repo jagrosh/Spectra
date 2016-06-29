@@ -61,10 +61,10 @@ public class BotScan extends Command{
         String str = SpConst.SUCCESS+"**"+count+"** bots found on **"+event.getGuild().getName()+"**:"+list;
         if(str.length()>2000)
         {
-            Sender.sendResponse(SpConst.WARNING+"**"+count+"** bots found, so the list is not shown.", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.WARNING+"**"+count+"** bots found, so the list is not shown.", event);
             return true;
         }
-        Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse(str, event);
         return true;
     }
 }

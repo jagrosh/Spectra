@@ -23,7 +23,6 @@ import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
-import net.dv8tion.jda.entities.impl.GuildImpl;
 
 /**
  *
@@ -82,7 +81,7 @@ public class FinderUtil {
         {
             id = query.replaceAll("<@!?(\\d+)>", "$1");
             User u = guild.getJDA().getUserById(id);
-            if(((GuildImpl)guild).getUserRoles().get(u)!=null)
+            if(guild.isMember(u))
                 return Collections.singletonList(u);
         }
         else if(query.matches("^.*#\\d{4}$"))

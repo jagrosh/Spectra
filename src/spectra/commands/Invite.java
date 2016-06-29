@@ -37,7 +37,7 @@ public class Invite extends Command {
         Sender.sendResponse("Hi! If you want me on your server, simply click this link, select a server where you have the \"Manage Server\" permission, and authorize!\n"
                 +"https://discordapp.com/oauth2/authorize?client_id="+ApplicationUtil.getApplicationId(event.getJDA())+"&scope=bot&permissions=297921599\n"
                 //+ "If you give me a role called \""+botName+"\" that is my color-controlling role, and the \"Manage Roles\" permission, I'll adjust my username color to match my image whenever it changes!\n"
-                + "Also, check out **Spectra Lounge**: "+SpConst.JAGZONE_INVITE, event.getChannel(), event.getMessage().getId());
+                + "Also, check out **"+event.getJDA().getGuildById(SpConst.JAGZONE_ID).getName()+"**: "+SpConst.JAGZONE_INVITE, event);
         return true;
     }
 }

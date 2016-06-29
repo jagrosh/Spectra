@@ -49,7 +49,7 @@ public class SpConst {
     
     final private static String INVALID_VALUE            = ERROR + "**Invalid Value:**\n";
     final public static String INVALID_INTEGER          = INVALID_VALUE + "`%s` must be an integer between %s and %s";
-    final public static String INVALID_TIME             = INVALID_VALUE + "`%s` must be a measure of time";
+    final public static String INVALID_TIME             = INVALID_VALUE + "No amount of time could be parsed from \"%s\"";
     final public static String INVALID_IN_DM            = INVALID_VALUE + "`%s` cannot be included via Direct Message";
 
     //final public static String ARGUMENT_ERROR_  = ERROR+"**Insufficient or incorrect arguments**:\n";

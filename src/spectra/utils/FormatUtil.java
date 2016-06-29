@@ -18,7 +18,6 @@ package spectra.utils;
 import java.util.Arrays;
 import java.util.List;
 import net.dv8tion.jda.entities.Message;
-import net.dv8tion.jda.entities.Message.Attachment;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;

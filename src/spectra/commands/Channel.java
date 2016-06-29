@@ -52,7 +52,7 @@ public class Channel extends Command {
         info += SpConst.LINESTART+"Num Users: **"+channel.getUsers().size()+"**";
         if(channel.getTopic()!=null && !channel.getTopic().trim().equals(""))
             info += "\n"+SpConst.LINESTART+"__**Topic**__:\n"+channel.getTopic();
-        Sender.sendResponse(info, event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse(info, event);
         return true;
     }
 }

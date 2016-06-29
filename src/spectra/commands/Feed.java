@@ -60,7 +60,7 @@ public class Feed extends Command {
             str = "The `feed` command assigns "+SpConst.BOTNAME+" to send certain type of messages to a channel";
         else
             str = SpConst.ERROR+"That is not a valid feed type!";
-        Sender.sendResponse(str + "\nPlease use `"+SpConst.PREFIX+"feed help` for a valid list of feeds", event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse(str + "\nPlease use `"+SpConst.PREFIX+"feed help` for a valid list of feeds", event);
         return true;
     }
     
@@ -85,7 +85,7 @@ public class Feed extends Command {
             if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan) || !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan))
             {
                 Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.MESSAGE_READ+", "+Permission.MESSAGE_WRITE+
-                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event.getChannel(), event.getMessage().getId());
+                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event);
                 return false;
             }
             String str = "";
@@ -94,7 +94,7 @@ public class Feed extends Command {
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.MODLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
             feeds.set(new String[]{tchan.getId(),Feeds.Type.MODLOG.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.MODLOG+" has been added to <#"+tchan.getId()+">";
-            Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(str, event);
             return true;
         }
     }
@@ -119,7 +119,7 @@ public class Feed extends Command {
             if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan) || !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan))
             {
                 Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.MESSAGE_READ+", "+Permission.MESSAGE_WRITE+
-                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event.getChannel(), event.getMessage().getId());
+                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event);
                 return false;
             }
             String str = "";
@@ -128,7 +128,7 @@ public class Feed extends Command {
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.SERVERLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
             feeds.set(new String[]{tchan.getId(),Feeds.Type.SERVERLOG.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.SERVERLOG+" has been added to <#"+tchan.getId()+">";
-            Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(str, event);
             return true;
         }
     }
@@ -153,7 +153,7 @@ public class Feed extends Command {
             if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan) || !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan))
             {
                 Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.MESSAGE_READ+", "+Permission.MESSAGE_WRITE+
-                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event.getChannel(), event.getMessage().getId());
+                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event);
                 return false;
             }
             String str = "";
@@ -162,7 +162,7 @@ public class Feed extends Command {
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.TAGLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
             feeds.set(new String[]{tchan.getId(),Feeds.Type.TAGLOG.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.TAGLOG+" has been added to <#"+tchan.getId()+">";
-            Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(str, event);
             return true;
         }
     }
@@ -187,7 +187,7 @@ public class Feed extends Command {
             if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan) || !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan))
             {
                 Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.MESSAGE_READ+", "+Permission.MESSAGE_WRITE+
-                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event.getChannel(), event.getMessage().getId());
+                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event);
                 return false;
             }
             String str = "";
@@ -196,7 +196,7 @@ public class Feed extends Command {
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.ANNOUNCEMENTS+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
             feeds.set(new String[]{event.getTextChannel().getId(),Feeds.Type.ANNOUNCEMENTS.toString(),event.getGuild().getId(),""});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.ANNOUNCEMENTS+" has been added to <#"+event.getTextChannel().getId()+">";
-            Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(str, event);
             return true;
         }
     }
@@ -214,7 +214,7 @@ public class Feed extends Command {
             List<String[]> feedlist = feeds.findFeedsForGuild(event.getGuild());
             if(feedlist.isEmpty())
             {
-                Sender.sendResponse(SpConst.WARNING+"No feeds found on **"+event.getGuild().getName()+"**", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.WARNING+"No feeds found on **"+event.getGuild().getName()+"**", event);
                 return true;
             }
             StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(feedlist.size()).append(" feeds found on **").append(event.getGuild().getName()).append("**:");
@@ -222,7 +222,7 @@ public class Feed extends Command {
                 builder.append("\n`").append(feed[Feeds.FEEDTYPE]).append("` - <#").append(feed[Feeds.CHANNELID])
                         .append(">").append((feed[Feeds.DETAILS]!=null && !feed[Feeds.DETAILS].equals("")) ? " : "+feed[Feeds.DETAILS] : "");
             });
-            Sender.sendResponse(builder.toString(), event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(builder.toString(), event);
             return true;
         }
     }
@@ -244,17 +244,17 @@ public class Feed extends Command {
             List<String[]> feedlist = feeds.findFeedsForGuild(event.getGuild());
             if(feedlist.isEmpty())
             {
-                Sender.sendResponse(SpConst.WARNING+"No feeds found on **"+event.getGuild().getName()+"**", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.WARNING+"No feeds found on **"+event.getGuild().getName()+"**", event);
                 return true;
             }
             for(String[] feed : feedlist)
                 if((feed[Feeds.FEEDTYPE]+((feed[Feeds.DETAILS]!=null && !feed[Feeds.DETAILS].equals("")) ? " "+feed[Feeds.DETAILS] : "")).equalsIgnoreCase(feedname))
                 {
                     feeds.removeFeed(feed);
-                    Sender.sendResponse(SpConst.SUCCESS+"Removed feed `"+feed[Feeds.FEEDTYPE]+"` from <#"+feed[Feeds.CHANNELID]+">", event.getChannel(), event.getMessage().getId());
+                    Sender.sendResponse(SpConst.SUCCESS+"Removed feed `"+feed[Feeds.FEEDTYPE]+"` from <#"+feed[Feeds.CHANNELID]+">", event);
                     return true;
                 }
-            Sender.sendResponse(SpConst.ERROR+"No feeds found matching \""+feedname+"\"", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.ERROR+"No feeds found matching \""+feedname+"\"", event);
             return false;
         }
     }

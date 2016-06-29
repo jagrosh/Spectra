@@ -48,7 +48,7 @@ public class About extends Command{
             "\nFor additional help, contact **jagrosh** (ID:"+SpConst.JAGROSH_ID+")"+
             "\nYou can send him a Direct Message, or join his server:"+
             "\nhttps://discord.gg/0p9LSGoRLu6Pet0k";
-        Sender.sendResponse(aboutText, event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse(aboutText, event);
         return true;
     }
     

@@ -94,11 +94,10 @@ public class Tag extends Command{
             tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
         if(tag==null)
         {
-            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
             return false;
         }
-        Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), 
-                event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event);
         return true;
     }
     
@@ -131,7 +130,7 @@ public class Tag extends Command{
                 tagname,
                 contents
                 });
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" created successfully.", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" created successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
@@ -143,7 +142,7 @@ public class Tag extends Command{
             }
             else
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tag[Tags.TAGNAME]+"\" already exists.", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tag[Tags.TAGNAME]+"\" already exists.", event);
                 return false;
             }
         }
@@ -168,13 +167,13 @@ public class Tag extends Command{
             String[] tag = tags.findTag(tagname);
             if(tag==null)//nothing to edit
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()))
             {
                 tags.removeTag(tag[Tags.TAGNAME]);
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
@@ -194,7 +193,7 @@ public class Tag extends Command{
                     //owner = "the server *"+event.getGuild().getName()+"*";
                 else
                     owner = "an unknown user (ID:"+tag[Tags.OWNERID]+")";
-                Sender.sendResponse(SpConst.ERROR+"You cannot delete tag \""+tag[Tags.TAGNAME]+"\" because it belongs to **"+owner+"**", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"You cannot delete tag \""+tag[Tags.TAGNAME]+"\" because it belongs to **"+owner+"**", event);
                 return false;
             }
         }
@@ -220,7 +219,7 @@ public class Tag extends Command{
             String[] tag = tags.findTag(tagname);
             if(tag==null)//nothing to edit
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
@@ -230,7 +229,7 @@ public class Tag extends Command{
                 tag[Tags.TAGNAME],
                 contents
                 });
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" edited successfully.", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" edited successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
@@ -250,7 +249,7 @@ public class Tag extends Command{
                     //owner = "the server *"+event.getGuild().getName()+"*";
                 else
                     owner = "an unknown user (ID:"+tag[Tags.OWNERID]+")";
-                Sender.sendResponse(SpConst.ERROR+"You cannot edit tag \""+tag[Tags.TAGNAME]+"\" because it belongs to **"+owner+"**", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"You cannot edit tag \""+tag[Tags.TAGNAME]+"\" because it belongs to **"+owner+"**", event);
                 return false;
             }
         }
@@ -285,7 +284,7 @@ public class Tag extends Command{
             taglist.stream().forEach((tag) -> {
                 builder.append(tag).append(" ");
             });
-            Sender.sendResponse(builder.toString(), event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(builder.toString(), event);
             return true;
         }
     }
@@ -312,7 +311,7 @@ public class Tag extends Command{
                 tag = tags.findTag(tagname, event.getGuild(), false, true);
             if(tag==null)
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
             String owner;
@@ -323,7 +322,7 @@ public class Tag extends Command{
                 owner = "the server *"+event.getGuild().getName()+"*";
             else
                 owner = "an unknown user (ID:"+tag[Tags.OWNERID]+")";
-            Sender.sendResponse("Tag \""+tag[Tags.TAGNAME]+"\" belongs to "+owner, event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse("Tag \""+tag[Tags.TAGNAME]+"\" belongs to "+owner, event);
             return true;
         }
     }
@@ -353,13 +352,13 @@ public class Tag extends Command{
             List<String[]> taglist = tags.findTags(null, event.getGuild(), local, nsfw);
             if(taglist.isEmpty())
             {
-                Sender.sendResponse(SpConst.WARNING+"No tags found!", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.WARNING+"No tags found!", event);
                 return false;
             }
             String[] tag = taglist.get((int)(Math.random()*taglist.size()));
             Sender.sendResponse("Tag \""+tag[Tags.TAGNAME]+"\":\n"
                     +JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()),
-                    event.getChannel(), event.getMessage().getId());
+                    event);
             return true;
         }
     }
@@ -393,10 +392,10 @@ public class Tag extends Command{
                 tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
             if(tag==null)
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            Sender.sendResponse("\u180E"+tag[Tags.CONTENTS], event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse("\u180E"+tag[Tags.CONTENTS], event);
             return true;
         }
     }
@@ -430,10 +429,10 @@ public class Tag extends Command{
                 tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
             if(tag==null)
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            Sender.sendResponse("```\n"+tag[Tags.CONTENTS]+"```", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse("```\n"+tag[Tags.CONTENTS]+"```", event);
             return true;
         }
     }
@@ -465,7 +464,7 @@ public class Tag extends Command{
             List<String[]> taglist = tags.findTags(query, event.getGuild(), local, nsfw);
             if(taglist.isEmpty())
             {
-                Sender.sendResponse(SpConst.WARNING+"No tags found matching \""+query+"\"!", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.WARNING+"No tags found matching \""+query+"\"!", event);
                 return false;
             }
             StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(taglist.size()).append(" tags found");
@@ -477,7 +476,7 @@ public class Tag extends Command{
             taglist.stream().forEach((tag) -> {
                 builder.append(tag[Tags.TAGNAME]).append(" ");
             });
-            Sender.sendResponse(builder.toString(),event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(builder.toString(),event);
             return true;
         }
     }
@@ -511,13 +510,13 @@ public class Tag extends Command{
                 tag = tags.findTag(tagname);
             if(tag==null)//nothing to edit
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
             else
             {
                 overrides.setTag(new String[]{"g"+event.getGuild().getId(),tag[Overrides.TAGNAME],contents});
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event);
                 handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
@@ -539,7 +538,7 @@ public class Tag extends Command{
             {
                 List<String> list = overrides.findGuildTags(event.getGuild());
                 if(list.isEmpty())
-                    Sender.sendResponse(SpConst.WARNING+"No tags have been overriden on **"+event.getGuild().getName()+"**", event.getChannel(), event.getMessage().getId());
+                    Sender.sendResponse(SpConst.WARNING+"No tags have been overriden on **"+event.getGuild().getName()+"**", event);
                 else
                 {
                     Collections.sort(list);
@@ -547,7 +546,7 @@ public class Tag extends Command{
                     list.stream().forEach((tag) -> {
                         builder.append(tag).append(" ");
                     });
-                    Sender.sendResponse(builder.toString(), event.getChannel(), event.getMessage().getId());
+                    Sender.sendResponse(builder.toString(), event);
                 }
                 return true;
             }
@@ -572,13 +571,13 @@ public class Tag extends Command{
             String[] tag = overrides.findTag(event.getGuild(), tagname, true);
             if(tag==null)
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently overriden", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently overriden", event);
                 return false;
             }
             else
             {
                 overrides.removeTag(tag);
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" restored successfully.", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" restored successfully.", event);
                 handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") restored tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
@@ -614,21 +613,21 @@ public class Tag extends Command{
                     tag = tags.findTag(tagname);
                 if(tag==null)//nothing to import
                 {
-                    Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event.getChannel(), event.getMessage().getId());
+                    Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                     return false;
                 }
                 else
                 {
                     String cmds = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
                     settings.setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds==null?tag[Tags.TAGNAME]:cmds+" "+tag[Tags.TAGNAME]);
-                    Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" has been added a tag command", event.getChannel(), event.getMessage().getId());
+                    Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" has been added a tag command", event);
                     handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") imported tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
                     return true;
                 }
             }
-            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is already a tag command!", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is already a tag command!", event);
             return false;
         }
     }
@@ -661,13 +660,13 @@ public class Tag extends Command{
             if(found)
             {
                 settings.setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, builder.toString().trim());
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" is no longer a tag command", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" is no longer a tag command", event);
                 handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") unimported tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
                 return true;
             }
-            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently a tag command!", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently a tag command!", event);
             return false;
         }
     }

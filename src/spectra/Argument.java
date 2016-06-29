@@ -25,14 +25,14 @@ public class Argument {
     final String name;
     final Type type;
     
-    final int min,max;
+    final long min,max;
     
     public Argument(String name, Type type, boolean required)
     {
         this(name,type,required,Integer.MIN_VALUE,Integer.MAX_VALUE);
     }
     
-    public Argument(String name, Type type, boolean required, int min, int max)
+    public Argument(String name, Type type, boolean required, long min, long max)
     {
         this.name = name;
         this.type = type;

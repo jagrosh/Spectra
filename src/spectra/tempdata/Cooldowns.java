@@ -38,6 +38,19 @@ public class Cooldowns {
         return cooldownsInstance;
     }
     
+    public synchronized long check(String key)
+    {
+        if(key==null)
+            return 0;
+        OffsetDateTime time = cooldowns.get(key);
+        if(time==null)
+            return 0;
+        long seconds = OffsetDateTime.now().until(time, ChronoUnit.SECONDS);
+        if(seconds <= 0)
+            return 0;
+        return seconds;
+    }
+    
     public synchronized long checkAndApply(String key, int newseconds)
     {
         if(key==null || newseconds==0)

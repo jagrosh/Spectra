@@ -110,7 +110,7 @@ public class Info extends Command{
         if(url!=null)
             str+="\n"+SpConst.LINESTART+"Avatar: "+url;
         
-        Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse(str, event);
         return true;
     }
     

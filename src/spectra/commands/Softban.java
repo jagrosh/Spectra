@@ -15,6 +15,8 @@
  */
 package spectra.commands;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
@@ -26,6 +28,7 @@ import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.datasources.Feeds;
+import spectra.datasources.Mutes;
 import spectra.datasources.Settings;
 
 /**
@@ -35,12 +38,14 @@ import spectra.datasources.Settings;
 public class Softban extends Command {
     final FeedHandler handler;
     final Settings settings;
-    public Softban(FeedHandler handler, Settings settings)
+    final Mutes mutes;
+    public Softban(FeedHandler handler, Settings settings, Mutes mutes)
     {
         this.handler = handler;
         this.settings = settings;
+        this.mutes = mutes;
         this.command = "softban";
-        this.help = "temporarily bans a user from the server";
+        this.help = "mutes and temporarily bans a user from the server";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,true),
             new Argument("for <reason>",Argument.Type.LONGSTRING,false)
@@ -48,6 +53,9 @@ public class Softban extends Command {
         this.separatorRegex = "\\s+for\\s+";
         this.availableInDM=false;
         this.level = PermLevel.MODERATOR;
+        this.requiredPermissions = new Permission[] {
+            Permission.BAN_MEMBERS
+        };
     }
 
     @Override
@@ -60,21 +68,14 @@ public class Softban extends Command {
         //check perm level of other user
         if(targetLevel.isAtLeast(level))
         {
-            Sender.sendResponse(SpConst.WARNING+"**"+target.getUsername()+"** cannot be softbanned because they are listed as "+targetLevel, event.getChannel(), event.getMessage().getId());
-            return false;
-        }
-        
-        //check if bot can kick
-        if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.BAN_MEMBERS, event.getGuild()))
-        {
-            Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.BAN_MEMBERS), event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.WARNING+"**"+target.getUsername()+"** cannot be softbanned because they are listed as "+targetLevel, event);
             return false;
         }
         
         //check if bot can interact with the other user
         if(!PermissionUtil.canInteract(event.getJDA().getSelfInfo(), target, event.getGuild()))
         {
-            Sender.sendResponse(SpConst.WARNING+"I cannot softban **"+target.getUsername()+"** due to permission hierarchy", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.WARNING+"I cannot softban **"+target.getUsername()+"** due to permission hierarchy", event);
             return false;
         }
         
@@ -82,7 +83,10 @@ public class Softban extends Command {
         try{
             String id = target.getId();
             event.getGuild().getManager().ban(id, 1);
-            Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was softbanned from the server \uD83C\uDF4C", event.getChannel(), event.getMessage().getId());
+            String[] prevmute = mutes.getMute(id, event.getGuild().getId());
+            if(prevmute==null || OffsetDateTime.now().plusDays(1).isAfter(OffsetDateTime.parse(prevmute[Mutes.UNMUTETIME])))
+                mutes.set(new String[]{id,event.getGuild().getId(),OffsetDateTime.now().plusDays(1).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)});
+            Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was softbanned from the server \uD83C\uDF4C", event);
             handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                     "\uD83C\uDF4C **"+event.getAuthor().getUsername()+"** softbanned **"+target.getUsername()+"** for "+reason);
             new Thread(){
@@ -93,7 +97,7 @@ public class Softban extends Command {
             return true;
         }catch(Exception e)
         {
-            Sender.sendResponse(SpConst.ERROR+"Failed to softban **"+target.getUsername()+"**", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.ERROR+"Failed to softban **"+target.getUsername()+"**", event);
             return false;
         }
     }

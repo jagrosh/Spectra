@@ -18,7 +18,6 @@ package spectra.commands;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Supplier;
 import javax.imageio.ImageIO;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
@@ -55,7 +54,7 @@ public class Avatar extends Command {
         String str = "Avatar for **"+user.getUsername()+"**:";
         BufferedImage bi = OtherUtil.imageFromUrl(url);
         if(bi==null)
-            Sender.sendResponse(str+"\n"+url, event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(str+"\n"+url, event);
         else
         {
             
@@ -65,7 +64,7 @@ public class Avatar extends Command {
                     ImageIO.write(bi, "png", f);
                 } catch (IOException ex) {System.out.println("[ERROR] Could not save avatar");}
                 return new Tuple<>(str,f);
-            }, str+"\n"+url, event.getChannel(), event.getMessage().getId());
+            }, str+"\n"+url, event);
         }
         return true;
     }

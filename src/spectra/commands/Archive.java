@@ -52,6 +52,9 @@ public class Archive extends Command{
             new Argument("channel",Argument.Type.TEXTCHANNEL,false)};//<numposts> [channel]
         this.cooldown=120;
         this.cooldownKey = (event) -> {return event.getAuthor()+"|"+(event.isPrivate() ? "PC" : event.getTextChannel().getId()+"|archive");};
+        this.requiredPermissions = new Permission[]{
+            Permission.MESSAGE_ATTACH_FILES
+        };
     }
     
     @Override
@@ -71,19 +74,13 @@ public class Archive extends Command{
             //check permission of user
             if(!PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_HISTORY, channel) || !PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_READ, channel))
             {
-                Sender.sendResponse(SpConst.ERROR+"You can only archive channels in which you can see the Message History!",event.getChannel(),event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"You can only archive channels in which you can see the Message History!",event);
                 return false;
             }
             //check permission of bot
             if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_HISTORY, channel))
             {
-                Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_HISTORY), event.getChannel(), event.getMessage().getId());
-                return false;
-            }
-            
-            if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, event.getTextChannel()))
-            {
-                Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_ATTACH_FILES), event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_HISTORY), event);
                 return false;
             }
             
@@ -103,7 +100,7 @@ public class Archive extends Command{
             String str = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages:";
             File f = OtherUtil.writeArchive(builder.toString(), "archive "+event.getMessage().getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME).replace(":", ""));
             return new Tuple<>(str,f);
-        },event.getChannel(),event.getMessage().getId());
+        },event);
         return true;
     }
 }

@@ -17,13 +17,12 @@ package spectra;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.function.Supplier;
 import net.dv8tion.jda.MessageBuilder;
 import net.dv8tion.jda.Permission;
-import net.dv8tion.jda.entities.MessageChannel;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.entities.Tuple;
 import spectra.tempdata.CallDepend;
@@ -35,48 +34,46 @@ import spectra.tempdata.CallDepend;
 public class Sender { 
     
     //for replying to commands
-    public static void sendResponse(String message, MessageChannel chan, String dependency)
+    public static void sendResponse(String message, MessageReceivedEvent event)
     {
-        Objects.requireNonNull(dependency);
         ArrayList<String> bits = splitMessage(message);
         bits.stream().forEach((bit) -> {
-            chan.sendMessageAsync(bit, m -> {
-                if(chan instanceof TextChannel)
-                    CallDepend.getInstance().add(dependency, m);
+            event.getChannel().sendMessageAsync(bit, m -> {
+                if(event.getChannel() instanceof TextChannel)
+                    CallDepend.getInstance().add(event.getMessage().getId(), m);
             });
         });
     }
     
     //reply with a file (or permission error)
-    public static void sendFileResponse(Supplier<Tuple<String,File>> message, MessageChannel chan, String dependency)
+    public static void sendFileResponse(Supplier<Tuple<String,File>> message, MessageReceivedEvent event)
     {
-        sendFileResponseWithAlternate(message, null, chan, dependency);
+        sendFileResponseWithAlternate(message, null, event);
     }
     
     //reply with a file, or text if a file can't be sent
-    public static void sendFileResponseWithAlternate(Supplier<Tuple<String,File>> message, String alternate, MessageChannel chan, String dependency)
+    public static void sendFileResponseWithAlternate(Supplier<Tuple<String,File>> message, String alternate, MessageReceivedEvent event)
     {
-        Objects.requireNonNull(dependency);
-        if(chan instanceof TextChannel)
+        if(!event.isPrivate())
         {
-            if(!PermissionUtil.checkPermission(((TextChannel)chan).getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, (TextChannel)chan))
+            if(!PermissionUtil.checkPermission(event.getTextChannel().getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, event.getTextChannel()))
             {
-                sendResponse(alternate==null ? String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_ATTACH_FILES) : alternate , chan, dependency);
+                sendResponse(alternate==null ? String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_ATTACH_FILES) : alternate , event);
                 return;
             }
         }
-        chan.sendTyping();
+        event.getChannel().sendTyping();
         Tuple<String,File> tuple = message.get();
         String msg = tuple.getFirst();
         File file = tuple.getSecond();
-        chan.sendFileAsync(file, msg==null ? null : new MessageBuilder().appendString(msg.length() > 2000 ? msg.substring(0, 2000) : msg).build(), m -> {
-                if(chan instanceof TextChannel)
-                    CallDepend.getInstance().add(dependency, m);
+        event.getChannel().sendFileAsync(file, msg==null ? null : new MessageBuilder().appendString(msg.length() > 2000 ? msg.substring(0, 2000) : msg).build(), m -> {
+                if(!event.isPrivate())
+                    CallDepend.getInstance().add(event.getMessage().getId(), m);
             });
     }
     
     //send help (warn if can't send)
-    public static void sendHelp(String message, PrivateChannel pchan, TextChannel fallback, String dependency)//dependency for fallback
+    public static void sendHelp(String message, PrivateChannel pchan, MessageReceivedEvent event)//dependency for fallback
     {
         ArrayList<String> bits = splitMessage(message);
         for(int i=0; i<bits.size(); i++)
@@ -84,9 +81,9 @@ public class Sender {
             boolean first = (i == 0);
             pchan.sendMessageAsync(bits.get(i), m ->
             {
-                if(m==null && first && fallback!=null)//failed to send
+                if(m==null && first && !event.isPrivate())//failed to send
                 {
-                    sendResponse(SpConst.CANT_HELP, fallback, dependency);
+                    sendResponse(SpConst.CANT_HELP, event);
                 }
             });
         }

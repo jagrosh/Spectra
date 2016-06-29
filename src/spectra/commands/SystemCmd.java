@@ -51,7 +51,7 @@ public class SystemCmd extends Command {
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) 
     {
-        Sender.sendResponse("\uD83D\uDCDF Please specify a system command.", event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse("\uD83D\uDCDF Please specify a system command.", event);
         return false;
     }
     
@@ -67,12 +67,12 @@ public class SystemCmd extends Command {
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             if(spectra.isIdling())
             {
-                Sender.sendResponse(SpConst.ERROR+"**"+SpConst.BOTNAME+"** is already `IDLING`", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"**"+SpConst.BOTNAME+"** is already `IDLING`", event);
                 return false;
             }
             spectra.setIdling(true);
             event.getJDA().getAccountManager().setIdle(true);
-            Sender.sendResponse("\uD83D\uDCF4 **"+SpConst.BOTNAME+"** is now `IDLING`", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse("\uD83D\uDCF4 **"+SpConst.BOTNAME+"** is now `IDLING`", event);
             return true;
         }
     }
@@ -89,12 +89,12 @@ public class SystemCmd extends Command {
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             if(!spectra.isIdling())
             {
-                Sender.sendResponse(SpConst.ERROR+"**"+SpConst.BOTNAME+"** is already `READY`", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"**"+SpConst.BOTNAME+"** is already `READY`", event);
                 return false;
             }
             spectra.setIdling(false);
             event.getJDA().getAccountManager().setIdle(false);
-            Sender.sendResponse(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now `READY`", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now `READY`", event);
             return true;
         }
     }
@@ -111,13 +111,13 @@ public class SystemCmd extends Command {
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             if(!spectra.isIdling())
             {
-                Sender.sendResponse(SpConst.ERROR+"Cannot shutdown if not idling!", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"Cannot shutdown if not idling!", event);
                 return false;
             }
             try{
             event.getJDA().getTextChannelById(feeds.feedForGuild(event.getJDA().getGuildById(SpConst.JAGZONE_ID), Feeds.Type.BOTLOG)[Feeds.CHANNELID])
                     .sendMessage(SpConst.WARNING+"**BOT SHUTTING DOWN**"+SpConst.WARNING+"\nRuntime: "+FormatUtil.secondsToTime(spectra.getStart().until(OffsetDateTime.now(), ChronoUnit.SECONDS)));
-            event.getChannel().sendMessage("Shutting down...");}catch(Exception e){System.err.println(e);}
+            event.getChannel().sendMessage("\uD83D\uDCDF Shutting down...");}catch(Exception e){System.err.println(e);}
             spectra.shutdown(event.getJDA());
             return true;
         }

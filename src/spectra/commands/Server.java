@@ -59,7 +59,7 @@ public class Server extends Command {
         if(guild.getIconUrl()!=null)
             str+="\n"+SpConst.LINESTART+"Server Icon: "+guild.getIconUrl();
         
-        Sender.sendResponse(str, event.getChannel(), event.getMessage().getId());
+        Sender.sendResponse(str, event);
         return true;
     }
 }

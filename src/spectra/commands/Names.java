@@ -48,9 +48,9 @@ public class Names extends Command {
             user = event.getAuthor();
         String names = savednames.getNames(user.getId());
         if(names==null)
-            Sender.sendResponse(SpConst.WARNING+"No previous names recorded for **"+user.getUsername()+"**!", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.WARNING+"No previous names recorded for **"+user.getUsername()+"**!", event);
         else
-            Sender.sendResponse(FormatUtil.demention(SpConst.SUCCESS+"Previous names for **"+user.getUsername()+"**:\n"+names), event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(FormatUtil.demention(SpConst.SUCCESS+"Previous names for **"+user.getUsername()+"**:\n"+names), event);
         return true;
     }
 }

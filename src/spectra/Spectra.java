@@ -24,6 +24,11 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDA;
@@ -31,6 +36,7 @@ import net.dv8tion.jda.JDABuilder;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.DisconnectEvent;
 import net.dv8tion.jda.events.ReadyEvent;
 import net.dv8tion.jda.events.ReconnectedEvent;
@@ -73,28 +79,148 @@ public class Spectra extends ListenerAdapter {
     static final OffsetDateTime start = OffsetDateTime.now();
     OffsetDateTime lastDisconnect;
     
-    final FeedHandler handler;
+    
     //datasources
     final Feeds feeds;
+    final Mutes mutes;
     final Overrides overrides;
     final SavedNames savednames;
     final Settings settings;
     final Tags tags;
     
+    //handlers
+    final FeedHandler handler;
+    
     //tempdata
     final MessageCache messagecache;
     
+    //timers
+    final ScheduledExecutorService feedflusher;
+    final ScheduledExecutorService unmuter;
 
+    
+    public static void main(String[] args)
+    {
+        new Spectra().init();
+    }
+    
+    public Spectra()
+    {
+        feeds       = new Feeds();
+        mutes       = new Mutes();
+        overrides   = new Overrides();
+        savednames  = new SavedNames();
+        settings    = new Settings();
+        tags        = new Tags();
+        
+        handler = new FeedHandler(feeds);
+        messagecache = new MessageCache();
+        
+        feedflusher = Executors.newSingleThreadScheduledExecutor();
+        unmuter  = Executors.newSingleThreadScheduledExecutor();
+    }
+    
+    public void init()
+    {
+        feeds.read();
+        mutes.read();
+        overrides.read();
+        savednames.read();
+        settings.read();
+        tags.read();
+        
+        commands = new Command[]{
+            new About(),
+            new Archive(),
+            new Avatar(),
+            new Channel(),
+            new Draw(),
+            new Info(),
+            new Invite(),
+            new Names(savednames),
+            new Ping(),
+            new Server(),
+            new Tag(tags, overrides, settings, handler),
+            
+            new BotScan(),
+            new Kick(handler, settings),
+            new Mute(handler, settings, mutes),
+            new Softban(handler, settings, mutes),
+            
+            new Feed(feeds),
+            new SystemCmd(this,feeds)
+        };
+        
+        try {
+            jda = new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).setBulkDeleteSplittingEnabled(false).buildAsync();
+        } catch (LoginException | IllegalArgumentException ex) {
+            System.err.println("ERROR - Building JDA : "+ex.toString());
+            System.exit(1);
+        }
+    }
+    
     @Override
     public void onReady(ReadyEvent event) {
         event.getJDA().getAccountManager().setGame("Type "+SpConst.PREFIX+"help");
-        feedFlusher.start();
+        
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
                         + "Started up in "+FormatUtil.secondsToTime(start.until(OffsetDateTime.now(), ChronoUnit.SECONDS)));
+        
+        feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}, 0, 20, TimeUnit.SECONDS);
+        unmuter.scheduleWithFixedDelay(()->{
+            List<String[]> expiredMutes = mutes.getExpiredMutes();
+            List<String[]> finished = new ArrayList<>();
+            for(String[] mute : expiredMutes)
+            {
+                Guild guild = jda.getGuildById(mute[Mutes.SERVERID]);
+                if(guild==null)
+                    finished.add(mute);
+                else if(guild.isAvailable())
+                {
+                    finished.add(mute);
+                    User u = jda.getUserById(mute[Mutes.USERID]);
+                    if(guild.isMember(u))
+                    {
+                        for(Role r : guild.getRolesForUser(u))
+                            if(r.getName().equalsIgnoreCase("Muted"))
+                            {
+                                try{
+                                guild.getManager().removeRoleFromUser(u, r).update();
+                                handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 **"+u.getUsername()+"** (ID:"+u.getId()+") was unmuted.");
+                                }catch(Exception e){System.out.println("Unable to remove a muted role on "+guild.getName()+" ("+guild.getId()+")");}
+                                break;
+                            }
+                    }
+                    else
+                    {
+                        handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 "+(u==null ? "[???]" :"**"+u.getUsername()+"**")+" (ID:"+mute[Mutes.USERID]+") was unmuted.");
+                    }
+                }
+            }
+            if(!finished.isEmpty())
+                mutes.removeAll(finished);
+        }, 0, 10, TimeUnit.SECONDS);
     }
-
+    
+    public void shutdown(JDA jda)
+    {
+        jda.shutdown();
+        isRunning=false;
+        
+        feeds.shutdown();
+        mutes.shutdown();
+        overrides.shutdown();
+        savednames.shutdown();
+        settings.shutdown();
+        tags.shutdown();
+        
+        feedflusher.shutdown();
+        unmuter.shutdown();
+    }
+    
+    
     @Override
     public void onDisconnect(DisconnectEvent event) {
         lastDisconnect = OffsetDateTime.now();
@@ -183,7 +309,7 @@ public class Spectra extends ListenerAdapter {
                 {
                     if( perm.isAtLeast(com.level) )
                     {
-                        if(com.level==PermLevel.MODERATOR)
+                        if(com.level==PermLevel.MODERATOR&& !current.isAtLeast(PermLevel.MODERATOR))
                         {
                             current = PermLevel.MODERATOR;
                             helpmsg+= "\n**Moderator Commands:**";
@@ -205,7 +331,7 @@ public class Spectra extends ListenerAdapter {
                 helpmsg+="\nFor commands, `<argument>` refers to a required argument, while `[argument]` is optional";
                 helpmsg+="\nDo not add <> or [] to your arguments, nor quotation marks";
                 helpmsg+="\nFor more help, contact **@jagrosh** (<@"+SpConst.JAGROSH_ID+">) or join "+SpConst.JAGZONE_INVITE;
-                Sender.sendHelp(helpmsg, event.getAuthor().getPrivateChannel(), event.getTextChannel(), event.getMessage().getId());
+                Sender.sendHelp(helpmsg, event.getAuthor().getPrivateChannel(), event);
             }
             else//wasn't base help command
             {
@@ -253,12 +379,11 @@ public class Spectra extends ListenerAdapter {
                                 tag = tags.findTag(cmd, null, false, nsfw);
                             if(tag==null)
                             {
-                                Sender.sendResponse(SpConst.ERROR+"Tag \""+cmd+"\" no longer exists!", event.getChannel(), event.getMessage().getId());
+                                Sender.sendResponse(SpConst.ERROR+"Tag \""+cmd+"\" no longer exists!", event);
                             }
                             else
                             {
-                                Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], args[1], event.getAuthor(), event.getGuild(), event.getChannel()), 
-                                    event.getChannel(), event.getMessage().getId());
+                                Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], args[1], event.getAuthor(), event.getGuild(), event.getChannel()), event);
                             }
                         }
                 }
@@ -435,43 +560,7 @@ public class Spectra extends ListenerAdapter {
     }
     
     
-    public void init()
-    {
-        commands = new Command[]{
-            new About(),
-            new Archive(),
-            new Avatar(),
-            new Channel(),
-            new Draw(),
-            new Info(),
-            new Invite(),
-            new Names(savednames),
-            new Ping(),
-            new Server(),
-            new Tag(tags, overrides, settings, handler),
-            
-            new BotScan(),
-            new Kick(handler, settings),
-            new Softban(handler, settings),
-            
-            new Feed(feeds),
-            new SystemCmd(this,feeds)
-        };
-        
-        feeds.read();
-        overrides.read();
-        savednames.read();
-        settings.read();
-        tags.read();
-        
-        
-        try {
-            jda = new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).setBulkDeleteSplittingEnabled(false).buildAsync();
-        } catch (LoginException | IllegalArgumentException ex) {
-            System.err.println("ERROR - Building JDA : "+ex.toString());
-            System.exit(1);
-        }
-    }
+    
     
     public boolean isIdling()
     {
@@ -488,41 +577,5 @@ public class Spectra extends ListenerAdapter {
         return start;
     }
     
-    public void shutdown(JDA jda)
-    {
-        jda.shutdown();
-        isRunning=false;
-        feeds.shutdown();
-        overrides.shutdown();
-        savednames.shutdown();
-        settings.shutdown();
-        tags.shutdown();
-    }
     
-    public Spectra()
-    {
-        feeds = new Feeds();
-        overrides = new Overrides();
-        savednames = new SavedNames();
-        settings = new Settings();
-        tags = new Tags();
-        handler = new FeedHandler(feeds);
-        messagecache = new MessageCache();
-        feedFlusher = new Thread(){
-            @Override
-            public void run()
-            {
-                while(isRunning)
-                {
-                    handler.flush(jda);
-                    try{Thread.sleep(20000);}catch(InterruptedException e){}
-                }
-            }
-        };
-    }
-    
-    public static void main(String[] args)
-    {
-        new Spectra().init();
-    }
 }

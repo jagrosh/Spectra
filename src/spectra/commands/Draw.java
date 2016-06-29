@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
@@ -42,6 +43,9 @@ public class Draw extends Command{
         this.arguments = new Argument[]{
             new Argument("hexcolor",Argument.Type.SHORTSTRING,false)
         };
+        this.requiredPermissions = new Permission[]{
+            Permission.MESSAGE_ATTACH_FILES
+        };
     }
 
     @Override
@@ -57,7 +61,7 @@ public class Draw extends Command{
             try{
                 color = Color.decode(in);
             }catch(NumberFormatException e){
-                Sender.sendResponse(SpConst.ERROR+"\""+in+"\" is not a valid color.", event.getChannel(), event.getMessage().getId());
+                Sender.sendResponse(SpConst.ERROR+"\""+in+"\" is not a valid color.", event);
                 return false;
             }
         }
@@ -70,7 +74,7 @@ public class Draw extends Command{
                     System.out.println("[ERROR] An error occured drawing the wave.");
                 }
             return new Tuple<>(null,f);
-        }, event.getChannel(), event.getMessage().getId());
+        }, event);
         return true;
     }
 }

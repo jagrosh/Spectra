@@ -48,6 +48,9 @@ public class Kick extends Command {
         this.separatorRegex = "\\s+for\\s+";
         this.availableInDM=false;
         this.level = PermLevel.MODERATOR;
+        this.requiredPermissions = new Permission[]{
+            Permission.KICK_MEMBERS
+        };
     }
 
     @Override
@@ -60,34 +63,27 @@ public class Kick extends Command {
         //check perm level of other user
         if(targetLevel.isAtLeast(level))
         {
-            Sender.sendResponse(SpConst.WARNING+"**"+target.getUsername()+"** cannot be kicked because they are listed as "+targetLevel, event.getChannel(), event.getMessage().getId());
-            return false;
-        }
-        
-        //check if bot can kick
-        if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.KICK_MEMBERS, event.getGuild()))
-        {
-            Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.KICK_MEMBERS), event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.WARNING+"**"+target.getUsername()+"** cannot be kicked because they are listed as "+targetLevel, event);
             return false;
         }
         
         //check if bot can interact with the other user
         if(!PermissionUtil.canInteract(event.getJDA().getSelfInfo(), target, event.getGuild()))
         {
-            Sender.sendResponse(SpConst.WARNING+"I cannot kick **"+target.getUsername()+"** due to permission hierarchy", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.WARNING+"I cannot kick **"+target.getUsername()+"** due to permission hierarchy", event);
             return false;
         }
         
         //attempt to kick
         try{
             event.getGuild().getManager().kick(target);
-            Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was kicked from the server \uD83D\uDC62", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was kicked from the server \uD83D\uDC62", event);
             handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                     "\uD83D\uDC62 **"+event.getAuthor().getUsername()+"** kicked **"+target.getUsername()+"** (ID:"+target.getId()+") for "+reason);
             return true;
         }catch(Exception e)
         {
-            Sender.sendResponse(SpConst.ERROR+"Failed to kick **"+target.getUsername()+"**", event.getChannel(), event.getMessage().getId());
+            Sender.sendResponse(SpConst.ERROR+"Failed to kick **"+target.getUsername()+"**", event);
             return false;
         }
     }
