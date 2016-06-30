@@ -142,6 +142,7 @@ public class Spectra extends ListenerAdapter {
             new Server(),
             new Tag(tags, overrides, settings, handler),
             
+            new Ban(handler, settings),
             new BotScan(),
             new Kick(handler, settings),
             new Mute(handler, settings, mutes),

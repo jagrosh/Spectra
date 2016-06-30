@@ -80,7 +80,7 @@ public abstract class Command {
                         switch(current)
                         {
                             case MODERATOR:
-                                builder.append("\n**Mod Commands**:");
+                                builder.append("\n**Moderator Commands**:");
                                 break;
                             case ADMIN:
                                 builder.append("\n**Admin Commands**:");

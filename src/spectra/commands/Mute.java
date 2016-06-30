@@ -166,6 +166,11 @@ public class Mute extends Command {
                     builder.append("ID:").append(savedmute[Mutes.USERID]).append(" ends in ").append(FormatUtil.secondsToTime(OffsetDateTime.now().until(OffsetDateTime.parse(savedmute[Mutes.UNMUTETIME]), ChronoUnit.SECONDS)));
                 }
             }
+            if(count==0)
+            {
+                Sender.sendResponse(SpConst.WARNING+"There are no muted users!", event);
+                return true;
+            }
             Sender.sendResponse(SpConst.SUCCESS+"**"+count+"** users muted on **"+event.getGuild().getName()+"**:"+builder.toString(), event);
             return true;
         }

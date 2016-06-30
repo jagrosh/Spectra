@@ -79,7 +79,7 @@ public class Softban extends Command {
             return false;
         }
         
-        //attempt to kick
+        //attempt to softban
         try{
             String id = target.getId();
             event.getGuild().getManager().ban(id, 1);

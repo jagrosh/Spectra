@@ -200,12 +200,12 @@ public class FeedHandler {
         }
     }
     
-    private static String logFormat(String text)
+    public static String logFormat(String text)
     {
         return "`["+OffsetDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME).substring(0,8)+"]` "+FormatUtil.demention(text);
     }
     
-    private static String botlogFormat(String text)
+    public static String botlogFormat(String text)
     {
         return "`["+OffsetDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME).substring(0,8)+"]` "+text;
     }
