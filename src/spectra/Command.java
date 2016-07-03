@@ -183,6 +183,11 @@ public abstract class Command {
                 case SHORTSTRING:{
                     String[] parts = FormatUtil.cleanSplit(workingSet);
                     parsedArgs[i] = parts[0];
+                    if(parts[0].length() < arguments[i].min || parts[0].length() > arguments[i].max)
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_LENGTH, arguments[i].name, arguments[i].min, arguments[i].max), event);
+                        return false;
+                    }
                     workingSet = parts[1];
                     break;}
                 case LONGSTRING:{
@@ -191,6 +196,11 @@ public abstract class Command {
                         parts = new String[]{workingSet,null};
                     else
                         parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    if(parts[0].length() < arguments[i].min || parts[0].length() > arguments[i].max)
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_LENGTH, arguments[i].name, arguments[i].min, arguments[i].max), event);
+                        return false;
+                    }
                     parsedArgs[i] = parts[0];
                     workingSet = parts[1];
                     break;}

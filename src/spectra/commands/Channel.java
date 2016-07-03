@@ -23,6 +23,7 @@ import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.utils.FormatUtil;
 
 /**
  *
@@ -51,7 +52,7 @@ public class Channel extends Command {
         info += SpConst.LINESTART+"Creation: **"+MiscUtil.getCreationTime(channel.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**\n";
         info += SpConst.LINESTART+"Num Users: **"+channel.getUsers().size()+"**";
         if(channel.getTopic()!=null && !channel.getTopic().trim().equals(""))
-            info += "\n"+SpConst.LINESTART+"__**Topic**__:\n"+channel.getTopic();
+            info += "\n"+SpConst.LINESTART+"__**Topic**__:\n"+FormatUtil.demention(channel.getTopic());
         Sender.sendResponse(info, event);
         return true;
     }

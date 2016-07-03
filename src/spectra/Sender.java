@@ -99,7 +99,7 @@ public class Sender {
     }
     
     //send automatic message
-    public static boolean sendFeed(String message, TextChannel tchan)
+    public static boolean sendMsg(String message, TextChannel tchan)
     {
         if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
         {
@@ -113,7 +113,7 @@ public class Sender {
     }
     
     //send automatic message with file
-    public static boolean sendFeedFile(String message, File file, String alternate, TextChannel tchan)
+    public static boolean sendMsgFile(String message, File file, String alternate, TextChannel tchan)
     {
         if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
         {

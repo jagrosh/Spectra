@@ -72,6 +72,7 @@ public class Tag extends Command{
             new TagOverride(),
             new TagRestore(),
             new TagImport(),
+            new TagMode(),
             new TagUnimport()
         };
     }
@@ -317,7 +318,7 @@ public class Tag extends Command{
             String owner;
             User u = event.getJDA().getUserById(tag[Tags.OWNERID]);
             if(u!=null)
-                owner = "**"+u.getUsername()+"**";
+                owner = "**"+u.getUsername()+"** #"+u.getDiscriminator();
             else if(tag[Tags.OWNERID].startsWith("g"))
                 owner = "the server *"+event.getGuild().getName()+"*";
             else
@@ -582,6 +583,35 @@ public class Tag extends Command{
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") restored tag **"+tagname
                                 +"** on **"+event.getGuild().getName()+"**");
                 return true;
+            }
+        }
+    }
+    
+    private class TagMode extends Command 
+    {
+        private TagMode()
+            {
+                this.command = "modes";
+                this.help = "sets the tag mode to local or global";
+                this.arguments = new Argument[]{
+                    new Argument("mode",Argument.Type.SHORTSTRING,true),
+                };
+                this.level = PermLevel.ADMIN;
+                this.availableInDM = false;
+            }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String mode = (String)(args[0]);
+            if(mode.equalsIgnoreCase("local") || mode.equalsIgnoreCase("global"))
+            {
+                settings.setSetting(event.getGuild().getId(), Settings.TAGMODE, mode.toUpperCase());
+                Sender.sendResponse(SpConst.SUCCESS+"Tag mode has been set to `"+mode.toUpperCase()+"`", event);
+                return true;
+            }
+            else
+            {
+                Sender.sendResponse(SpConst.ERROR+"Valid tag modes are `LOCAL` and `GLOBAL`", event);
+                return false;
             }
         }
     }

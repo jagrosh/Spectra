@@ -98,10 +98,10 @@ public class Settings extends DataSource {
     
     final public static int SERVERID   = 0;
     final public static int WELCOMEMSG = 1;
-    final public static int TALKLEVEL  = 2;
+    final public static int ROOMSETTING  = 2;
     final public static int BANNEDCMDS = 3;
     final public static int MODIDS     = 4;
-    final public static int MHROLES    = 5;
+    final public static int MHROLES    = 5;// -> whitelist
     final public static int LEAVEMSG   = 6;
     final public static int PREFIXES   = 7;
     final public static int IGNORELIST = 8;

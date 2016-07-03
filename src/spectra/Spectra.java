@@ -33,6 +33,7 @@ import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.JDABuilder;
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.Role;
@@ -55,8 +56,10 @@ import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.events.message.guild.GuildMessageUpdateEvent;
 import net.dv8tion.jda.events.user.UserAvatarUpdateEvent;
 import net.dv8tion.jda.events.user.UserNameUpdateEvent;
+import net.dv8tion.jda.events.voice.VoiceLeaveEvent;
 import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.MiscUtil;
+import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.entities.Tuple;
@@ -84,6 +87,7 @@ public class Spectra extends ListenerAdapter {
     final Feeds feeds;
     final Mutes mutes;
     final Overrides overrides;
+    final Rooms rooms;
     final SavedNames savednames;
     final Settings settings;
     final Tags tags;
@@ -97,7 +101,7 @@ public class Spectra extends ListenerAdapter {
     //timers
     final ScheduledExecutorService feedflusher;
     final ScheduledExecutorService unmuter;
-
+    final ScheduledExecutorService roomchecker;
     
     public static void main(String[] args)
     {
@@ -109,6 +113,7 @@ public class Spectra extends ListenerAdapter {
         feeds       = new Feeds();
         mutes       = new Mutes();
         overrides   = new Overrides();
+        rooms       = new Rooms();
         savednames  = new SavedNames();
         settings    = new Settings();
         tags        = new Tags();
@@ -118,6 +123,7 @@ public class Spectra extends ListenerAdapter {
         
         feedflusher = Executors.newSingleThreadScheduledExecutor();
         unmuter  = Executors.newSingleThreadScheduledExecutor();
+        roomchecker = Executors.newSingleThreadScheduledExecutor();
     }
     
     public void init()
@@ -125,6 +131,7 @@ public class Spectra extends ListenerAdapter {
         feeds.read();
         mutes.read();
         overrides.read();
+        rooms.read();
         savednames.read();
         settings.read();
         tags.read();
@@ -139,6 +146,7 @@ public class Spectra extends ListenerAdapter {
             new Invite(),
             new Names(savednames),
             new Ping(),
+            new Room(rooms, settings, handler),
             new Server(),
             new Tag(tags, overrides, settings, handler),
             
@@ -168,7 +176,6 @@ public class Spectra extends ListenerAdapter {
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
                         + "Started up in "+FormatUtil.secondsToTime(start.until(OffsetDateTime.now(), ChronoUnit.SECONDS)));
-        
         feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}, 0, 20, TimeUnit.SECONDS);
         unmuter.scheduleWithFixedDelay(()->{
             List<String[]> expiredMutes = mutes.getExpiredMutes();
@@ -213,13 +220,16 @@ public class Spectra extends ListenerAdapter {
         feeds.shutdown();
         mutes.shutdown();
         overrides.shutdown();
+        rooms.shutdown();
         savednames.shutdown();
         settings.shutdown();
         tags.shutdown();
         
         feedflusher.shutdown();
         unmuter.shutdown();
+        roomchecker.shutdown();
     }
+    
     
     
     @Override
@@ -331,7 +341,7 @@ public class Spectra extends ListenerAdapter {
                 helpmsg+="\n\nFor more information, call "+SpConst.PREFIX+"<command> help. For example, `"+SpConst.PREFIX+"tag help`";
                 helpmsg+="\nFor commands, `<argument>` refers to a required argument, while `[argument]` is optional";
                 helpmsg+="\nDo not add <> or [] to your arguments, nor quotation marks";
-                helpmsg+="\nFor more help, contact **@jagrosh** (<@"+SpConst.JAGROSH_ID+">) or join "+SpConst.JAGZONE_INVITE;
+                helpmsg+="\nFor more help, contact **@jagrosh** "+(event.getAuthor().getId().equals(SpConst.JAGROSH_ID) ? "" : "(<@"+SpConst.JAGROSH_ID+">) ")+"or join "+SpConst.JAGZONE_INVITE;
                 Sender.sendHelp(helpmsg, event.getAuthor().getPrivateChannel(), event);
             }
             else//wasn't base help command
@@ -437,6 +447,12 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), 
                 "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server.");
+        if(mutes.getMute(event.getUser().getId(), event.getGuild().getId())!=null)
+            if(PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MANAGE_ROLES, event.getGuild()))
+                event.getGuild().getRoles().stream().filter((role) -> (role.getName().equalsIgnoreCase("muted") 
+                        && PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))).forEach((role) -> {
+                    event.getGuild().getManager().addRoleToUser(event.getUser(), role);
+        });
     }
 
     @Override
@@ -485,9 +501,15 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberNickChange(GuildMemberNickChangeEvent event) {
-        handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\u270D **"+event.getUser().getUsername()+"** (ID:"
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
+        String id = event.getUser().getId();
+        if(feed!=null)
+        {
+            if(feed[Feeds.DETAILS]!=null && (feed[Feeds.DETAILS].contains("+n"+id) || (!feed[Feeds.DETAILS].contains("-n"+id) && !feed[Feeds.DETAILS].contains("+n"))))
+                handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\u270D **"+event.getUser().getUsername()+"** (ID:"
                         +event.getUser().getId()+") has changed nicknames from "+(event.getPrevNick()==null ? "[none]" : "**"+event.getPrevNick()+"**")+" to "+
                         (event.getNewNick()==null ? "[none]" : "**"+event.getNewNick()+"**"));
+        }
     }
     
     @Override
@@ -506,12 +528,17 @@ public class Spectra extends ListenerAdapter {
     public void onUserAvatarUpdate(UserAvatarUpdateEvent event) {
         if(event.getUser().equals(event.getJDA().getSelfInfo()) || event.getUser().getId().equals("135251434445733888"))
             return;
+        String id = event.getUser().getId();
         String oldurl = event.getPreviousAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getPreviousAvatarUrl();
         String newurl = event.getUser().getAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getUser().getAvatarUrl();
         ArrayList<Guild> guilds = new ArrayList<>();
-        jda.getGuilds().stream().filter((g) -> (g.isMember(event.getUser()))).forEach((g) -> {
-            guilds.add(g);
-        });
+        for(Guild g : jda.getGuilds())
+            if(g.isMember(event.getUser()))
+            {
+                String[] feed = feeds.feedForGuild(g, Feeds.Type.SERVERLOG);
+                if(feed!=null && feed[Feeds.DETAILS]!=null && (feed[Feeds.DETAILS].contains("+a"+id) || (!feed[Feeds.DETAILS].contains("-a"+id) && !feed[Feeds.DETAILS].contains("+a"))))
+                    guilds.add(g);
+            }
         handler.submitFile(Feeds.Type.SERVERLOG, guilds, ()->{
                 BufferedImage oldimg = OtherUtil.imageFromUrl(oldurl);
                 BufferedImage newimg = OtherUtil.imageFromUrl(newurl);
@@ -558,6 +585,19 @@ public class Spectra extends ListenerAdapter {
                 + "```Users : **"+guild.getUsers().size()
                 +  "**\nOwner : **"+guild.getOwner().getUsername()+"** (ID:"+guild.getOwnerId()
                 +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
+    }
+
+    @Override
+    public void onVoiceLeave(VoiceLeaveEvent event) {
+        if(event.getOldChannel().getUsers().isEmpty())
+        {
+            String[] room = rooms.get(event.getOldChannel().getId());
+            if(room!=null)
+            {
+                event.getOldChannel().getManager().delete();
+                rooms.remove(event.getOldChannel().getId());
+            }
+        }
     }
     
     

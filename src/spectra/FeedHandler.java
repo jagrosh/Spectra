@@ -49,7 +49,7 @@ public class FeedHandler {
                 TextChannel tc = jda.getTextChannelById(id);
                 if (!(tc==null)) {
                     if (!(buffers.get(id)==null || buffers.get(id).equals(""))) {
-                        Sender.sendFeed(buffers.get(id), tc);
+                        Sender.sendMsg(buffers.get(id), tc);
                         buffers.put(id, "");
                     }
                 }
@@ -101,7 +101,7 @@ public class FeedHandler {
 
                 if(currentBuffer.length()+text.length()+1 > 2000)//flush current buffer
                 {
-                    safe = Sender.sendFeed(currentBuffer, target);
+                    safe = Sender.sendMsg(currentBuffer, target);
                     currentBuffer = "";
                     if(!safe)
                     {
@@ -115,7 +115,7 @@ public class FeedHandler {
                     currentBuffer += "\n"+text;
                     if(currentBuffer.length() > 1800)
                     {
-                        safe = Sender.sendFeed(currentBuffer, target);
+                        safe = Sender.sendMsg(currentBuffer, target);
                         currentBuffer = "";
                         if(!safe)
                         {
@@ -176,7 +176,7 @@ public class FeedHandler {
                 boolean safe =true;
                 if(!currentBuffer.equals(""))
                 {
-                    safe = Sender.sendFeed(currentBuffer, target);
+                    safe = Sender.sendMsg(currentBuffer, target);
                     currentBuffer = "";
                     if(!safe)
                     {
@@ -187,7 +187,7 @@ public class FeedHandler {
 
                 if(safe)
                 {
-                    safe = Sender.sendFeedFile(normal, file, alternative, target);
+                    safe = Sender.sendMsgFile(normal, file, alternative, target);
                     if(!safe)
                     {
                         feeds.removeFeed(matching);

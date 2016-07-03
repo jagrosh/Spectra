@@ -39,7 +39,7 @@ public class Draw extends Command{
         this.command = "draw";
         this.help = "generates an electric wave of a random or specified color";
         this.cooldown = 10;
-        this.cooldownKey = (event) -> {return event.getAuthor().getId();};
+        this.cooldownKey = (event) -> {return event.getAuthor().getId()+"|draw";};
         this.arguments = new Argument[]{
             new Argument("hexcolor",Argument.Type.SHORTSTRING,false)
         };

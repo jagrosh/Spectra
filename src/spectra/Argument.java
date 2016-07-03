@@ -29,7 +29,7 @@ public class Argument {
     
     public Argument(String name, Type type, boolean required)
     {
-        this(name,type,required,Integer.MIN_VALUE,Integer.MAX_VALUE);
+        this(name,type,required,Long.MIN_VALUE,Long.MAX_VALUE);
     }
     
     public Argument(String name, Type type, boolean required, long min, long max)

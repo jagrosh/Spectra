@@ -57,7 +57,7 @@ public class Feed extends Command {
         String invalidtype = args[0]==null?null:(String)(args[0]);
         String str;
         if(invalidtype==null)
-            str = "The `feed` command assigns "+SpConst.BOTNAME+" to send certain type of messages to a channel";
+            str = "\u2139 The `feed` command assigns "+SpConst.BOTNAME+" to send certain type of messages to a channel";
         else
             str = SpConst.ERROR+"That is not a valid feed type!";
         Sender.sendResponse(str + "\nPlease use `"+SpConst.PREFIX+"feed help` for a valid list of feeds", event);
@@ -106,13 +106,15 @@ public class Feed extends Command {
             this.help = "sets the `serverlog` feed, which displays various activity in the server";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
-                new Argument("channel",Argument.Type.TEXTCHANNEL,false)
+                new Argument("channel",Argument.Type.TEXTCHANNEL,false),
+                new Argument("options",Argument.Type.LONGSTRING,false)
             };
             this.availableInDM = false;
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             TextChannel tchan = (TextChannel)(args[0]);
+            String options = args[1]==null ? "" : (String)args[1];
             if(tchan==null)
                 tchan = event.getTextChannel();
             //check bot permissions for channel
@@ -126,7 +128,7 @@ public class Feed extends Command {
             String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.SERVERLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
-            feeds.set(new String[]{tchan.getId(),Feeds.Type.SERVERLOG.toString(),event.getGuild().getId(),""});
+            feeds.set(new String[]{tchan.getId(),Feeds.Type.SERVERLOG.toString(),event.getGuild().getId(),options});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.SERVERLOG+" has been added to <#"+tchan.getId()+">";
             Sender.sendResponse(str, event);
             return true;
@@ -231,6 +233,7 @@ public class Feed extends Command {
         public FeedRemove()
         {
             this.command = "remove";
+            this.aliases = new String[]{"clear","delete"};
             this.help = "removes a feed";
             this.level = PermLevel.ADMIN;
             this.availableInDM = false;

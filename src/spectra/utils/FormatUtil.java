@@ -57,6 +57,11 @@ public class FormatUtil {
         return input.replace("<@", "<@\u180E");
     }
     
+    public static String unembed(String input)
+    {
+        return input.replaceAll("(?:\\s|^)<?(https?:\\/\\/.+?)>?(?=\\s|$)", " <$1>").trim();
+    }
+    
     public static String secondsToTime(long timeseconds)
     {
         StringBuilder builder = new StringBuilder();
