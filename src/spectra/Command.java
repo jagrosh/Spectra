@@ -243,6 +243,11 @@ public abstract class Command {
                         Sender.sendResponse(String.format(SpConst.INVALID_TIME, parts[0]), event);
                         return false;
                     }
+                    if(timeinseconds < arguments[i].min || timeinseconds > arguments[i].max)
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_TIME_RANGE, arguments[i].name, FormatUtil.secondsToTime(arguments[i].min), FormatUtil.secondsToTime(arguments[i].max)), event);
+                        return false;
+                    }
                     parsedArgs[i] = timeinseconds;
                     workingSet = parts[1];
                     break;}

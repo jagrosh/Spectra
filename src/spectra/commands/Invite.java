@@ -29,7 +29,7 @@ public class Invite extends Command {
     public Invite()
     {
         this.command = "invite";
-        this.help = "displays how to invite **"+SpConst.BOTNAME+"** to your server";
+        this.help = "displays how to invite "+SpConst.BOTNAME+" to your server";
     }
 
     @Override

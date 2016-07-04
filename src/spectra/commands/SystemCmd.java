@@ -119,7 +119,7 @@ public class SystemCmd extends Command {
             event.getJDA().getTextChannelById(feeds.feedForGuild(event.getJDA().getGuildById(SpConst.JAGZONE_ID), Feeds.Type.BOTLOG)[Feeds.CHANNELID])
                     .sendMessage(FeedHandler.botlogFormat(SpConst.ERROR+"**"+SpConst.BOTNAME+"** is going <@&182294168083628032>"+"\nRuntime: "+FormatUtil.secondsToTime(spectra.getStart().until(OffsetDateTime.now(), ChronoUnit.SECONDS))));
             event.getChannel().sendMessage("\uD83D\uDCDF Shutting down...");}catch(Exception e){System.err.println(e);}
-            spectra.shutdown(event.getJDA());
+            spectra.shutdown();
             return true;
         }
     }

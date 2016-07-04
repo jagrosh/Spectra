@@ -36,6 +36,7 @@ import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
+import net.dv8tion.jda.entities.MessageChannel;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
@@ -89,6 +90,7 @@ public class Spectra extends ListenerAdapter {
     private final Mutes mutes;
     private final Overrides overrides;
     private final Profiles profiles;
+    private final Reminders reminders;
     private final Rooms rooms;
     private final SavedNames savednames;
     private final Settings settings;
@@ -104,6 +106,10 @@ public class Spectra extends ListenerAdapter {
     private final ScheduledExecutorService feedflusher;
     private final ScheduledExecutorService unmuter;
     private final ScheduledExecutorService roomchecker;
+    private final ScheduledExecutorService reminderchecker;
+    
+    //eventhandler
+    private final AsyncInterfacedEventManager eventmanager;
     
     public static void main(String[] args)
     {
@@ -117,6 +123,7 @@ public class Spectra extends ListenerAdapter {
         mutes       = new Mutes();
         overrides   = new Overrides();
         profiles    = new Profiles();
+        reminders   = new Reminders();
         rooms       = new Rooms();
         savednames  = new SavedNames();
         settings    = new Settings();
@@ -128,6 +135,9 @@ public class Spectra extends ListenerAdapter {
         feedflusher = Executors.newSingleThreadScheduledExecutor();
         unmuter  = Executors.newSingleThreadScheduledExecutor();
         roomchecker = Executors.newSingleThreadScheduledExecutor();
+        reminderchecker = Executors.newSingleThreadScheduledExecutor();
+        
+        eventmanager = new AsyncInterfacedEventManager();
     }
     
     public void init()
@@ -137,6 +147,7 @@ public class Spectra extends ListenerAdapter {
         mutes.read();
         overrides.read();
         profiles.read();
+        reminders.read();
         rooms.read();
         savednames.read();
         settings.read();
@@ -154,6 +165,7 @@ public class Spectra extends ListenerAdapter {
             new Names(savednames),
             new Ping(),
             new Profile(profiles),
+            new Reminder(reminders),
             new Room(rooms, settings, handler),
             new Server(),
             new Tag(tags, overrides, settings, handler),
@@ -170,7 +182,12 @@ public class Spectra extends ListenerAdapter {
         };
         
         try {
-            jda = new JDABuilder().addListener(this).setBotToken(OtherUtil.readFileLines("discordbot.login").get(1)).setBulkDeleteSplittingEnabled(false).buildAsync();
+            jda = new JDABuilder()
+                    .addListener(this)
+                    .setBotToken(OtherUtil.readFileLines("discordbot.login").get(1))
+                    .setBulkDeleteSplittingEnabled(false)
+                    .setEventManager(eventmanager)
+                    .buildAsync();
         } catch (LoginException | IllegalArgumentException ex) {
             System.err.println("ERROR - Building JDA : "+ex.toString());
             System.exit(1);
@@ -319,17 +336,40 @@ public class Spectra extends ListenerAdapter {
             }
         }// </editor-fold>
                 , 0, 120, TimeUnit.SECONDS);
+        reminderchecker.scheduleWithFixedDelay(() -> // <editor-fold defaultstate="collapsed" desc="{reminders}">
+        {
+            List<String[]> list = reminders.getExpiredReminders();
+            list.stream().map((item) -> {
+                reminders.removeReminder(item);
+                return item;
+            }).forEach((item) -> {
+                TextChannel chan = jda.getTextChannelById(item[Reminders.CHANNELID]);
+                if(chan==null)
+                {
+                    User user = jda.getUserById(item[Reminders.USERID]);
+                    if(user!=null)
+                        Sender.sendPrivate("\u23F0 "+item[Reminders.MESSAGE], user.getPrivateChannel());
+                }
+                else
+                {
+                    Sender.sendMsg("\u23F0 <@"+item[Reminders.USERID]+"> \u23F0 "+item[Reminders.MESSAGE], chan);
+                }
+            });
+        }// </editor-fold>
+                , 0, 30, TimeUnit.SECONDS);
     }
     
-    public void shutdown(JDA jda)
+    public void shutdown()
     {
         jda.shutdown();
+        eventmanager.shutdown();
         
         afks.shutdown();
         feeds.shutdown();
         mutes.shutdown();
         overrides.shutdown();
         profiles.shutdown();
+        reminders.shutdown();
         rooms.shutdown();
         savednames.shutdown();
         settings.shutdown();
@@ -338,6 +378,7 @@ public class Spectra extends ListenerAdapter {
         feedflusher.shutdown();
         unmuter.shutdown();
         roomchecker.shutdown();
+        reminderchecker.shutdown();
     }
     
     

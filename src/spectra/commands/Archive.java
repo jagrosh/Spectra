@@ -59,7 +59,7 @@ public class Archive extends Command{
     
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
-        int numposts = (int)(args[0]);
+        long numposts = (long)(args[0]);
         TextChannel channel = (TextChannel)(args[1]);
         MessageHistory mh;
         if(event.isPrivate())
@@ -88,7 +88,7 @@ public class Archive extends Command{
         }
         
         Sender.sendFileResponse(() -> {
-            List<Message> messages = mh.retrieve(numposts);
+            List<Message> messages = mh.retrieve((int)numposts);
             StringBuilder builder = new StringBuilder("--Archive--\n");
             for(int i=messages.size()-1;i>=0;i--)
             {
