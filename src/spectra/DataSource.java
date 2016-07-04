@@ -47,6 +47,11 @@ public abstract class DataSource {
     
     protected DataSource(){}
     
+    public int getSize()
+    {
+        return size;
+    }
+    
     public String[] get(String key)
     {
         synchronized(data)

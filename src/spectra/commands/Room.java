@@ -41,9 +41,9 @@ import spectra.utils.FormatUtil;
  */
 public class Room extends Command 
 {
-    Rooms rooms;
-    Settings settings;
-    FeedHandler handler;
+    private final Rooms rooms;
+    private final Settings settings;
+    private final FeedHandler handler;
     public Room(Rooms rooms, Settings settings, FeedHandler handler)
     {
         this.rooms = rooms;

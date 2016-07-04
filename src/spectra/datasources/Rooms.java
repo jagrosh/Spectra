@@ -15,7 +15,9 @@
  */
 package spectra.datasources;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import net.dv8tion.jda.entities.Guild;
 import spectra.DataSource;
@@ -25,11 +27,67 @@ import spectra.DataSource;
  * @author John Grosh (jagrosh)
  */
 public class Rooms extends DataSource{
+    private final HashMap<String,OffsetDateTime> lastActivity;
+    private final ArrayList<String> warnings;
     public Rooms()
     {
         this.filename = "discordbot.rooms";
         this.size = 4;
         this.generateKey = (item) -> {return item[CHANNELID];};
+        lastActivity = new HashMap<>();
+        warnings = new ArrayList<>();
+    }
+    
+    public void setLastActivity(String channelid, OffsetDateTime last)
+    {
+        if(get(channelid)!=null)
+        {
+            synchronized(lastActivity)
+            {
+                lastActivity.put(channelid, last);
+            }
+            synchronized(warnings)
+            {
+                warnings.remove(channelid);
+            }
+        }
+    }
+    
+    public OffsetDateTime getLastActivity(String channelid)
+    {
+        synchronized(lastActivity)
+        {
+            return lastActivity.get(channelid);
+        }
+    }
+    
+    public void setWarned(String channelid)
+    {
+        synchronized(warnings)
+        {
+            if(!warnings.contains(channelid))
+                warnings.add(channelid);
+        }
+    }
+    
+    public boolean isWarned(String channelid)
+    {
+        synchronized(warnings)
+        {
+            return warnings.contains(channelid);
+        }
+    }
+    
+    public List<String> getAllRoomIds()
+    {
+        ArrayList<String> ids = new ArrayList<>();
+        synchronized(data)
+        {
+            data.values().stream().forEach((room) -> {
+                ids.add(room[CHANNELID]);
+            });
+        }
+        return ids;
     }
     
     public List<String[]> getTextRoomsOnGuild(Guild guild)

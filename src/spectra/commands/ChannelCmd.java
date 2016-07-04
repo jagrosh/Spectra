@@ -29,8 +29,8 @@ import spectra.utils.FormatUtil;
  *
  * @author John Grosh (jagrosh)
  */
-public class Channel extends Command {
-    public Channel()
+public class ChannelCmd extends Command {
+    public ChannelCmd()
     {
         this.command = "channel";
         this.help = "gets information about a channel";

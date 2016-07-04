@@ -27,16 +27,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.JDABuilder;
+import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.DisconnectEvent;
 import net.dv8tion.jda.events.ReadyEvent;
@@ -74,34 +75,33 @@ import spectra.utils.FormatUtil;
  */
 public class Spectra extends ListenerAdapter {
     
-    JDA jda;
-    Command[] commands;
-    Thread feedFlusher;
-    boolean isRunning = true;
-    boolean idling = false;
-    static final OffsetDateTime start = OffsetDateTime.now();
-    OffsetDateTime lastDisconnect;
+    private JDA jda;
+    private Command[] commands;
+    private boolean idling = false;
+    private static final OffsetDateTime start = OffsetDateTime.now();
+    private OffsetDateTime lastDisconnect;
     
     
     //datasources
-    final Feeds feeds;
-    final Mutes mutes;
-    final Overrides overrides;
-    final Rooms rooms;
-    final SavedNames savednames;
-    final Settings settings;
-    final Tags tags;
+    private final Feeds feeds;
+    private final Mutes mutes;
+    private final Overrides overrides;
+    private final Profiles profiles;
+    private final Rooms rooms;
+    private final SavedNames savednames;
+    private final Settings settings;
+    private final Tags tags;
     
     //handlers
-    final FeedHandler handler;
+    private final FeedHandler handler;
     
     //tempdata
-    final MessageCache messagecache;
+    private final MessageCache messagecache;
     
     //timers
-    final ScheduledExecutorService feedflusher;
-    final ScheduledExecutorService unmuter;
-    final ScheduledExecutorService roomchecker;
+    private final ScheduledExecutorService feedflusher;
+    private final ScheduledExecutorService unmuter;
+    private final ScheduledExecutorService roomchecker;
     
     public static void main(String[] args)
     {
@@ -113,6 +113,7 @@ public class Spectra extends ListenerAdapter {
         feeds       = new Feeds();
         mutes       = new Mutes();
         overrides   = new Overrides();
+        profiles    = new Profiles();
         rooms       = new Rooms();
         savednames  = new SavedNames();
         settings    = new Settings();
@@ -131,6 +132,7 @@ public class Spectra extends ListenerAdapter {
         feeds.read();
         mutes.read();
         overrides.read();
+        profiles.read();
         rooms.read();
         savednames.read();
         settings.read();
@@ -140,12 +142,13 @@ public class Spectra extends ListenerAdapter {
             new About(),
             new Archive(),
             new Avatar(),
-            new Channel(),
+            new ChannelCmd(),
             new Draw(),
             new Info(),
             new Invite(),
             new Names(savednames),
             new Ping(),
+            new Profile(profiles),
             new Room(rooms, settings, handler),
             new Server(),
             new Tag(tags, overrides, settings, handler),
@@ -176,8 +179,10 @@ public class Spectra extends ListenerAdapter {
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
                         + "Started up in "+FormatUtil.secondsToTime(start.until(OffsetDateTime.now(), ChronoUnit.SECONDS)));
-        feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}, 0, 20, TimeUnit.SECONDS);
-        unmuter.scheduleWithFixedDelay(()->{
+        feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}
+                , 0, 20, TimeUnit.SECONDS);
+        unmuter.scheduleWithFixedDelay(()->// <editor-fold defaultstate="collapsed" desc="{unmuter}">
+        {
             List<String[]> expiredMutes = mutes.getExpiredMutes();
             List<String[]> finished = new ArrayList<>();
             for(String[] mute : expiredMutes)
@@ -209,17 +214,115 @@ public class Spectra extends ListenerAdapter {
             }
             if(!finished.isEmpty())
                 mutes.removeAll(finished);
-        }, 0, 10, TimeUnit.SECONDS);
+        }// </editor-fold>
+                ,0, 10, TimeUnit.SECONDS);
+        roomchecker.scheduleWithFixedDelay(() -> // <editor-fold defaultstate="collapsed" desc="{roomchecker}">
+        {
+            int warn = 36;
+            int delete = 12;
+            List<String> allIds = rooms.getAllRoomIds();
+            for(String id : allIds)
+            {
+                TextChannel tc = jda.getTextChannelById(id);
+                if(tc==null)
+                {
+                    Guild guild = jda.getGuildById(rooms.get(id)[Rooms.SERVERID]);
+                    if(guild==null || guild.isAvailable())
+                        rooms.remove(id);
+                    continue;
+                }
+                boolean checked = false;
+                if(rooms.getLastActivity(id)==null)
+                {
+                    MessageHistory mh = new MessageHistory(tc);
+                    List<Message> messages = mh.retrieve(1);
+                    checked = true;
+                    if(messages==null || messages.isEmpty())
+                        rooms.setLastActivity(id, MiscUtil.getCreationTime(id));
+                    else
+                    {
+                        rooms.setLastActivity(id, messages.get(0).getTime());
+                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
+                            rooms.setWarned(id);
+                    }
+                }
+                if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && rooms.isWarned(id))
+                {
+                    if(!checked)
+                    {
+                        MessageHistory mh = new MessageHistory(tc);
+                        List<Message> messages = mh.retrieve(1);
+                        checked = true;
+                        if(messages==null || messages.isEmpty())
+                            rooms.setLastActivity(id, MiscUtil.getCreationTime(id));
+                        else
+                        {
+                            rooms.setLastActivity(id, messages.get(0).getTime());
+                            if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
+                                rooms.setWarned(id);
+                        }
+                        if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && rooms.isWarned(id))
+                        {
+                            rooms.remove(id);
+                            handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
+                                "** (ID:"+tc.getId()+") has been removed due to inactivity.");
+                            tc.getManager().delete();
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        rooms.remove(id);
+                        handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
+                            "** (ID:"+tc.getId()+") has been removed due to inactivity.");
+                        tc.getManager().delete();
+                        continue;
+                    }
+                }
+                if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
+                {
+                    if(!checked)
+                    {
+                        MessageHistory mh = new MessageHistory(tc);
+                        List<Message> messages = mh.retrieve(1);
+                        //checked = true;
+                        if(messages==null || messages.isEmpty())
+                            rooms.setLastActivity(id, MiscUtil.getCreationTime(id));
+                        else
+                        {
+                            rooms.setLastActivity(id, messages.get(0).getTime());
+                            if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
+                                rooms.setWarned(id);
+                        }
+                        if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
+                        {
+                            //warn
+                            Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+rooms.get(id)[Rooms.OWNERID]+">"), tc);
+                            rooms.setWarned(id);
+                            //continue;
+                        }
+                    }
+                    else
+                    {
+                        //warn
+                        Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+rooms.get(id)[Rooms.OWNERID]+">"), tc);
+                        rooms.setWarned(id);
+                        //continue;
+                    }
+                }
+            }
+        }// </editor-fold>
+                , 0, 120, TimeUnit.SECONDS);
     }
     
     public void shutdown(JDA jda)
     {
         jda.shutdown();
-        isRunning=false;
         
         feeds.shutdown();
         mutes.shutdown();
         overrides.shutdown();
+        profiles.shutdown();
         rooms.shutdown();
         savednames.shutdown();
         settings.shutdown();
@@ -406,6 +509,7 @@ public class Spectra extends ListenerAdapter {
     
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+        rooms.setLastActivity(event.getChannel().getId(), event.getMessage().getTime());
         if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
     }
@@ -532,13 +636,12 @@ public class Spectra extends ListenerAdapter {
         String oldurl = event.getPreviousAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getPreviousAvatarUrl();
         String newurl = event.getUser().getAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getUser().getAvatarUrl();
         ArrayList<Guild> guilds = new ArrayList<>();
-        for(Guild g : jda.getGuilds())
-            if(g.isMember(event.getUser()))
-            {
-                String[] feed = feeds.feedForGuild(g, Feeds.Type.SERVERLOG);
-                if(feed!=null && feed[Feeds.DETAILS]!=null && (feed[Feeds.DETAILS].contains("+a"+id) || (!feed[Feeds.DETAILS].contains("-a"+id) && !feed[Feeds.DETAILS].contains("+a"))))
-                    guilds.add(g);
+        jda.getGuilds().stream().filter((g) -> (g.isMember(event.getUser()))).forEach((g) -> {
+            String[] feed = feeds.feedForGuild(g, Feeds.Type.SERVERLOG);
+            if (feed!=null && feed[Feeds.DETAILS]!=null && (feed[Feeds.DETAILS].contains("+a"+id) || (!feed[Feeds.DETAILS].contains("-a"+id) && !feed[Feeds.DETAILS].contains("+a")))) {
+                guilds.add(g);
             }
+        });
         handler.submitFile(Feeds.Type.SERVERLOG, guilds, ()->{
                 BufferedImage oldimg = OtherUtil.imageFromUrl(oldurl);
                 BufferedImage newimg = OtherUtil.imageFromUrl(newurl);

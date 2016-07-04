@@ -16,6 +16,7 @@
 package spectra.commands;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import net.dv8tion.jda.entities.Guild;
@@ -591,7 +592,7 @@ public class Tag extends Command{
     {
         private TagMode()
             {
-                this.command = "modes";
+                this.command = "mode";
                 this.help = "sets the tag mode to local or global";
                 this.arguments = new Argument[]{
                     new Argument("mode",Argument.Type.SHORTSTRING,true),
@@ -624,6 +625,9 @@ public class Tag extends Command{
                 this.help = "imports a tag from a tag command";
                 this.arguments = new Argument[]{
                     new Argument("tagname",Argument.Type.SHORTSTRING,true),
+                };
+                this.children = new Command[]{
+                    new TagImportList()
                 };
                 this.level = PermLevel.ADMIN;
                 this.availableInDM = false;
@@ -659,6 +663,34 @@ public class Tag extends Command{
             }
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is already a tag command!", event);
             return false;
+        }
+        private class TagImportList extends Command
+        {
+            private TagImportList()
+            {
+                this.command = "list";
+                this.help = "lists tag imports on the current server";
+                this.level = PermLevel.MODERATOR;
+                this.availableInDM = false;
+            }
+            @Override
+            protected boolean execute(Object[] args, MessageReceivedEvent event)
+            {
+                String[] imports = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS].split("\\s+");
+                ArrayList<String> list = new ArrayList<>(Arrays.asList(imports));
+                if(imports.length==0)
+                    Sender.sendResponse(SpConst.WARNING+"No tags have been imported on **"+event.getGuild().getName()+"**", event);
+                else
+                {
+                    Collections.sort(list);
+                    StringBuilder builder = new StringBuilder(SpConst.SUCCESS+list.size()+" tag imports on **"+event.getGuild().getName()+"**:\n");
+                    list.stream().forEach((tag) -> {
+                        builder.append(tag).append(" ");
+                    });
+                    Sender.sendResponse(builder.toString(), event);
+                }
+                return true;
+            }
         }
     }
     

@@ -63,4 +63,6 @@ public class SpConst {
     final public static String NONE_FOUND               = WARNING + "**No %s found matching \"%s\"**";
     
     final public static String ON_COOLDOWN              = WARNING + "That command is on cooldown for another %s";
+    
+    final public static String ROOM_WARNING             = "\u200B%s, this room has not seen activity for at least 36 hours. It will be deleted if there is no activity within the next 12 hours, or you can delete it yourself with `"+PREFIX+"room remove`";
 }
