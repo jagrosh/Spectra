@@ -17,6 +17,7 @@ package spectra;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import net.dv8tion.jda.MessageBuilder;
 import net.dv8tion.jda.Permission;
@@ -26,20 +27,48 @@ import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.entities.Tuple;
 import spectra.tempdata.CallDepend;
+import spectra.utils.OtherUtil;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Sender { 
-    
+    private final static int maxMessages = 2;
     //for replying to commands
     public static void sendResponse(String message, MessageReceivedEvent event)
     {
-        ArrayList<String> bits = splitMessage(message);
+        List<String> bits = splitMessage(message);
+        if(bits.size() > maxMessages)
+        {
+            if(event.isPrivate() || PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, event.getTextChannel()))
+            {
+                event.getTextChannel().sendTyping();
+                String header = bits.get(0);
+                header = header.split("\n",2)[0];
+                if(header.length()>100)
+                {
+                    header = header.substring(0,100);
+                    int index = header.lastIndexOf(" ");
+                    if(index!=-1)
+                        header = header.substring(0,index);
+                }
+                File f = OtherUtil.writeArchive(message, "Result");
+                event.getChannel().sendFileAsync(f, new MessageBuilder().appendString(header).build(), m -> {
+                    CallDepend.getInstance().add(event.getMessage().getId(), m);
+                });
+                return;
+            }
+            bits = bits.subList(0, maxMessages);
+            String lastBit = bits.get(maxMessages);
+            lastBit+="(...message too long!)";
+            if(lastBit.length()>2000)
+                lastBit = lastBit.substring(0, 2000);
+            bits.set(maxMessages, lastBit);
+        }
         bits.stream().forEach((bit) -> {
             event.getChannel().sendMessageAsync(bit, m -> {
-                if(event.getChannel() instanceof TextChannel)
+                if(!event.isPrivate())
                     CallDepend.getInstance().add(event.getMessage().getId(), m);
             });
         });
@@ -142,10 +171,11 @@ public class Sender {
             stringtoSend = stringtoSend.replace("@everyone", "@\u180Eeveryone").replace("@here", "@\u180Ehere").trim();
             while(stringtoSend.length()>2000)
             {
+                int leeway = 2000 - (stringtoSend.length()%2000);
                 int index = stringtoSend.lastIndexOf("\n", 2000);
-                if(index==-1)
+                if(index<leeway)
                     index = stringtoSend.lastIndexOf(" ", 2000);
-                if(index==-1)
+                if(index<leeway)
                     index=2000;
                 String temp = stringtoSend.substring(0,index).trim();
                 if(!temp.equals(""))

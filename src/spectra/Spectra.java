@@ -57,6 +57,7 @@ import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.events.message.guild.GuildMessageUpdateEvent;
 import net.dv8tion.jda.events.user.UserAvatarUpdateEvent;
 import net.dv8tion.jda.events.user.UserNameUpdateEvent;
+import net.dv8tion.jda.events.user.UserTypingEvent;
 import net.dv8tion.jda.events.voice.VoiceLeaveEvent;
 import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.MiscUtil;
@@ -83,6 +84,7 @@ public class Spectra extends ListenerAdapter {
     
     
     //datasources
+    private final AFKs afks;
     private final Feeds feeds;
     private final Mutes mutes;
     private final Overrides overrides;
@@ -110,6 +112,7 @@ public class Spectra extends ListenerAdapter {
     
     public Spectra()
     {
+        afks        = new AFKs();
         feeds       = new Feeds();
         mutes       = new Mutes();
         overrides   = new Overrides();
@@ -129,6 +132,7 @@ public class Spectra extends ListenerAdapter {
     
     public void init()
     {
+        afks.read();
         feeds.read();
         mutes.read();
         overrides.read();
@@ -140,6 +144,7 @@ public class Spectra extends ListenerAdapter {
         
         commands = new Command[]{
             new About(),
+            new AFK(afks),
             new Archive(),
             new Avatar(),
             new ChannelCmd(),
@@ -152,6 +157,7 @@ public class Spectra extends ListenerAdapter {
             new Room(rooms, settings, handler),
             new Server(),
             new Tag(tags, overrides, settings, handler),
+            new Timefor(profiles),
             
             new Ban(handler, settings),
             new BotScan(),
@@ -319,6 +325,7 @@ public class Spectra extends ListenerAdapter {
     {
         jda.shutdown();
         
+        afks.shutdown();
         feeds.shutdown();
         mutes.shutdown();
         overrides.shutdown();
@@ -366,6 +373,19 @@ public class Spectra extends ListenerAdapter {
         boolean isCommand;
         boolean successful;
         
+        if(afks.get(event.getAuthor().getId())!=null)
+        {
+            Sender.sendPrivate(SpConst.SUCCESS+"Welcome back, I have removed your AFK status.", event.getAuthor().getPrivateChannel());
+            afks.remove(event.getAuthor().getId());
+        }
+        if(!event.isPrivate())
+            event.getMessage().getMentionedUsers().stream().filter((u) -> (afks.get(u.getId())!=null)).forEach((u) -> {
+                String relate = "__"+event.getGuild().getName()+"__ <#"+event.getTextChannel().getId()+"> <@"+event.getAuthor().getId()+">:\n"+event.getMessage().getRawContent();
+                if(relate.length()>2000)
+                    relate = relate.substring(0,2000);
+                Sender.sendPrivate(relate, u.getPrivateChannel());
+        });
+        
         if(idling && !event.getAuthor().getId().equals(SpConst.JAGROSH_ID))
             return;
         //get the settings for the server
@@ -408,6 +428,21 @@ public class Spectra extends ListenerAdapter {
                         ignore = true;
                         break;
                     }
+        }
+        
+        if(!ignore && !event.isPrivate() && !event.getMessage().getMentionedUsers().isEmpty())
+        {
+            StringBuilder builder = new StringBuilder("");
+            event.getMessage().getMentionedUsers().stream().forEach(u -> {
+                if(afks.get(u.getId())!=null)
+                {
+                    String response = afks.get(u.getId())[AFKs.MESSAGE];
+                    if(response!=null)
+                        builder.append("\n\uD83D\uDCA4 **").append(u.getUsername()).append("** is currently AFK:\n").append(response);
+                }});
+            String afkmessage = builder.toString().trim();
+            if(!afkmessage.equals(""))
+            Sender.sendMsg(afkmessage, event.getTextChannel());
         }
         
         if(strippedMessage!=null)//potential command right here
@@ -506,6 +541,15 @@ public class Spectra extends ListenerAdapter {
         
     }
 
+    
+    @Override
+    public void onUserTyping(UserTypingEvent event) {
+        if(afks.get(event.getUser().getId())!=null)
+        {
+            Sender.sendPrivate(SpConst.SUCCESS+"Welcome back, I have removed your AFK status.", event.getUser().getPrivateChannel());
+            afks.remove(event.getUser().getId());
+        }
+    }
     
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
