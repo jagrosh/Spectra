@@ -36,14 +36,16 @@ import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
-import net.dv8tion.jda.entities.MessageChannel;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.entities.impl.JDAImpl;
 import net.dv8tion.jda.events.DisconnectEvent;
 import net.dv8tion.jda.events.ReadyEvent;
 import net.dv8tion.jda.events.ReconnectedEvent;
 import net.dv8tion.jda.events.ResumedEvent;
+import net.dv8tion.jda.events.ShutdownEvent;
+import net.dv8tion.jda.events.StatusChangeEvent;
 import net.dv8tion.jda.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.events.guild.member.GuildMemberBanEvent;
@@ -63,6 +65,7 @@ import net.dv8tion.jda.events.voice.VoiceLeaveEvent;
 import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.MiscUtil;
 import net.dv8tion.jda.utils.PermissionUtil;
+import net.dv8tion.jda.utils.SimpleLog;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.entities.Tuple;
@@ -70,6 +73,7 @@ import spectra.tempdata.CallDepend;
 import spectra.tempdata.MessageCache;
 import spectra.utils.OtherUtil;
 import spectra.utils.FormatUtil;
+import spectra.web.BingImageSearcher;
 
 /**
  *
@@ -102,11 +106,15 @@ public class Spectra extends ListenerAdapter {
     //tempdata
     private final MessageCache messagecache;
     
+    //searchers
+    private final BingImageSearcher imagesearcher;
+    
     //timers
     private final ScheduledExecutorService feedflusher;
     private final ScheduledExecutorService unmuter;
     private final ScheduledExecutorService roomchecker;
     private final ScheduledExecutorService reminderchecker;
+    private final ScheduledExecutorService cachecleaner;
     
     //eventhandler
     private final AsyncInterfacedEventManager eventmanager;
@@ -132,10 +140,13 @@ public class Spectra extends ListenerAdapter {
         handler = new FeedHandler(feeds);
         messagecache = new MessageCache();
         
+        imagesearcher = new BingImageSearcher(OtherUtil.readFileLines("bing.apikey"));
+        
         feedflusher = Executors.newSingleThreadScheduledExecutor();
         unmuter  = Executors.newSingleThreadScheduledExecutor();
         roomchecker = Executors.newSingleThreadScheduledExecutor();
         reminderchecker = Executors.newSingleThreadScheduledExecutor();
+        cachecleaner  = Executors.newSingleThreadScheduledExecutor();
         
         eventmanager = new AsyncInterfacedEventManager();
     }
@@ -160,6 +171,7 @@ public class Spectra extends ListenerAdapter {
             new Avatar(),
             new ChannelCmd(),
             new Draw(),
+            new ImageSearch(imagesearcher),
             new Info(),
             new Invite(),
             new Names(savednames),
@@ -178,9 +190,14 @@ public class Spectra extends ListenerAdapter {
             new Softban(handler, settings, mutes),
             
             new Feed(feeds),
-            new SystemCmd(this,feeds)
+            new Leave(settings),
+            new Prefix(settings),
+            new Welcome(settings),
+                
+            new SystemCmd(this,feeds),
         };
         
+        JDAImpl.LOG.setLevel(SimpleLog.Level.TRACE);
         try {
             jda = new JDABuilder()
                     .addListener(this)
@@ -357,31 +374,17 @@ public class Spectra extends ListenerAdapter {
             });
         }// </editor-fold>
                 , 0, 30, TimeUnit.SECONDS);
+        cachecleaner.scheduleWithFixedDelay(() -> // <editor-fold defaultstate="collapsed" desc="{cachecleaner}">
+        {
+            imagesearcher.clearCache();
+        }// </editor-fold>
+                , 6, 6, TimeUnit.HOURS);
     }
     
     public void shutdown()
     {
         jda.shutdown();
-        eventmanager.shutdown();
-        
-        afks.shutdown();
-        feeds.shutdown();
-        mutes.shutdown();
-        overrides.shutdown();
-        profiles.shutdown();
-        reminders.shutdown();
-        rooms.shutdown();
-        savednames.shutdown();
-        settings.shutdown();
-        tags.shutdown();
-        
-        feedflusher.shutdown();
-        unmuter.shutdown();
-        roomchecker.shutdown();
-        reminderchecker.shutdown();
     }
-    
-    
     
     @Override
     public void onDisconnect(DisconnectEvent event) {
@@ -404,6 +407,33 @@ public class Spectra extends ListenerAdapter {
                         + (lastDisconnect==null ? "No disconnect time recorded." : 
                         "Downtime: "+FormatUtil.secondsToTime(lastDisconnect.until(OffsetDateTime.now(), ChronoUnit.SECONDS))) );
         lastDisconnect = null;
+    }
+
+    @Override
+    public void onStatusChange(StatusChangeEvent event) {
+        SimpleLog.getLog("Status").info("Status changed from ["+event.getOldStatus()+"] to ["+event.getStatus()+"]");
+    }
+
+    @Override
+    public void onShutdown(ShutdownEvent event) {
+        eventmanager.shutdown();
+        
+        afks.shutdown();
+        feeds.shutdown();
+        mutes.shutdown();
+        overrides.shutdown();
+        profiles.shutdown();
+        reminders.shutdown();
+        rooms.shutdown();
+        savednames.shutdown();
+        settings.shutdown();
+        tags.shutdown();
+        
+        feedflusher.shutdown();
+        unmuter.shutdown();
+        roomchecker.shutdown();
+        reminderchecker.shutdown();
+        cachecleaner.shutdown();
     }
     
     @Override
@@ -493,7 +523,7 @@ public class Spectra extends ListenerAdapter {
             {//we don't worry about ignores for help
                 isCommand = true;
                 successful = true;
-                String helpmsg = "**Available help "+(event.isPrivate() ? "via Direct Message" : "in <#"+event.getTextChannel().getId()+">")+"**:";
+                String helpmsg = "**Available help ("+(event.isPrivate() ? "Direct Message" : "<#"+event.getTextChannel().getId()+">")+")**:";
                 PermLevel current = PermLevel.EVERYONE;
                 for(Command com: commands)
                 {
@@ -642,12 +672,36 @@ public class Spectra extends ListenerAdapter {
                         && PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))).forEach((role) -> {
                     event.getGuild().getManager().addRoleToUser(event.getUser(), role);
         });
+        String[] currentsettings = settings.getSettingsForGuild(event.getGuild().getId());
+        String current = currentsettings==null ? null : currentsettings[Settings.WELCOMEMSG];
+        if(current!=null && !current.equals(""))
+        {
+            String[] parts = Settings.parseWelcomeMessage(current);
+            TextChannel channel = parts[0]==null ? event.getGuild().getPublicChannel() : event.getJDA().getTextChannelById(parts[0]);
+            if(channel==null || !channel.getGuild().equals(event.getGuild()))
+                channel = event.getGuild().getPublicChannel();
+            String toSend = JagTag.convertText(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()), "", event.getUser(),event.getGuild(), channel).trim();
+            if(!toSend.equals(""))
+                Sender.sendMsg(toSend, channel);
+        }
     }
 
     @Override
     public void onGuildMemberLeave(GuildMemberLeaveEvent event) {
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
                 "\uD83D\uDCE4 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") left or was kicked from the server.");
+        String[] currentsettings = settings.getSettingsForGuild(event.getGuild().getId());
+        String current = currentsettings==null ? null : currentsettings[Settings.LEAVEMSG];
+        if(current!=null && !current.equals(""))
+        {
+            String[] parts = Settings.parseWelcomeMessage(current);
+            TextChannel channel = parts[0]==null ? event.getGuild().getPublicChannel() : event.getJDA().getTextChannelById(parts[0]);
+            if(channel==null || !channel.getGuild().equals(event.getGuild()))
+                channel = event.getGuild().getPublicChannel();
+            String toSend = JagTag.convertText(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()), "", event.getUser(),event.getGuild(), channel).trim();
+            if(!toSend.equals(""))
+                Sender.sendMsg(toSend, channel);
+        }
     }
 
     @Override

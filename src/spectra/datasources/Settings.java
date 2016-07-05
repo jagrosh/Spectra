@@ -96,6 +96,21 @@ public class Settings extends DataSource {
         return tagCommandList.trim().split("\\s+");
     }
     
+    //returns an id or null in the first index, and the message in the second
+    public static String[] parseWelcomeMessage(String message)
+    {
+        String[] parts = message.split(":",2);
+        if(parts.length>1)
+        {
+            parts[0] = parts[0].trim();
+            if(parts[0].startsWith("<#") && parts[0].endsWith(">"))
+                parts[0]= parts[0].substring(2,parts[0].length()-1);
+            if(parts[0].matches("\\d+"))
+                return new String[]{parts[0],parts[1].trim()};
+        }
+        return new String[]{null,message};
+    }
+    
     final public static int SERVERID   = 0;
     final public static int WELCOMEMSG = 1;
     final public static int ROOMSETTING  = 2;

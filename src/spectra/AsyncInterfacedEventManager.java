@@ -40,7 +40,7 @@ public class AsyncInterfacedEventManager implements IEventManager
 
     public AsyncInterfacedEventManager()
     {
-        threadpool = Executors.newCachedThreadPool();
+        threadpool = Executors.newFixedThreadPool(100);
     }
 
     @Override
@@ -69,17 +69,20 @@ public class AsyncInterfacedEventManager implements IEventManager
     @Override
     public void handle(Event event)
     {
-        listeners.stream().forEach((listener) -> {
-            try
-            {
-                threadpool.submit( () -> listener.onEvent(event) );
-            }
-            catch (Throwable throwable)
-            {
-                JDAImpl.LOG.fatal("One of the EventListeners had an uncaught exception");
-                JDAImpl.LOG.log(throwable);
-            }
-        });
+        if(!threadpool.isShutdown())
+            threadpool.submit(() -> {
+                listeners.stream().forEach((listener) -> {
+                    try
+                    {
+                        listener.onEvent(event);
+                    }
+                    catch (Throwable throwable)
+                    {
+                        JDAImpl.LOG.fatal("One of the EventListeners had an uncaught exception");
+                        JDAImpl.LOG.log(throwable);
+                    }
+                });
+            });
     }
     
     public void shutdown()
