@@ -249,3 +249,6 @@ a {
 @media screen and (max-width: 42em) {
   .site-footer {
     font-size: 0.9rem; } }
+    
+.table {
+  font-size:12pt; }
