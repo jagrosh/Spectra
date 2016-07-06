@@ -1,1 +1,130 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Spectra by jagrosh</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body bgcolor="#36393e">
+    <section class="page-header">
+      <h1 class="project-name">Spectra</h1>
+      <h2 class="project-tagline">Spectra is a multi-purpose, for-fun and for-utility Discord bot!</h2>
+      <a href="https://github.com/jagrosh/Spectra" class="btn">View on GitHub</a>
+      <a href="https://discord.gg/0p9LSGoRLu6Pet0k" class="btn">Spectra Lounge on Discord</a>
+      <a href="https://jagrosh.github.io/Spectra/jagtag.html" class="btn">JagTag</a>
+    </section>
 
+    <section class="main-content">
+      <h3>
+<a id="what-is-jagtag" class="anchor" href="#what-is-jagtag" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What is JagTag?</h3>
+
+<p>JagTag is a simple, interpretted scripting language that is used by Spectra in various areas. </p>
+
+<h3>
+<a id="spectra-by-jagrosh" class="anchor" href="#spectra-by-jagrosh" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><strong>Spectra</strong> by jagrosh</h3>
+
+<table class="table table-striped table-bordered">
+<thead>
+<tr>
+<th>JagTag Syntax</th>
+<th>Description</th>
+<th>Example Usage</th>
+<th>Example Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{user}</td>
+<td>The user’s username</td>
+<td>Hello, {user}!</td>
+<td>Hello, jagrosh!</td>
+</tr>
+<tr>
+<td>{userid}</td>
+<td>The user’s Discord ID</td>
+<td>Your ID is {userid}</td>
+<td>Your ID is 113156185389092864</td>
+</tr>
+<tr>
+<td>{nick}</td>
+<td>The user’s nickname if they have one, otherwise their username</td>
+<td>Hello, {nick}!</td>
+<td>Hello, jag!</td>
+</tr>
+<tr>
+<td>{discrim}</td>
+<td>The user’s discriminator</td>
+<td>You are #{discrim}</td>
+<td>You are #4824</td>
+</tr>
+<tr>
+<td>{server}</td>
+<td>The name of the server (or “Direct Message”)</td>
+<td>Welcome to {server}!</td>
+<td>Welcome to Spectra Lounge!</td>
+</tr>
+<tr>
+<td>{serverid}</td>
+<td>The Discord ID of the server (or 0 in DMs)</td>
+<td>This server’s ID is {serverid}</td>
+<td>This server’s ID is 147698382092238848</td>
+</tr>
+<tr>
+<td>{servercount}</td>
+<td>The number of users on the server (or 1 in DMs)</td>
+<td>Wow! {servercount} users!</td>
+<td>Wow! 427 users!</td>
+</tr>
+<tr>
+<td>{channel}</td>
+<td>The current channel (or “#Direct Message”)</td>
+<td>{channel} is for serious chat only</td>
+<td>bug_reports is for serious chat only</td>
+</tr>
+<tr>
+<td>{channelid}</td>
+<td>The id of the current channel (or 0 in DMs)</td>
+<td>This channel has id {channelid}</td>
+<td>This channel has id 159849755294302208</td>
+</tr>
+<tr>
+<td>{args}</td>
+<td>Any additional text that is passed in (tags only)</td>
+<td>You said “{args}”</td>
+<td>You said “cool tag bro”</td>
+</tr>
+<tr>
+<td>{argslen}</td>
+<td>The number of arguments (arguments are separated by whitespace)</td>
+<td>You said {argslen} words</td>
+<td>You said 3 words</td>
+</tr>
+<tr>
+<td>{avatar}</td>
+<td>The url of the user’s avatar (or nothing if they don’t have an avatar)</td>
+<td>Here’s your avatar: {avatar}</td>
+<td>Here’s your avatar: <a href="https://cdn.discordapp.com/avatars/113156185389092864/70c5de967c130e2535a69ca1eacdbe24.jpg">https://cdn.discordapp.com/avatars/113156185389092864/70c5de967c130e2535a69ca1eacdbe24.jpg</a></td>
+</tr>
+<tr>
+<td>{nsfw}</td>
+<td>Marks a tag as Not Safe For Work</td>
+<td>[REDACTED] {nsfw}</td>
+<td>In NSFW channel : [REDACTED]      In regular channel : This tag has been marked as Not Safe For Work</td>
+</tr>
+</tbody>
+</table>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/jagrosh/Spectra">Spectra</a> is maintained by <a href="https://github.com/jagrosh">jagrosh</a>.</span>
+        
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
