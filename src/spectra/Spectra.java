@@ -90,7 +90,11 @@ public class Spectra extends ListenerAdapter {
     
     //datasources
     private final AFKs afks;
+    private final Contests contests;
+    private final Donators donators;
+    private final Entries entries;
     private final Feeds feeds;
+    private final Guides guides;
     private final Mutes mutes;
     private final Overrides overrides;
     private final Profiles profiles;
@@ -127,7 +131,11 @@ public class Spectra extends ListenerAdapter {
     public Spectra()
     {
         afks        = new AFKs();
+        contests    = new Contests();
+        donators    = new Donators();
+        entries     = new Entries();
         feeds       = new Feeds();
+        guides      = new Guides();
         mutes       = new Mutes();
         overrides   = new Overrides();
         profiles    = new Profiles();
@@ -154,7 +162,11 @@ public class Spectra extends ListenerAdapter {
     public void init()
     {
         afks.read();
+        contests.read();
+        donators.read();
+        entries.read();
         feeds.read();
+        guides.read();
         mutes.read();
         overrides.read();
         profiles.read();
@@ -182,6 +194,7 @@ public class Spectra extends ListenerAdapter {
             new Server(),
             new Tag(tags, overrides, settings, handler),
             new Timefor(profiles),
+            new WelcomeGuide(guides),
             
             new Ban(handler, settings),
             new BotScan(),
@@ -190,9 +203,12 @@ public class Spectra extends ListenerAdapter {
             new Softban(handler, settings, mutes),
             
             new Feed(feeds),
+            new Ignore(settings),
             new Leave(settings),
+            new ModCmd(settings),
             new Prefix(settings),
             new Welcome(settings),
+            new WelcomeDM(guides),
                 
             new SystemCmd(this,feeds),
         };
@@ -419,7 +435,11 @@ public class Spectra extends ListenerAdapter {
         eventmanager.shutdown();
         
         afks.shutdown();
+        contests.shutdown();
+        donators.shutdown();
+        entries.shutdown();
         feeds.shutdown();
+        guides.shutdown();
         mutes.shutdown();
         overrides.shutdown();
         profiles.shutdown();
@@ -684,6 +704,11 @@ public class Spectra extends ListenerAdapter {
             if(!toSend.equals(""))
                 Sender.sendMsg(toSend, channel);
         }
+        String[] guide = guides.get(event.getGuild().getId());
+        if(guide!=null)
+            for(int i=1; i<guide.length; i++)
+                if(guide[i]!=null && !guide[i].equals(""))
+                    Sender.sendPrivate(guide[i], event.getUser().getPrivateChannel());
     }
 
     @Override
@@ -768,8 +793,8 @@ public class Spectra extends ListenerAdapter {
     }
 
     @Override
-    public void onUserAvatarUpdate(UserAvatarUpdateEvent event) {
-        if(event.getUser().equals(event.getJDA().getSelfInfo()) || event.getUser().getId().equals("135251434445733888"))
+    public void onUserAvatarUpdate(UserAvatarUpdateEvent event)  {
+        if(event.getUser().equals(event.getJDA().getSelfInfo()))
             return;
         String id = event.getUser().getId();
         String oldurl = event.getPreviousAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getPreviousAvatarUrl();

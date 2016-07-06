@@ -59,7 +59,7 @@ public class Profile extends Command {
         {
             String response = SpConst.WARNING+"No profile found for **"+user.getUsername()+"**.";
             if(user.equals(event.getAuthor()))
-                response+="Set a profile field to create a profile. Use `"+SpConst.PREFIX+"profile help` for more information.";
+                response+=" Set a profile field to create a profile. Use `"+SpConst.PREFIX+"profile help` for more information.";
             Sender.sendResponse(response, event);
             return false;
         }

@@ -46,7 +46,14 @@ public abstract class Command {
     protected String separatorRegex = null;
     protected Function<MessageReceivedEvent,String> cooldownKey;
     
-    protected abstract boolean execute(Object[] args, MessageReceivedEvent event);
+    protected boolean execute(Object[] args, MessageReceivedEvent event)
+    {
+        StringBuilder builder = new StringBuilder(SpConst.ERROR+"Valid options are:");
+        for(Command child: children)
+            builder.append(" `").append(child.command).append("`");
+        Sender.sendResponse(builder.toString(), event);
+        return false;
+    }
     
     public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned)
     {

@@ -36,21 +36,14 @@ public class Prefix extends Command {
         this.availableInDM= false;
         this.help = "shows or sets prefixes for the current server";
         this.level = PermLevel.ADMIN;
+        this.arguments = new Argument[]{
+            new Argument("add|list|remove",Argument.Type.SHORTSTRING,true)
+        };
         this.children = new Command[]{
             new PrefixAdd(),
+            new PrefixList(),
             new PrefixRemove()
         };
-    }
-
-    @Override
-    protected boolean execute(Object[] args, MessageReceivedEvent event) {
-        String[] prefixes = Settings.prefixesFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.PREFIXES]);
-        StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Prefixes on **"+event.getGuild().getName()+"**:\n");
-        for(String prfx: prefixes)
-            builder.append(" `").append(prfx).append("`");
-        builder.append("\nSee `"+SpConst.PREFIX+"prefix help` for how to add or remove prefixes");
-        Sender.sendResponse(builder.toString(), event);
-        return true;
     }
     
     private class PrefixAdd extends Command
@@ -132,6 +125,27 @@ public class Prefix extends Command {
                 newprefixes = newprefixes.substring(1);
             settings.setSetting(event.getGuild().getId(), Settings.PREFIXES, newprefixes);
             Sender.sendResponse(SpConst.SUCCESS+"Prefix `"+prefix+"` has been removed", event);
+            return true;
+        }
+    }
+    
+    private class PrefixList extends Command
+    {
+        private PrefixList()
+        {
+            this.command = "list";
+            this.availableInDM= false;
+            this.help = "lists prefixes for the current server";
+            this.level = PermLevel.ADMIN;
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String[] prefixes = Settings.prefixesFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.PREFIXES]);
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Prefixes on **"+event.getGuild().getName()+"**:\n");
+            for(String prfx: prefixes)
+                builder.append(" `").append(prfx).append("`");
+            builder.append("\nSee `"+SpConst.PREFIX+"prefix help` for how to add or remove prefixes");
+            Sender.sendResponse(builder.toString(), event);
             return true;
         }
     }

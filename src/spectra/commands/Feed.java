@@ -40,7 +40,7 @@ public class Feed extends Command {
         this.help = "sets or removes a feed; `"+SpConst.PREFIX+"feed help` for more";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{
-            new Argument("feedtype",Argument.Type.SHORTSTRING,false)
+            new Argument("feedtype",Argument.Type.SHORTSTRING,true)
         };
         this.children = new Command[]{
             new FeedAnnouncements(),
@@ -52,18 +52,6 @@ public class Feed extends Command {
         };
         this.availableInDM = false;
     }
-    @Override
-    protected boolean execute(Object[] args, MessageReceivedEvent event) {
-        String invalidtype = args[0]==null?null:(String)(args[0]);
-        String str;
-        if(invalidtype==null)
-            str = "\u2139 The `feed` command assigns "+SpConst.BOTNAME+" to send certain type of messages to a channel";
-        else
-            str = SpConst.ERROR+"That is not a valid feed type!";
-        Sender.sendResponse(str + "\nPlease use `"+SpConst.PREFIX+"feed help` for a valid list of feeds", event);
-        return true;
-    }
-    
     
     private class FeedModlog extends Command {
         public FeedModlog()

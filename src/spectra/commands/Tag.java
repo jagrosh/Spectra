@@ -676,19 +676,20 @@ public class Tag extends Command{
             @Override
             protected boolean execute(Object[] args, MessageReceivedEvent event)
             {
-                String[] imports = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS].split("\\s+");
-                ArrayList<String> list = new ArrayList<>(Arrays.asList(imports));
-                if(imports.length==0)
-                    Sender.sendResponse(SpConst.WARNING+"No tags have been imported on **"+event.getGuild().getName()+"**", event);
-                else
+                String importlist= settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
+                if(importlist==null || importlist.equals(""))
                 {
-                    Collections.sort(list);
-                    StringBuilder builder = new StringBuilder(SpConst.SUCCESS+list.size()+" tag imports on **"+event.getGuild().getName()+"**:\n");
-                    list.stream().forEach((tag) -> {
-                        builder.append(tag).append(" ");
-                    });
-                    Sender.sendResponse(builder.toString(), event);
+                    Sender.sendResponse(SpConst.WARNING+"No tags have been imported on **"+event.getGuild().getName()+"**", event);
+                    return true;
                 }
+                String[] imports = importlist.split("\\s+");
+                ArrayList<String> list = new ArrayList<>(Arrays.asList(imports));
+                Collections.sort(list);
+                StringBuilder builder = new StringBuilder(SpConst.SUCCESS+list.size()+" tag imports on **"+event.getGuild().getName()+"**:\n");
+                list.stream().forEach((tag) -> {
+                    builder.append(tag).append(" ");
+                });
+                Sender.sendResponse(builder.toString(), event);
                 return true;
             }
         }
