@@ -18,7 +18,12 @@ package spectra.datasources;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import net.dv8tion.jda.JDA;
+import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.User;
 import spectra.DataSource;
+import spectra.FeedHandler;
 
 /**
  *
@@ -68,6 +73,43 @@ public class Mutes extends DataSource {
         mutes.stream().forEach((mute) -> {
             remove(generateKey.apply(mute));
         });
+    }
+    
+    public void checkUnmutes(JDA jda, FeedHandler handler)
+    {
+        if(jda.getStatus()!=JDA.Status.CONNECTED)
+                return;
+        List<String[]> expiredMutes = getExpiredMutes();
+        List<String[]> finished = new ArrayList<>();
+        for(String[] mute : expiredMutes)
+        {
+            Guild guild = jda.getGuildById(mute[Mutes.SERVERID]);
+            if(guild==null)
+                finished.add(mute);
+            else if(guild.isAvailable())
+            {
+                finished.add(mute);
+                User u = jda.getUserById(mute[Mutes.USERID]);
+                if(guild.isMember(u))
+                {
+                    for(Role r : guild.getRolesForUser(u))
+                        if(r.getName().equalsIgnoreCase("Muted"))
+                        {
+                            try{
+                            guild.getManager().removeRoleFromUser(u, r).update();
+                            handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 **"+u.getUsername()+"** (ID:"+u.getId()+") was unmuted.");
+                            }catch(Exception e){System.out.println("Unable to remove a muted role on "+guild.getName()+" ("+guild.getId()+")");}
+                            break;
+                        }
+                }
+                else
+                {
+                    handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 "+(u==null ? "[???]" :"**"+u.getUsername()+"**")+" (ID:"+mute[Mutes.USERID]+") was unmuted.");
+                }
+            }
+        }
+        if(!finished.isEmpty())
+            removeAll(finished);
     }
     
     final public static int USERID   = 0;

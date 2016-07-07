@@ -51,7 +51,7 @@ public class Archive extends Command{
             new Argument("numposts",Argument.Type.INTEGER,true,1,1000), 
             new Argument("channel",Argument.Type.TEXTCHANNEL,false)};//<numposts> [channel]
         this.cooldown=120;
-        this.cooldownKey = (event) -> {return event.getAuthor()+"|"+(event.isPrivate() ? "PC" : event.getTextChannel().getId()+"|archive");};
+        this.cooldownKey = event -> event.getAuthor().getId()+"|"+(event.isPrivate() ? "PC" : event.getTextChannel().getId())+"|archive";
         this.requiredPermissions = new Permission[]{
             Permission.MESSAGE_ATTACH_FILES
         };

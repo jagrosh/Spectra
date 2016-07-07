@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDA;
+import net.dv8tion.jda.JDA.Status;
 import net.dv8tion.jda.JDABuilder;
 import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
@@ -63,6 +64,7 @@ import net.dv8tion.jda.events.user.UserNameUpdateEvent;
 import net.dv8tion.jda.events.user.UserTypingEvent;
 import net.dv8tion.jda.events.voice.VoiceLeaveEvent;
 import net.dv8tion.jda.hooks.ListenerAdapter;
+import net.dv8tion.jda.utils.AvatarUtil;
 import net.dv8tion.jda.utils.MiscUtil;
 import net.dv8tion.jda.utils.PermissionUtil;
 import net.dv8tion.jda.utils.SimpleLog;
@@ -74,6 +76,7 @@ import spectra.tempdata.MessageCache;
 import spectra.utils.OtherUtil;
 import spectra.utils.FormatUtil;
 import spectra.web.BingImageSearcher;
+import spectra.web.GoogleSearcher;
 
 /**
  *
@@ -86,7 +89,8 @@ public class Spectra extends ListenerAdapter {
     private boolean idling = false;
     private static final OffsetDateTime start = OffsetDateTime.now();
     private OffsetDateTime lastDisconnect;
-    
+    private Color currentColor;
+    private int colorCounter;
     
     //datasources
     private final AFKs afks;
@@ -112,6 +116,7 @@ public class Spectra extends ListenerAdapter {
     
     //searchers
     private final BingImageSearcher imagesearcher;
+    private final GoogleSearcher googlesearcher;
     
     //timers
     private final ScheduledExecutorService feedflusher;
@@ -119,6 +124,7 @@ public class Spectra extends ListenerAdapter {
     private final ScheduledExecutorService roomchecker;
     private final ScheduledExecutorService reminderchecker;
     private final ScheduledExecutorService cachecleaner;
+    private final ScheduledExecutorService avatarchanger;
     
     //eventhandler
     private final AsyncInterfacedEventManager eventmanager;
@@ -149,17 +155,19 @@ public class Spectra extends ListenerAdapter {
         messagecache = new MessageCache();
         
         imagesearcher = new BingImageSearcher(OtherUtil.readFileLines("bing.apikey"));
+        googlesearcher = new GoogleSearcher();
         
         feedflusher = Executors.newSingleThreadScheduledExecutor();
         unmuter  = Executors.newSingleThreadScheduledExecutor();
         roomchecker = Executors.newSingleThreadScheduledExecutor();
         reminderchecker = Executors.newSingleThreadScheduledExecutor();
         cachecleaner  = Executors.newSingleThreadScheduledExecutor();
+        avatarchanger = Executors.newSingleThreadScheduledExecutor();
         
         eventmanager = new AsyncInterfacedEventManager();
     }
     
-    public void init()
+    private void init()
     {
         afks.read();
         contests.read();
@@ -183,6 +191,7 @@ public class Spectra extends ListenerAdapter {
             new Avatar(),
             new ChannelCmd(),
             new Draw(),
+            new GoogleSearch(googlesearcher),
             new ImageSearch(imagesearcher),
             new Info(),
             new Invite(),
@@ -198,6 +207,7 @@ public class Spectra extends ListenerAdapter {
             
             new Ban(handler, settings),
             new BotScan(),
+            new Clean(handler),
             new Kick(handler, settings),
             new Mute(handler, settings, mutes),
             new Softban(handler, settings, mutes),
@@ -210,6 +220,7 @@ public class Spectra extends ListenerAdapter {
             new Welcome(settings),
             new WelcomeDM(guides),
                 
+            new Eval(this),
             new SystemCmd(this,feeds),
         };
         
@@ -235,171 +246,78 @@ public class Spectra extends ListenerAdapter {
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
                         + "Started up in "+FormatUtil.secondsToTime(start.until(OffsetDateTime.now(), ChronoUnit.SECONDS)));
-        feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}
-                , 0, 20, TimeUnit.SECONDS);
-        unmuter.scheduleWithFixedDelay(()->// <editor-fold defaultstate="collapsed" desc="{unmuter}">
-        {
-            List<String[]> expiredMutes = mutes.getExpiredMutes();
-            List<String[]> finished = new ArrayList<>();
-            for(String[] mute : expiredMutes)
-            {
-                Guild guild = jda.getGuildById(mute[Mutes.SERVERID]);
-                if(guild==null)
-                    finished.add(mute);
-                else if(guild.isAvailable())
-                {
-                    finished.add(mute);
-                    User u = jda.getUserById(mute[Mutes.USERID]);
-                    if(guild.isMember(u))
-                    {
-                        for(Role r : guild.getRolesForUser(u))
-                            if(r.getName().equalsIgnoreCase("Muted"))
-                            {
-                                try{
-                                guild.getManager().removeRoleFromUser(u, r).update();
-                                handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 **"+u.getUsername()+"** (ID:"+u.getId()+") was unmuted.");
-                                }catch(Exception e){System.out.println("Unable to remove a muted role on "+guild.getName()+" ("+guild.getId()+")");}
-                                break;
-                            }
-                    }
-                    else
-                    {
-                        handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 "+(u==null ? "[???]" :"**"+u.getUsername()+"**")+" (ID:"+mute[Mutes.USERID]+") was unmuted.");
-                    }
-                }
-            }
-            if(!finished.isEmpty())
-                mutes.removeAll(finished);
-        }// </editor-fold>
-                ,0, 10, TimeUnit.SECONDS);
-        roomchecker.scheduleWithFixedDelay(() -> // <editor-fold defaultstate="collapsed" desc="{roomchecker}">
-        {
-            int warn = 36;
-            int delete = 12;
-            List<String> allIds = rooms.getAllRoomIds();
-            for(String id : allIds)
-            {
-                TextChannel tc = jda.getTextChannelById(id);
-                if(tc==null)
-                {
-                    Guild guild = jda.getGuildById(rooms.get(id)[Rooms.SERVERID]);
-                    if(guild==null || guild.isAvailable())
-                        rooms.remove(id);
-                    continue;
-                }
-                boolean checked = false;
-                if(rooms.getLastActivity(id)==null)
-                {
-                    MessageHistory mh = new MessageHistory(tc);
-                    List<Message> messages = mh.retrieve(1);
-                    checked = true;
-                    if(messages==null || messages.isEmpty())
-                        rooms.setLastActivity(id, MiscUtil.getCreationTime(id));
-                    else
-                    {
-                        rooms.setLastActivity(id, messages.get(0).getTime());
-                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
-                            rooms.setWarned(id);
-                    }
-                }
-                if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && rooms.isWarned(id))
-                {
-                    if(!checked)
-                    {
-                        MessageHistory mh = new MessageHistory(tc);
-                        List<Message> messages = mh.retrieve(1);
-                        checked = true;
-                        if(messages==null || messages.isEmpty())
-                            rooms.setLastActivity(id, MiscUtil.getCreationTime(id));
-                        else
-                        {
-                            rooms.setLastActivity(id, messages.get(0).getTime());
-                            if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
-                                rooms.setWarned(id);
-                        }
-                        if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && rooms.isWarned(id))
-                        {
-                            rooms.remove(id);
-                            handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
-                                "** (ID:"+tc.getId()+") has been removed due to inactivity.");
-                            tc.getManager().delete();
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        rooms.remove(id);
-                        handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
-                            "** (ID:"+tc.getId()+") has been removed due to inactivity.");
-                        tc.getManager().delete();
-                        continue;
-                    }
-                }
-                if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
-                {
-                    if(!checked)
-                    {
-                        MessageHistory mh = new MessageHistory(tc);
-                        List<Message> messages = mh.retrieve(1);
-                        //checked = true;
-                        if(messages==null || messages.isEmpty())
-                            rooms.setLastActivity(id, MiscUtil.getCreationTime(id));
-                        else
-                        {
-                            rooms.setLastActivity(id, messages.get(0).getTime());
-                            if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
-                                rooms.setWarned(id);
-                        }
-                        if(rooms.getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
-                        {
-                            //warn
-                            Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+rooms.get(id)[Rooms.OWNERID]+">"), tc);
-                            rooms.setWarned(id);
-                            //continue;
-                        }
-                    }
-                    else
-                    {
-                        //warn
-                        Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+rooms.get(id)[Rooms.OWNERID]+">"), tc);
-                        rooms.setWarned(id);
-                        //continue;
-                    }
-                }
-            }
-        }// </editor-fold>
-                , 0, 120, TimeUnit.SECONDS);
-        reminderchecker.scheduleWithFixedDelay(() -> // <editor-fold defaultstate="collapsed" desc="{reminders}">
-        {
-            List<String[]> list = reminders.getExpiredReminders();
-            list.stream().map((item) -> {
-                reminders.removeReminder(item);
-                return item;
-            }).forEach((item) -> {
-                TextChannel chan = jda.getTextChannelById(item[Reminders.CHANNELID]);
-                if(chan==null)
-                {
-                    User user = jda.getUserById(item[Reminders.USERID]);
-                    if(user!=null)
-                        Sender.sendPrivate("\u23F0 "+item[Reminders.MESSAGE], user.getPrivateChannel());
-                }
-                else
-                {
-                    Sender.sendMsg("\u23F0 <@"+item[Reminders.USERID]+"> \u23F0 "+item[Reminders.MESSAGE], chan);
-                }
-            });
-        }// </editor-fold>
-                , 0, 30, TimeUnit.SECONDS);
-        cachecleaner.scheduleWithFixedDelay(() -> // <editor-fold defaultstate="collapsed" desc="{cachecleaner}">
-        {
+        feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}, 0, 20, TimeUnit.SECONDS);
+        unmuter.scheduleWithFixedDelay(()-> {mutes.checkUnmutes(jda, handler);},0, 10, TimeUnit.SECONDS);
+        roomchecker.scheduleWithFixedDelay(() -> {rooms.checkExpires(jda, handler);}, 0, 120, TimeUnit.SECONDS);
+        reminderchecker.scheduleWithFixedDelay(() -> {reminders.checkReminders(jda);}, 0, 30, TimeUnit.SECONDS);
+        cachecleaner.scheduleWithFixedDelay(() -> {
             imagesearcher.clearCache();
-        }// </editor-fold>
-                , 6, 6, TimeUnit.HOURS);
+            googlesearcher.clearCache();}, 6, 3, TimeUnit.HOURS);
+        avatarchanger.scheduleWithFixedDelay(()->{
+            if(jda.getStatus()!=Status.CONNECTED)
+                return;
+            if(colorCounter<=0)
+            {
+                colorCounter=10;
+                currentColor = Color.getHSBColor((float)Math.random(), 1.0f, .5f);
+                ArrayList<Role> modifiable = new ArrayList<>();
+                for(Guild g: jda.getGuilds())
+                {
+                    if(!g.isAvailable())
+                        continue;
+                    if(!PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MANAGE_ROLES, g))
+                        continue;
+                    List<Role> guildroles = g.getRolesForUser(jda.getSelfInfo());
+                    for(int i=1; i<guildroles.size(); i++)
+                        if(guildroles.get(i).getName().equalsIgnoreCase(jda.getSelfInfo().getUsername()))
+                        {
+                            modifiable.add(guildroles.get(i));
+                            break;
+                        }
+                }
+                jda.getAccountManager().setAvatar(AvatarUtil.getAvatar(OtherUtil.makeWave(currentColor))).update();
+                modifiable.stream().forEach((r) -> {
+                    r.getManager().setPermissionsRaw(r.getPermissionsRaw()).setColor(currentColor.brighter()).update();
+                });
+            }
+            else
+            {
+                jda.getAccountManager().setAvatar(AvatarUtil.getAvatar(OtherUtil.makeWave(currentColor))).update();
+            }
+            colorCounter--;
+        }, 3, 3, TimeUnit.MINUTES);
     }
     
     public void shutdown()
     {
         jda.shutdown();
+    }
+    
+    @Override
+    public void onShutdown(ShutdownEvent event) {
+        eventmanager.shutdown();
+        
+        afks.shutdown();
+        contests.shutdown();
+        donators.shutdown();
+        entries.shutdown();
+        feeds.shutdown();
+        guides.shutdown();
+        mutes.shutdown();
+        overrides.shutdown();
+        profiles.shutdown();
+        reminders.shutdown();
+        rooms.shutdown();
+        savednames.shutdown();
+        settings.shutdown();
+        tags.shutdown();
+        
+        feedflusher.shutdown();
+        unmuter.shutdown();
+        roomchecker.shutdown();
+        reminderchecker.shutdown();
+        cachecleaner.shutdown();
+        avatarchanger.shutdown();
     }
     
     @Override
@@ -430,31 +348,6 @@ public class Spectra extends ListenerAdapter {
         SimpleLog.getLog("Status").info("Status changed from ["+event.getOldStatus()+"] to ["+event.getStatus()+"]");
     }
 
-    @Override
-    public void onShutdown(ShutdownEvent event) {
-        eventmanager.shutdown();
-        
-        afks.shutdown();
-        contests.shutdown();
-        donators.shutdown();
-        entries.shutdown();
-        feeds.shutdown();
-        guides.shutdown();
-        mutes.shutdown();
-        overrides.shutdown();
-        profiles.shutdown();
-        reminders.shutdown();
-        rooms.shutdown();
-        savednames.shutdown();
-        settings.shutdown();
-        tags.shutdown();
-        
-        feedflusher.shutdown();
-        unmuter.shutdown();
-        roomchecker.shutdown();
-        reminderchecker.shutdown();
-        cachecleaner.shutdown();
-    }
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
@@ -547,6 +440,8 @@ public class Spectra extends ListenerAdapter {
                 PermLevel current = PermLevel.EVERYONE;
                 for(Command com: commands)
                 {
+                    if(com.hidden)
+                        continue;
                     if( perm.isAtLeast(com.level) )
                     {
                         if(com.level==PermLevel.MODERATOR&& !current.isAtLeast(PermLevel.MODERATOR))

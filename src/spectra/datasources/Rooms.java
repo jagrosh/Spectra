@@ -16,11 +16,20 @@
 package spectra.datasources;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import net.dv8tion.jda.JDA;
+import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.entities.Message;
+import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.utils.MiscUtil;
 import spectra.DataSource;
+import spectra.FeedHandler;
+import spectra.Sender;
+import spectra.SpConst;
 
 /**
  *
@@ -114,6 +123,105 @@ public class Rooms extends DataSource{
             });
         }
         return list;
+    }
+    
+    public void checkExpires(JDA jda, FeedHandler handler)
+    {
+        if(jda.getStatus()!=JDA.Status.CONNECTED)
+            return;
+        int warn = 36;
+        int delete = 12;
+        List<String> allIds = getAllRoomIds();
+        for(String id : allIds)
+        {
+            TextChannel tc = jda.getTextChannelById(id);
+            if(tc==null)
+            {
+                Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
+                if(guild==null || guild.isAvailable())
+                    remove(id);
+                continue;
+            }
+            boolean checked = false;
+            if(getLastActivity(id)==null)
+            {
+                MessageHistory mh = new MessageHistory(tc);
+                List<Message> messages = mh.retrieve(1);
+                checked = true;
+                if(messages==null || messages.isEmpty())
+                    setLastActivity(id, MiscUtil.getCreationTime(id));
+                else
+                {
+                    setLastActivity(id, messages.get(0).getTime());
+                    if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
+                        setWarned(id);
+                }
+            }
+            if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && isWarned(id))
+            {
+                if(!checked)
+                {
+                    MessageHistory mh = new MessageHistory(tc);
+                    List<Message> messages = mh.retrieve(1);
+                    checked = true;
+                    if(messages==null || messages.isEmpty())
+                        setLastActivity(id, MiscUtil.getCreationTime(id));
+                    else
+                    {
+                        setLastActivity(id, messages.get(0).getTime());
+                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
+                            setWarned(id);
+                    }
+                    if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && isWarned(id))
+                    {
+                        remove(id);
+                        handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
+                            "** (ID:"+tc.getId()+") has been removed due to inactivity.");
+                        tc.getManager().delete();
+                        continue;
+                    }
+                }
+                else
+                {
+                    remove(id);
+                    handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
+                        "** (ID:"+tc.getId()+") has been removed due to inactivity.");
+                    tc.getManager().delete();
+                    continue;
+                }
+            }
+            if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
+            {
+                if(!checked)
+                {
+                    MessageHistory mh = new MessageHistory(tc);
+                    List<Message> messages = mh.retrieve(1);
+                    //checked = true;
+                    if(messages==null || messages.isEmpty())
+                        setLastActivity(id, MiscUtil.getCreationTime(id));
+                    else
+                    {
+                        setLastActivity(id, messages.get(0).getTime());
+                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
+                            setWarned(id);
+                    }
+                    if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
+                    {
+                        //warn
+                        Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+get(id)[Rooms.OWNERID]+">"), tc);
+                        setWarned(id);
+                        //continue;
+                    }
+                }
+                else
+                {
+                    //warn
+                    Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+get(id)[Rooms.OWNERID]+">"), tc);
+                    setWarned(id);
+                    //continue;
+                }
+            }
+        }
     }
     
     final public static int SERVERID   = 0;

@@ -21,7 +21,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.entities.VoiceChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.Argument;
@@ -59,7 +61,8 @@ public class Mute extends Command {
             new Argument("for <reason>", Argument.Type.LONGSTRING,false)
         };
         this.children = new Command[]{
-            new MuteList()
+            new MuteList(),
+            new MuteSetup()
         };
         this.requiredPermissions = new Permission[]{
             Permission.MANAGE_ROLES
@@ -173,6 +176,79 @@ public class Mute extends Command {
             }
             Sender.sendResponse(SpConst.SUCCESS+"**"+count+"** users muted on **"+event.getGuild().getName()+"**:"+builder.toString(), event);
             return true;
+        }
+    }
+    
+    private class MuteSetup extends Command
+    {
+        public MuteSetup()
+        {
+            this.command = "setup";
+            this.help = "sets up the muted role on the server";
+            this.availableInDM = false;
+            this.level = PermLevel.ADMIN;
+            this.arguments = new Argument[]{
+                new Argument("confirmation",Argument.Type.SHORTSTRING,false)
+            };
+            this.requiredPermissions = new Permission[]{
+                Permission.MANAGE_CHANNEL, Permission.MANAGE_ROLES
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String confirmation = args[0]==null ? null : (String)args[0];
+            String trueconfirm = event.getGuild().getId().substring(4, 7)+event.getAuthor().getId().substring(4, 7);
+            if(confirmation!=null && !confirmation.equals(trueconfirm))
+            {
+                Sender.sendResponse(SpConst.ERROR+"Incorrect confirmation code! Please type `"+SpConst.PREFIX+"mute setup` to see the status and get the confirmation code.", event);
+                return false;
+            }
+            Role mutedrole = null;
+            for(Role role : event.getGuild().getRoles())
+                if(role.getName().equalsIgnoreCase("muted"))
+                {
+                    mutedrole = role;
+                    break;
+                }
+            if(mutedrole!=null && !PermissionUtil.canInteract(event.getJDA().getSelfInfo(), mutedrole))
+            {
+                Sender.sendResponse(SpConst.ERROR+"Please delete the current muted role, or move it below my highest role, before continuing setup.", event);
+                return false;
+            }
+            if(confirmation==null)
+            {
+                String str = SpConst.WARNING+"Running this command will set up a muted role on this server.\n";
+                if(mutedrole==null)
+                    str+="This will created the role and set up the permissions.";
+                else
+                    str+="The role already exists. This will overwrite the current permissions.";
+                str+="Type `"+SpConst.PREFIX+"mute setup "+trueconfirm+"` to continue.";
+                Sender.sendResponse(str, event);
+                return true;
+            }
+            try
+            {
+                event.getChannel().sendTyping();
+                if(mutedrole==null)
+                {
+                    mutedrole = event.getGuild().createRole().getRole();
+                    int pos = event.getGuild().getRolesForUser(event.getJDA().getSelfInfo()).get(0).getPosition();
+                    mutedrole.getManager().move(pos-1).revoke(Permission.values()).setColor(11).setName("Muted").update();
+                }
+                for(TextChannel tc: event.getGuild().getTextChannels())
+                    tc.createPermissionOverride(mutedrole).deny(Permission.MESSAGE_WRITE).update();
+                for(VoiceChannel vc: event.getGuild().getVoiceChannels())
+                    vc.createPermissionOverride(mutedrole).deny(Permission.VOICE_CONNECT,Permission.VOICE_SPEAK).update();
+                Sender.sendResponse(SpConst.SUCCESS+"The muted role has been set up. Please make sure everything is in order "
+                        + "by checking the position of the role, as well as the channel specific permissions.", event);
+                return true;
+            } catch (Exception e)
+            {
+                Sender.sendResponse(SpConst.ERROR+"Something went wrong while setting up. Please make sure "
+                        + "I have permission to edit/create roles, and modify every channel. Alternatively, give me the "
+                        + "`Administrator` permission for setting up. If this still fails, please contact jagrosh.", event);
+                return false;
+            }
         }
     }
 }

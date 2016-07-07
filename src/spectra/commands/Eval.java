@@ -1,0 +1,67 @@
+/*
+ * Copyright 2016 John Grosh (jagrosh).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package spectra.commands;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import spectra.Argument;
+import spectra.Command;
+import spectra.PermLevel;
+import spectra.Sender;
+import spectra.SpConst;
+import spectra.Spectra;
+
+/**
+ *
+ * @author John Grosh (jagrosh)
+ */
+public class Eval extends Command {
+    private final Spectra spectra;
+    public Eval(Spectra spectra)
+    {
+        this.spectra = spectra;
+        this.command = "eval";
+        this.arguments = new Argument[]{
+            new Argument("code",Argument.Type.LONGSTRING,true)
+        };
+        this.level = PermLevel.JAGROSH;
+        this.help = "evaluate Nashorn (JS) code";
+        this.longhelp = "This command evaluates JavaScript code using the Nashorn Script Engine. The injected variables are: "
+                + "Spectra `bot`, MessageReceivedEvent `event`, JDA `jda`, Guild `guild`, and MessageChannel `channel`.";
+    }
+
+    @Override
+    protected boolean execute(Object[] args, MessageReceivedEvent event) {
+        String toEval = (String)args[0];
+        ScriptEngine se = new ScriptEngineManager().getEngineByName("Nashorn");
+        se.put("bot", spectra);
+        se.put("event", event);
+        se.put("jda", event.getJDA());
+        se.put("guild", event.getGuild());
+        se.put("channel", event.getChannel());
+        try
+        {
+            Sender.sendResponse(SpConst.SUCCESS+"Evaluated Successfully:\n```\n"+se.eval(toEval)+"```", event);
+            return true;
+        } 
+        catch(Exception e)
+        {
+            Sender.sendResponse(SpConst.ERROR+"An exception was thrown:\n```\n"+e+"```", event);
+            return false;
+        }
+    }
+}

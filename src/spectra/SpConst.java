@@ -42,10 +42,10 @@ public class SpConst {
     final public static String NEED_PERMISSION          = ERROR + "**I do not have the proper permissions to do that!**\n"
                                                                 + "Please make sure I have the following permissions:\n%s";
     final public static String BANNED_COMMAND           = ERROR + "**That command is unavailable here!**";
-    final public static String BANNED_COMMAND_IFADMIN   = "\nTo toggle this command on/off on this server, use `"+PREFIX+"toggle %s`\n"
+    final public static String BANNED_COMMAND_IFADMIN   = "\nTo toggle this command on/off on this server, use `"+PREFIX.replace("%", "%%")+"toggle %s`\n"
                                                                 + "Alternatively, add `{%s}` to a channel's topic to make it available there";
     final public static String NOT_VIA_DM               = ERROR + "**That command is not available via Direct Message!**";
-    final public static String TOO_FEW_ARGS             = ERROR + "**Too few arguments provided**\nTry using `"+PREFIX+"%s help` for more information.";
+    final public static String TOO_FEW_ARGS             = ERROR + "**Too few arguments provided**\nTry using `"+PREFIX.replace("%", "%%")+"%s help` for more information.";
     
     final private static String INVALID_VALUE            = ERROR + "**Invalid Value:**\n";
     final public static String INVALID_INTEGER          = INVALID_VALUE + "`%s` must be an integer between %s and %s";
@@ -65,5 +65,6 @@ public class SpConst {
     
     final public static String ON_COOLDOWN              = WARNING + "That command is on cooldown for another %s";
     
-    final public static String ROOM_WARNING             = "\u200B%s, this room has not seen activity for at least 36 hours. It will be deleted if there is no activity within the next 12 hours, or you can delete it yourself with `"+PREFIX+"room remove`";
+    final public static String ROOM_WARNING             = "\u200B%s, this room has not seen activity for at least 36 hours. It will be deleted if "
+                                                            + "there is no activity within the next 12 hours, or you can delete it yourself with `"+PREFIX.replace("%", "%%")+"room remove`";
 }

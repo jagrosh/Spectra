@@ -60,11 +60,11 @@ public class Sender {
                 return;
             }
             bits = bits.subList(0, maxMessages);
-            String lastBit = bits.get(maxMessages);
+            String lastBit = bits.get(maxMessages-1);
+            if(lastBit.length()>(2000-30))
+                lastBit = lastBit.substring(0,1970);
             lastBit+="(...message too long!)";
-            if(lastBit.length()>2000)
-                lastBit = lastBit.substring(0, 2000);
-            bits.set(maxMessages, lastBit);
+            bits.set(maxMessages-1, lastBit);
         }
         bits.stream().forEach((bit) -> {
             event.getChannel().sendMessageAsync(bit, m -> {

@@ -45,10 +45,13 @@ public class FeedHandler {
     public void flush(JDA jda)
     {
         synchronized(buffers){
-            buffers.keySet().stream().forEach((id) -> {
+            buffers.keySet().stream().forEach((id) -> 
+            {
                 TextChannel tc = jda.getTextChannelById(id);
-                if (!(tc==null)) {
-                    if (!(buffers.get(id)==null || buffers.get(id).equals(""))) {
+                if (!(tc==null)) 
+                {
+                    if (!(buffers.get(id)==null || buffers.get(id).equals(""))) 
+                    {
                         Sender.sendMsg(buffers.get(id), tc);
                         buffers.put(id, "");
                     }

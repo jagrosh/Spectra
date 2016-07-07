@@ -45,6 +45,7 @@ public abstract class Command {
     protected int cooldown = 0; //seconds
     protected String separatorRegex = null;
     protected Function<MessageReceivedEvent,String> cooldownKey;
+    protected boolean hidden = false;
     
     protected boolean execute(Object[] args, MessageReceivedEvent event)
     {
@@ -81,6 +82,8 @@ public abstract class Command {
                 PermLevel current = level;
                 for(Command child: children)
                 {
+                    if(child.hidden)
+                        continue;
                     if(child.level!=current)
                     {
                         current = child.level;

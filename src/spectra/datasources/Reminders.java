@@ -18,7 +18,11 @@ package spectra.datasources;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import net.dv8tion.jda.JDA;
+import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.entities.User;
 import spectra.DataSource;
+import spectra.Sender;
 
 /**
  *
@@ -61,6 +65,29 @@ public class Reminders extends DataSource {
     public void removeReminder(String[] reminder)
     {
         remove(generateKey.apply(reminder));
+    }
+    
+    public void checkReminders(JDA jda)
+    {
+        if(jda.getStatus()!=JDA.Status.CONNECTED)
+            return;
+        List<String[]> list = getExpiredReminders();
+        list.stream().map((item) -> {
+            removeReminder(item);
+            return item;
+        }).forEach((item) -> {
+            TextChannel chan = jda.getTextChannelById(item[Reminders.CHANNELID]);
+            if(chan==null)
+            {
+                User user = jda.getUserById(item[Reminders.USERID]);
+                if(user!=null)
+                    Sender.sendPrivate("\u23F0 "+item[Reminders.MESSAGE], user.getPrivateChannel());
+            }
+            else
+            {
+                Sender.sendMsg("\u23F0 <@"+item[Reminders.USERID]+"> \u23F0 "+item[Reminders.MESSAGE], chan);
+            }
+        });
     }
     
     final public static int USERID   = 0;
