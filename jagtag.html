@@ -232,20 +232,14 @@
 <td>My favorite numbers are [REDACTED], [REDACTED], and [REDACTED]</td>
 </tr>
 <tr>
-<td>{math:NUMBER|OPERATION|NUMBER|OPERATION|NUMBER}</td>
+<td>{math:NUM|OP|NUM|OP|NUM}</td>
 <td>Performs basic math. Operations are: + - * / and %. Multiple operations can be used in a single math replacement</td>
 <td>40000 minutes is the same as {math:40000|/|60|/|24} days</td>
 <td>40000 minutes is the same as 27.777777777777775 days</td>
 </tr>
 <tr>
-<td>{if:VALUE|COMPARITOR|VALUE|then:TEXT|else:TEXT}</td>
-<td>Performs a conditional check. Values can be textual or numerical. Possible operations are <, >, =, or ~. For numbers, ~ is a check for equality when rounding to 2 decimal places. For strings, ~ is a case-insensitive equals</td>
-<td>I'm feeling {if:THIS|~|this|then:like this|else:like that}.</td>
-<td>I'm feeling like this</td>
-</tr>
-<tr>
-<td>{if:VALUE|COMPARITOR|VALUE|then:TEXT|else:TEXT}</td>
-<td>Performs a conditional check. Values can be textual or numerical. Possible operations are <, >, =, or ~. For numbers, ~ is a check for equality when rounding to 2 decimal places. For strings, ~ is a case-insensitive equals</td>
+<td>{if:VAL|COMP|VAL|then:TEXT|else:TEXT}</td>
+<td>Performs a conditional check. Values can be textual or numerical. Possible comparitors are <, >, =, or ~. For numbers, ~ is a check for equality when rounding to 2 decimal places. For strings, ~ is a case-insensitive equals</td>
 <td>I'm feeling {if:THIS|~|this|then:like this|else:like that}.</td>
 <td>I'm feeling like this</td>
 </tr>
