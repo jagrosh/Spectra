@@ -15,6 +15,8 @@
  */
 package spectra.datasources;
 
+import java.util.ArrayList;
+import java.util.List;
 import spectra.DataSource;
 
 /**
@@ -28,6 +30,18 @@ public class Entries extends DataSource {
         this.filename = "discordbot.entries";
         this.size = 4;
         this.generateKey = item -> item[SERVERID]+"|"+item[USERID]+"|"+item[CONTESTNAME].toLowerCase();
+    }
+    
+    public List<String[]> getEntries(String guildid, String contestname)
+    {
+        ArrayList<String[]> list = new ArrayList<>();
+        synchronized(data)
+        {
+            data.values().stream().filter((entry) -> (entry[SERVERID].equals(guildid) && entry[CONTESTNAME].equalsIgnoreCase(contestname))).forEach((entry) -> {
+                list.add(entry);
+            });
+        }
+        return list;
     }
     
     final public static int SERVERID    = 0;

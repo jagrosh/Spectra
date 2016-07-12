@@ -36,6 +36,7 @@ import spectra.utils.FormatUtil;
 public class FeedHandler {
     private final HashMap<String,String> buffers = new HashMap<>();
     final Feeds feeds;
+    boolean useBuffer = false;
     
     public FeedHandler(Feeds feeds)
     {
@@ -44,6 +45,8 @@ public class FeedHandler {
     
     public void flush(JDA jda)
     {
+        if(!useBuffer)
+            return;
         synchronized(buffers){
             buffers.keySet().stream().forEach((id) -> 
             {
@@ -76,7 +79,64 @@ public class FeedHandler {
             text = logFormat(text);
         else if (type==Feeds.Type.BOTLOG)
             text = botlogFormat(text);
-        synchronized(buffers)
+        if(useBuffer)
+        {
+            synchronized(buffers)
+            {
+                for(Guild guild : guilds)
+                {
+                    String[] matching = feeds.feedForGuild(guild, type);
+                    if(matching==null)
+                        continue;
+                    TextChannel target = guild.getJDA().getTextChannelById(matching[Feeds.CHANNELID]);
+                    if(target==null)
+                    {
+                        if(guild.isAvailable())//channel was deleted
+                        {
+                            feeds.removeFeed(matching);
+                            buffers.remove(matching[Feeds.CHANNELID]);
+                        }
+                        continue;
+                    }
+
+                    String currentBuffer;
+                    currentBuffer = buffers.get(matching[Feeds.CHANNELID]);
+
+                    if(currentBuffer==null)
+                        currentBuffer = "";
+
+                    boolean safe = true;
+
+                    if(currentBuffer.length()+text.length()+1 > 2000)//flush current buffer
+                    {
+                        safe = Sender.sendMsg(currentBuffer, target);
+                        currentBuffer = "";
+                        if(!safe)
+                        {
+                            feeds.removeFeed(matching);
+                            Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
+                        }
+                    }
+
+                    if(safe)
+                    {
+                        currentBuffer += "\n"+text;
+                        if(currentBuffer.length() > 1800)
+                        {
+                            safe = Sender.sendMsg(currentBuffer, target);
+                            currentBuffer = "";
+                            if(!safe)
+                            {
+                                feeds.removeFeed(matching);
+                                Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
+                            }
+                        }
+                    }
+                    buffers.put(matching[Feeds.CHANNELID], currentBuffer);
+                }
+            }
+        }
+        else
         {
             for(Guild guild : guilds)
             {
@@ -89,45 +149,15 @@ public class FeedHandler {
                     if(guild.isAvailable())//channel was deleted
                     {
                         feeds.removeFeed(matching);
-                        buffers.remove(matching[Feeds.CHANNELID]);
                     }
                     continue;
                 }
-
-                String currentBuffer;
-                currentBuffer = buffers.get(matching[Feeds.CHANNELID]);
-
-                if(currentBuffer==null)
-                    currentBuffer = "";
-
-                boolean safe = true;
-
-                if(currentBuffer.length()+text.length()+1 > 2000)//flush current buffer
+                boolean safe = Sender.sendMsg(text, target);
+                if(!safe)
                 {
-                    safe = Sender.sendMsg(currentBuffer, target);
-                    currentBuffer = "";
-                    if(!safe)
-                    {
-                        feeds.removeFeed(matching);
-                        Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
-                    }
+                    feeds.removeFeed(matching);
+                    Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
                 }
-
-                if(safe)
-                {
-                    currentBuffer += "\n"+text;
-                    if(currentBuffer.length() > 1800)
-                    {
-                        safe = Sender.sendMsg(currentBuffer, target);
-                        currentBuffer = "";
-                        if(!safe)
-                        {
-                            feeds.removeFeed(matching);
-                            Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
-                        }
-                    }
-                }
-                buffers.put(matching[Feeds.CHANNELID], currentBuffer);
             }
         }
     }
@@ -140,7 +170,69 @@ public class FeedHandler {
             alternative = botlogFormat(alternative);
         File file = null;
         String normal = null;
-        synchronized(buffers)
+        if(useBuffer)
+        {
+            synchronized(buffers)
+            {
+                for(Guild guild : guilds)
+                {
+                    String[] matching = feeds.feedForGuild(guild, type);
+                    if(matching==null)
+                        continue;
+                    TextChannel target = guild.getJDA().getTextChannelById(matching[Feeds.CHANNELID]);
+                    if(target==null)
+                    {
+                        if(guild.isAvailable())//channel was deleted
+                        {
+                            feeds.removeFeed(matching);
+                            buffers.remove(matching[Feeds.CHANNELID]);
+                        }
+                        continue;
+                    }
+
+                    String currentBuffer = buffers.get(matching[Feeds.CHANNELID]);
+
+                    if(currentBuffer==null)
+                        currentBuffer = "";
+
+                    if(file==null)
+                    {
+                        Tuple<String,File> item = message.get();
+                        file = item.getSecond();
+                        normal = item.getFirst();
+                        if(type==Feeds.Type.MODLOG || type== Feeds.Type.SERVERLOG || type==Feeds.Type.TAGLOG)
+                            normal = logFormat(normal);
+                        else if (type==Feeds.Type.BOTLOG)
+                            normal = botlogFormat(normal);
+                    }
+
+                    boolean safe =true;
+                    if(!currentBuffer.equals(""))
+                    {
+                        safe = Sender.sendMsg(currentBuffer, target);
+                        currentBuffer = "";
+                        if(!safe)
+                        {
+                            feeds.removeFeed(matching);
+                            Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
+                        }
+                    }
+
+                    if(safe)
+                    {
+                        safe = Sender.sendMsgFile(normal, file, alternative, target);
+                        if(!safe)
+                        {
+                            feeds.removeFeed(matching);
+                            Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
+                        }
+                    }
+
+                    buffers.put(matching[Feeds.CHANNELID], currentBuffer);
+                }
+            }
+        }
+        else
         {
             for(Guild guild : guilds)
             {
@@ -153,18 +245,10 @@ public class FeedHandler {
                     if(guild.isAvailable())//channel was deleted
                     {
                         feeds.removeFeed(matching);
-                        buffers.remove(matching[Feeds.CHANNELID]);
                     }
                     continue;
                 }
-
-                String currentBuffer;
-
-                currentBuffer = buffers.get(matching[Feeds.CHANNELID]);
-
-                if(currentBuffer==null)
-                    currentBuffer = "";
-
+                
                 if(file==null)
                 {
                     Tuple<String,File> item = message.get();
@@ -175,30 +259,13 @@ public class FeedHandler {
                     else if (type==Feeds.Type.BOTLOG)
                         normal = botlogFormat(normal);
                 }
-
-                boolean safe =true;
-                if(!currentBuffer.equals(""))
+                
+                boolean safe = Sender.sendMsgFile(normal, file, alternative, target);
+                if(!safe)
                 {
-                    safe = Sender.sendMsg(currentBuffer, target);
-                    currentBuffer = "";
-                    if(!safe)
-                    {
-                        feeds.removeFeed(matching);
-                        Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
-                    }
+                    feeds.removeFeed(matching);
+                    Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
                 }
-
-                if(safe)
-                {
-                    safe = Sender.sendMsgFile(normal, file, alternative, target);
-                    if(!safe)
-                    {
-                        feeds.removeFeed(matching);
-                        Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
-                    }
-                }
-
-                buffers.put(matching[Feeds.CHANNELID], currentBuffer);
             }
         }
     }

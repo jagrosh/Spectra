@@ -99,7 +99,7 @@ public class Tag extends Command{
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
             return false;
         }
-        Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event);
+        Sender.sendResponse("\u200B"+JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event);
         return true;
     }
     
@@ -397,7 +397,7 @@ public class Tag extends Command{
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            Sender.sendResponse("\u180E"+tag[Tags.CONTENTS], event);
+            Sender.sendResponse("\u200B"+tag[Tags.CONTENTS], event);
             return true;
         }
     }

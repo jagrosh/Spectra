@@ -54,7 +54,7 @@ public class FormatUtil {
     
     public static String demention(String input)
     {
-        return input.replace("<@", "<@\u180E");
+        return input.replace("<@", "<@\u200B");
     }
     
     public static String unembed(String input)

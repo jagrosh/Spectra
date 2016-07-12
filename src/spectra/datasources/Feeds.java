@@ -62,6 +62,18 @@ public class Feeds extends DataSource {
         }
     }
     
+    public List<String> findGuildsForFeedType(Type type)
+    {
+        ArrayList<String> ids = new ArrayList<>();
+        synchronized(data)
+        {
+            data.values().stream().filter((feed) -> (feed[FEEDTYPE].equals(type.toString()))).forEach((feed) -> {
+                ids.add(feed[GUILDID]);
+            });
+        }
+        return ids;
+    }
+    
     final public static int CHANNELID = 0;
     final public static int FEEDTYPE  = 1;
     final public static int GUILDID   = 2;

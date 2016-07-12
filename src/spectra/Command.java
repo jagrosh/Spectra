@@ -66,7 +66,7 @@ public abstract class Command {
         if("help".equalsIgnoreCase(args))//display help text if applicable
         {
             StringBuilder builder = new StringBuilder();
-            builder.append("**Available help for `").append(parentChain).append(command).append("` ").append(event.isPrivate() ? "via Direct Message" : "in <#"+event.getTextChannel().getId()+">").append("**:\n");
+            builder.append("**Available help for `").append(parentChain).append(command).append("` ").append(event.isPrivate() ? "(Direct Message)" : "(<#"+event.getTextChannel().getId()+">)").append("**:\n");
             builder.append("Usage: `" + SpConst.PREFIX).append(parentChain).append(command).append("`").append(Argument.arrayToString(arguments));
             
             if(aliases.length>0)

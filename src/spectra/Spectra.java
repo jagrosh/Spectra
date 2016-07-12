@@ -33,13 +33,11 @@ import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.JDA.Status;
 import net.dv8tion.jda.JDABuilder;
-import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.entities.impl.JDAImpl;
 import net.dv8tion.jda.events.DisconnectEvent;
 import net.dv8tion.jda.events.ReadyEvent;
@@ -125,6 +123,7 @@ public class Spectra extends ListenerAdapter {
     private final ScheduledExecutorService reminderchecker;
     private final ScheduledExecutorService cachecleaner;
     private final ScheduledExecutorService avatarchanger;
+    private final ScheduledExecutorService contestchecker;
     
     //eventhandler
     private final AsyncInterfacedEventManager eventmanager;
@@ -163,6 +162,7 @@ public class Spectra extends ListenerAdapter {
         reminderchecker = Executors.newSingleThreadScheduledExecutor();
         cachecleaner  = Executors.newSingleThreadScheduledExecutor();
         avatarchanger = Executors.newSingleThreadScheduledExecutor();
+        contestchecker = Executors.newSingleThreadScheduledExecutor();
         
         eventmanager = new AsyncInterfacedEventManager();
     }
@@ -190,6 +190,7 @@ public class Spectra extends ListenerAdapter {
             new Archive(),
             new Avatar(),
             new ChannelCmd(),
+            new Contest(contests, entries),
             new Draw(),
             new GoogleSearch(googlesearcher),
             new ImageSearch(imagesearcher),
@@ -217,14 +218,16 @@ public class Spectra extends ListenerAdapter {
             new Leave(settings),
             new ModCmd(settings),
             new Prefix(settings),
+            new RoleCmd(),
+            new Say(),
             new Welcome(settings),
             new WelcomeDM(guides),
                 
+            new Announce(handler,feeds),
             new Eval(this),
             new SystemCmd(this,feeds),
         };
         
-        JDAImpl.LOG.setLevel(SimpleLog.Level.TRACE);
         try {
             jda = new JDABuilder()
                     .addListener(this)
@@ -250,6 +253,7 @@ public class Spectra extends ListenerAdapter {
         unmuter.scheduleWithFixedDelay(()-> {mutes.checkUnmutes(jda, handler);},0, 10, TimeUnit.SECONDS);
         roomchecker.scheduleWithFixedDelay(() -> {rooms.checkExpires(jda, handler);}, 0, 120, TimeUnit.SECONDS);
         reminderchecker.scheduleWithFixedDelay(() -> {reminders.checkReminders(jda);}, 0, 30, TimeUnit.SECONDS);
+        contestchecker.scheduleWithFixedDelay(() -> {contests.notifications(jda);}, 0, 1, TimeUnit.MINUTES);
         cachecleaner.scheduleWithFixedDelay(() -> {
             imagesearcher.clearCache();
             googlesearcher.clearCache();}, 6, 3, TimeUnit.HOURS);
@@ -318,6 +322,7 @@ public class Spectra extends ListenerAdapter {
         reminderchecker.shutdown();
         cachecleaner.shutdown();
         avatarchanger.shutdown();
+        contestchecker.shutdown();
     }
     
     @Override
@@ -518,7 +523,7 @@ public class Spectra extends ListenerAdapter {
                             }
                             else
                             {
-                                Sender.sendResponse("\u180E"+JagTag.convertText(tag[Tags.CONTENTS], args[1], event.getAuthor(), event.getGuild(), event.getChannel()), event);
+                                Sender.sendResponse("\u200B"+JagTag.convertText(tag[Tags.CONTENTS], args[1], event.getAuthor(), event.getGuild(), event.getChannel()), event);
                             }
                         }
                 }

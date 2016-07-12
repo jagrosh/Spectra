@@ -168,7 +168,7 @@ public class Sender {
         ArrayList<String> msgs =  new ArrayList<>();
         if(stringtoSend!=null)
         {
-            stringtoSend = stringtoSend.replace("@everyone", "@\u180Eeveryone").replace("@here", "@\u180Ehere").trim();
+            stringtoSend = stringtoSend.replace("@everyone", "@\u200Beveryone").replace("@here", "@\u200Bhere").trim();
             while(stringtoSend.length()>2000)
             {
                 int leeway = 2000 - (stringtoSend.length()%2000);
