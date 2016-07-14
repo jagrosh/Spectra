@@ -382,5 +382,14 @@ public abstract class Command {
                 return true;
         return false;
     }
+    
+    public String getName()
+    {
+        return command;
+    }
 
+    public PermLevel getLevel()
+    {
+        return level;
+    }
 }

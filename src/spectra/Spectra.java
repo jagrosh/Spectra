@@ -38,7 +38,6 @@ import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.entities.impl.JDAImpl;
 import net.dv8tion.jda.events.DisconnectEvent;
 import net.dv8tion.jda.events.ReadyEvent;
 import net.dv8tion.jda.events.ReconnectedEvent;
@@ -71,10 +70,12 @@ import spectra.datasources.*;
 import spectra.entities.Tuple;
 import spectra.tempdata.CallDepend;
 import spectra.tempdata.MessageCache;
+import spectra.tempdata.PhoneConnections;
 import spectra.utils.OtherUtil;
 import spectra.utils.FormatUtil;
 import spectra.web.BingImageSearcher;
 import spectra.web.GoogleSearcher;
+import spectra.web.YoutubeSearcher;
 
 /**
  *
@@ -111,10 +112,12 @@ public class Spectra extends ListenerAdapter {
     
     //tempdata
     private final MessageCache messagecache;
+    private final PhoneConnections phones;
     
     //searchers
     private final BingImageSearcher imagesearcher;
     private final GoogleSearcher googlesearcher;
+    private final YoutubeSearcher youtubesearcher;
     
     //timers
     private final ScheduledExecutorService feedflusher;
@@ -152,9 +155,11 @@ public class Spectra extends ListenerAdapter {
         
         handler = new FeedHandler(feeds);
         messagecache = new MessageCache();
+        phones = new PhoneConnections();
         
         imagesearcher = new BingImageSearcher(OtherUtil.readFileLines("bing.apikey"));
         googlesearcher = new GoogleSearcher();
+        youtubesearcher = new YoutubeSearcher(OtherUtil.readFileLines("youtube.apikey").get(0));
         
         feedflusher = Executors.newSingleThreadScheduledExecutor();
         unmuter  = Executors.newSingleThreadScheduledExecutor();
@@ -202,9 +207,11 @@ public class Spectra extends ListenerAdapter {
             new Reminder(reminders),
             new Room(rooms, settings, handler),
             new Server(),
+            new Speakerphone(phones),
             new Tag(tags, overrides, settings, handler),
             new Timefor(profiles),
             new WelcomeGuide(guides),
+            new YoutubeSearch(youtubesearcher),
             
             new Ban(handler, settings),
             new BotScan(),
@@ -213,6 +220,7 @@ public class Spectra extends ListenerAdapter {
             new Mute(handler, settings, mutes),
             new Softban(handler, settings, mutes),
             
+            new CommandCmd(settings, this),
             new Feed(feeds),
             new Ignore(settings),
             new Leave(settings),
@@ -359,7 +367,7 @@ public class Spectra extends ListenerAdapter {
         
         PermLevel perm;
         boolean ignore;
-        boolean isCommand;
+        boolean isCommand = false;
         boolean successful;
         
         if(afks.get(event.getAuthor().getId())!=null)
@@ -419,7 +427,7 @@ public class Spectra extends ListenerAdapter {
                     }
         }
         
-        if(!ignore && !event.isPrivate() && !event.getMessage().getMentionedUsers().isEmpty())
+        if(!ignore && !event.isPrivate() && !event.getMessage().getMentionedUsers().isEmpty() && !event.getAuthor().isBot())
         {
             StringBuilder builder = new StringBuilder("");
             event.getMessage().getMentionedUsers().stream().forEach(u -> {
@@ -434,7 +442,7 @@ public class Spectra extends ListenerAdapter {
             Sender.sendMsg(afkmessage, event.getTextChannel());
         }
         
-        if(strippedMessage!=null)//potential command right here
+        if(strippedMessage!=null && !event.getAuthor().isBot())//potential command right here
         {
             strippedMessage = strippedMessage.trim();
             if(strippedMessage.equalsIgnoreCase("help"))//send full help message (based on access level)
@@ -529,7 +537,26 @@ public class Spectra extends ListenerAdapter {
                 }
             }
         }
-        
+        if(!event.isPrivate() && !isCommand && !ignore && !event.getAuthor().isBot())
+        {
+            TextChannel chan = phones.getOtherLine(event.getTextChannel());
+            if(chan!=null)
+            {
+                String toSend = (PhoneConnections.LINE+FormatUtil.appendAttachmentUrls(event.getMessage()))
+                        .replaceAll("(?i)spectra", "you")
+                        .replace(event.getAuthorName(), "Spectra")
+                        .replace("@everyone", "@\u200Beveryone")
+                        .replace("@here", "@\u200Bhere");
+                if(toSend.length()>2000)
+                    toSend = toSend.substring(0,2000);
+                try{
+                    chan.sendMessage(toSend);
+                }catch(Exception e)
+                {
+                    phones.endCall(event.getJDA());
+                }
+            }
+        }
     }
 
     
@@ -539,6 +566,12 @@ public class Spectra extends ListenerAdapter {
         {
             Sender.sendPrivate(SpConst.SUCCESS+"Welcome back, I have removed your AFK status.", event.getUser().getPrivateChannel());
             afks.remove(event.getUser().getId());
+        }
+        if(event.getChannel() instanceof TextChannel)
+        {
+            TextChannel other = phones.getOtherLine(((TextChannel)event.getChannel()));
+            if(other!=null && !event.getUser().isBot())
+                other.sendTyping();
         }
     }
     
@@ -551,10 +584,13 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
-        if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
+        if(feed!=null)
         {
+            String id = event.getAuthor().getId();
             Message msg = messagecache.updateMessage(event.getGuild().getId(), event.getMessage());
-            if(msg!=null && !msg.getRawContent().equals(event.getMessage().getRawContent()))
+            String details = feed[Feeds.DETAILS];
+            if(msg!=null && !msg.getRawContent().equals(event.getMessage().getRawContent()) && (details==null || details.contains("+m"+id) || !(details.contains("-m"+id) || details.contains("+m"))))
             {
                 String old = FormatUtil.appendAttachmentUrls(msg);
                 String newmsg = FormatUtil.appendAttachmentUrls(event.getMessage());
@@ -569,10 +605,13 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
         CallDepend.getInstance().delete(event.getMessageId());
-        if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
+        if(feed!=null)
         {
+            String id = event.getAuthor().getId();
             Message msg = messagecache.deleteMessage(event.getGuild().getId(), event.getMessageId());
-            if(msg!=null)
+            String details = feed[Feeds.DETAILS];
+            if( msg!=null && (details==null || details.contains("+m"+id) || !(details.contains("-m"+id) || details.contains("+m"))) )
             {
                 String del = FormatUtil.appendAttachmentUrls(msg);
                 handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
@@ -670,10 +709,11 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildMemberNickChange(GuildMemberNickChangeEvent event) {
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
-        String id = event.getUser().getId();
         if(feed!=null)
         {
-            if(feed[Feeds.DETAILS]!=null && (feed[Feeds.DETAILS].contains("+n"+id) || (!feed[Feeds.DETAILS].contains("-n"+id) && !feed[Feeds.DETAILS].contains("+n"))))
+            String id = event.getUser().getId();
+            String details = feed[Feeds.DETAILS];
+            if( details==null || details.contains("+n"+id) || !(details.contains("-n"+id) || details.contains("+n")) )
                 handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\u270D **"+event.getUser().getUsername()+"** (ID:"
                         +event.getUser().getId()+") has changed nicknames from "+(event.getPrevNick()==null ? "[none]" : "**"+event.getPrevNick()+"**")+" to "+
                         (event.getNewNick()==null ? "[none]" : "**"+event.getNewNick()+"**"));
@@ -702,8 +742,13 @@ public class Spectra extends ListenerAdapter {
         ArrayList<Guild> guilds = new ArrayList<>();
         jda.getGuilds().stream().filter((g) -> (g.isMember(event.getUser()))).forEach((g) -> {
             String[] feed = feeds.feedForGuild(g, Feeds.Type.SERVERLOG);
-            if (feed!=null && feed[Feeds.DETAILS]!=null && (feed[Feeds.DETAILS].contains("+a"+id) || (!feed[Feeds.DETAILS].contains("-a"+id) && !feed[Feeds.DETAILS].contains("+a")))) {
-                guilds.add(g);
+            if(feed!=null)
+            {
+                String details = feed[Feeds.DETAILS];
+                if (details==null || details.contains("+a"+id) || !(details.contains("-a"+id) || details.contains("+a"))) 
+                {
+                    guilds.add(g);
+                }
             }
         });
         handler.submitFile(Feeds.Type.SERVERLOG, guilds, ()->{
@@ -785,5 +830,8 @@ public class Spectra extends ListenerAdapter {
         return start;
     }
     
-    
+    public Command[] getCommandList()
+    {
+        return commands;
+    }
 }
