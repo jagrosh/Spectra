@@ -58,7 +58,7 @@ public class PhoneConnections {
             if(done!=null)
             {
                 Sender.sendMsg(CONNECTION_LOST, done);
-                Cooldowns.getInstance().checkAndApply(done.getGuild().getId()+"|speakerphone", 120);
+                Cooldowns.getInstance().checkAndApply(done.getId()+"|speakerphone", 120);
             }
             ids.remove(0);
             TextChannel first = current.getJDA().getTextChannelById(ids.get(0));
@@ -97,7 +97,7 @@ public class PhoneConnections {
             Sender.sendMsg(OVERLOAD, chan);
             return chan;
         }).forEach((chan) -> {
-            Cooldowns.getInstance().checkAndApply(chan.getGuild().getId()+"|speakerphone", 180);
+            Cooldowns.getInstance().checkAndApply(chan.getId()+"|speakerphone", 180);
         });
         ids.clear();
     }
@@ -124,7 +124,7 @@ public class PhoneConnections {
         if(chan==null)
         {
             ids.clear();
-            Sender.sendMsg(CONNECTION_LOST, chan);
+            Sender.sendMsg(CONNECTION_LOST, current);
         }
         return chan;
     }

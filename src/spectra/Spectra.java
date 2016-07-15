@@ -196,6 +196,7 @@ public class Spectra extends ListenerAdapter {
             new Avatar(),
             new ChannelCmd(),
             new Contest(contests, entries),
+            new Donate(donators),
             new Draw(),
             new GoogleSearch(googlesearcher),
             new ImageSearch(imagesearcher),
@@ -205,6 +206,7 @@ public class Spectra extends ListenerAdapter {
             new Ping(),
             new Profile(profiles),
             new Reminder(reminders),
+            new Roll(),
             new Room(rooms, settings, handler),
             new Server(),
             new Speakerphone(phones),
@@ -232,6 +234,7 @@ public class Spectra extends ListenerAdapter {
             new WelcomeDM(guides),
                 
             new Announce(handler,feeds),
+            new Donator(donators),
             new Eval(this),
             new SystemCmd(this,feeds),
         };
@@ -356,10 +359,10 @@ public class Spectra extends ListenerAdapter {
         lastDisconnect = null;
     }
 
-    @Override
+    /*@Override
     public void onStatusChange(StatusChangeEvent event) {
         SimpleLog.getLog("Status").info("Status changed from ["+event.getOldStatus()+"] to ["+event.getStatus()+"]");
-    }
+    }*/
 
     
     @Override
@@ -472,7 +475,7 @@ public class Spectra extends ListenerAdapter {
                             current = PermLevel.JAGROSH;
                             helpmsg+= "\n**jagrosh Commands:**";
                         }
-                        helpmsg += "\n`"+SpConst.PREFIX+com.command+"`"+Argument.arrayToString(com.arguments)+" - "+com.help;
+                        helpmsg += "\n`"+SpConst.PREFIX+com.command+Argument.arrayToString(com.arguments)+"` - "+com.help;
                     }
                 }
                 helpmsg+="\n\nFor more information, call "+SpConst.PREFIX+"<command> help. For example, `"+SpConst.PREFIX+"tag help`";
@@ -608,7 +611,7 @@ public class Spectra extends ListenerAdapter {
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
         {
-            String id = event.getAuthor().getId();
+            String id = event.getAuthor()==null ? null : event.getAuthor().getId();
             Message msg = messagecache.deleteMessage(event.getGuild().getId(), event.getMessageId());
             String details = feed[Feeds.DETAILS];
             if( msg!=null && (details==null || details.contains("+m"+id) || !(details.contains("-m"+id) || details.contains("+m"))) )

@@ -67,6 +67,7 @@ public class YoutubeSearcher {
             urls.add(sr.getId().getVideoId());
         });
         } catch (IOException ex) {
+            SimpleLog.getLog("Youtube").fatal("Search failure: "+ex.toString());
             return null;
         }
         return urls;

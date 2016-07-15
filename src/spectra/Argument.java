@@ -56,11 +56,11 @@ public class Argument {
     {
         if(args.length==0)
             return "";
-        StringBuilder builder = new StringBuilder(" `");
+        StringBuilder builder = new StringBuilder(" ");
         builder.append(args[0].toString());
         for(int i = 1; i<args.length; i++)
             builder.append(" ").append(args[i].toString());
-        return builder.append("`").toString();
+        return builder.toString();
     }
     
     public enum Type {

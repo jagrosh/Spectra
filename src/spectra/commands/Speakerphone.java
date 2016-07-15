@@ -33,7 +33,7 @@ public class Speakerphone extends Command {
         this.help = "picks up the phone";
         this.availableInDM = false;
         this.cooldown = 0;
-        this.cooldownKey = event -> event.getGuild().getId()+"|speakerphone";
+        this.cooldownKey = event -> event.getTextChannel().getId()+"|speakerphone";
     }
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {

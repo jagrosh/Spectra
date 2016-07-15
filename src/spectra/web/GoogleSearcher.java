@@ -22,6 +22,7 @@ import java.net.URLEncoder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import net.dv8tion.jda.utils.SimpleLog;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -74,7 +75,7 @@ public class GoogleSearcher {
                 }
             });
         } catch (IOException e) {
-            System.err.println(e);
+            SimpleLog.getLog("Google").fatal("Search failure: "+e.toString());
             return null;
         }
         synchronized(cache)

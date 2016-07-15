@@ -15,6 +15,9 @@
  */
 package spectra.datasources;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import spectra.DataSource;
 
 /**
@@ -28,6 +31,16 @@ public class Donators extends DataSource {
         this.filename = "discordbot.donators";
         this.size = 2;
         this.generateKey = item -> item[USERID];
+    }
+    
+    public List<String[]> donatorList()
+    {
+        synchronized(data)
+        {
+            ArrayList<String[]> list = new ArrayList<>(data.values());
+            Collections.sort(list, (String[] a, String[] b) -> (int)(100.0*(Double.parseDouble(b[1])-Double.parseDouble(a[1]))) );
+            return list;
+        }
     }
     
     final public static int USERID   = 0;

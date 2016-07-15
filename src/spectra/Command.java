@@ -67,7 +67,7 @@ public abstract class Command {
         {
             StringBuilder builder = new StringBuilder();
             builder.append("**Available help for `").append(parentChain).append(command).append("` ").append(event.isPrivate() ? "(Direct Message)" : "(<#"+event.getTextChannel().getId()+">)").append("**:\n");
-            builder.append("Usage: `" + SpConst.PREFIX).append(parentChain).append(command).append("`").append(Argument.arrayToString(arguments));
+            builder.append("Usage: `" + SpConst.PREFIX).append(parentChain).append(command).append(Argument.arrayToString(arguments)).append("`");
             
             if(aliases.length>0)
             {
@@ -98,8 +98,8 @@ public abstract class Command {
                         }
                     }
                     builder.append("\n`" + SpConst.PREFIX).append(parentChain).append(command)
-                            .append(" ").append(child.command).append("`").append(Argument.arrayToString(child.arguments))
-                            .append(" - ").append(child.help);
+                            .append(" ").append(child.command).append(Argument.arrayToString(child.arguments))
+                            .append("` - ").append(child.help);
                 }
             }
             Sender.sendHelp(builder.toString(), event.getAuthor().getPrivateChannel(), event); 
