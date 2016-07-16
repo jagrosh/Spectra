@@ -44,6 +44,9 @@ public class Contest extends Command {
         this.entries = entries;
         this.command = "contest";
         this.help = "commands for automated contests";
+        this.longhelp = "This command is the hub for the contest commands. "+SpConst.BOTNAME+" "
+                + "Contests are automated competitions. They are created with set time boundaries "
+                + "and rules, and only accept entries between the given times.";
         this.availableInDM = false;
         this.children = new Command[]{
             new ContestList(),
@@ -66,6 +69,9 @@ public class Contest extends Command {
         {
             this.command = "list";
             this.help = "lists contests on the server";
+            this.longhelp = "This command lists the current contests on the server. A time "
+                    + "period must be specified (current contests, contests that have ended, "
+                    + "or contests that have not started yet).";
             this.availableInDM = false;
             this.arguments = new Argument[]{
                 new Argument("current|ended|upcoming",Argument.Type.SHORTSTRING,true)
@@ -145,6 +151,7 @@ public class Contest extends Command {
         {
             this.command = "rules";
             this.help = "shows the rules of a contest";
+            this.longhelp = "This command displays the rules that were set for a contest at creation, or upon last edit.";
             this.availableInDM = false;
             this.arguments = new Argument[]{
                 new Argument("contestname",Argument.Type.SHORTSTRING,true)
@@ -170,6 +177,9 @@ public class Contest extends Command {
         {
             this.command = "time";
             this.help = "shows the time remaining in a contest";
+            this.longhelp = "This command shows the time for a contest. For contests that have ended, "
+                    + "it will show how long ago they ended. For current contests, it will show how much "
+                    + "time remains. For upcoming contests, it will show how long until it starts.";
             this.availableInDM = false;
             this.arguments = new Argument[]{
                 new Argument("contestname",Argument.Type.SHORTSTRING,true)
@@ -203,6 +213,11 @@ public class Contest extends Command {
         {
             this.command = "submit";
             this.help = "submits an entry to a contest";
+            this.longhelp = "This command is used to submit an entry to a contest. Entries "
+                    + "are in the form of text (or links). If a contest has image submission, it "
+                    + "is recommened to use some image-hosting site, rather than Discord-hosting. "
+                    + "Each user may only submit one entry; any entry after the first will overwrite "
+                    + "the previous.";
             this.availableInDM = false;
             this.arguments = new Argument[]{
                 new Argument("contestname",Argument.Type.SHORTSTRING,true),
@@ -241,6 +256,8 @@ public class Contest extends Command {
         {
             this.command = "getentries";
             this.help = "gets the current entries for a contest";
+            this.longhelp = "This contests compiles all the entries for a contest and uploads "
+                    + "them (in a .txt file) to the current chat.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
@@ -287,6 +304,10 @@ public class Contest extends Command {
             this.aliases = new String[]{"add"};
             this.availableInDM = false;
             this.help = "creates a new contest";
+            this.longhelp = "Thic command creates a new contest on the server. A name must be provided for the "
+                    + "contest, as well as how long until the contest should start, how long the contest should run "
+                    + "for, and the rules of the contest. A | (vertical pipe) MUST be included between the first set "
+                    + "of time units (time until start) and the second set (length of contest).";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("contestname",Argument.Type.SHORTSTRING,true),
@@ -330,6 +351,10 @@ public class Contest extends Command {
             this.command = "edit";
             this.availableInDM = false;
             this.help = "edits an existing contest";
+            this.longhelp = "Thic command is used to edit an existing contest. The time values are the "
+                    + "difference in time from the already-established endpoints. If rules are included they "
+                    + "will replace the current rules. If no rules are included, the existing rules will be"
+                    + "kept.";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("contestname",Argument.Type.SHORTSTRING,true),

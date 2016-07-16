@@ -46,6 +46,10 @@ public class Softban extends Command {
         this.mutes = mutes;
         this.command = "softban";
         this.help = "mutes and temporarily bans a user from the server";
+        this.longhelp = "This command first bans a user from the server, clearing any messages "
+                + "within the past 24 hours. Shortly after, the user is unbanned, and a 24 hour mute "
+                + "is applied (they will be muted if they return to the server within 24 hours). This "
+                + "command is essentially clean, kick, and mute wrapped into one easy command.";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,true),
             new Argument("for <reason>",Argument.Type.LONGSTRING,false)

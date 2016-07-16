@@ -34,7 +34,10 @@ public class ChannelCmd extends Command {
     {
         this.command = "channel";
         this.help = "gets information about a channel";
-        this.longhelp = "This command displays information about the given channel, or the current channel if none is provided.";
+        this.longhelp = "This command displays information about the given channel, or the current channel "
+                + "if none is provided. This can be used to show information about \"hidden\" channels as well. "
+                + "This is public information ("+SpConst.BOTNAME+" doesn't need any permissions to view it), so please "
+                + "keep important or sensitive information out of channel topics. Use pins instead.";
         this.arguments = new Argument[]{
             new Argument("channel",Argument.Type.TEXTCHANNEL,false)
         };

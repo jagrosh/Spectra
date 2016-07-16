@@ -34,7 +34,8 @@ public class ImageSearch extends Command {
         this.bingsearch = bingsearch;
         this.command = "image";
         this.aliases = new String[]{"img","pic"};
-        this.help = "find an image of the given query";
+        this.help = "searches the web for an image";
+        this.longhelp = "This command searches Bing for an image matching the given query.";
         this.arguments = new Argument[]{
             new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };

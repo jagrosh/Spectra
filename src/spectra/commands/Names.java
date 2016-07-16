@@ -36,6 +36,9 @@ public class Names extends Command {
         this.command = "names";
         this.aliases = new String[]{"pastnames","namehistory"};
         this.help = "shows some previous names for a user";
+        this.longhelp = "This command displays a user's (or your, if no user is provided) "
+                + "previous usernames. These are only tracked during the time "+SpConst.BOTNAME+" "
+                + "can see the user, and nicknames are not tracked.";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.USER,false)
         };

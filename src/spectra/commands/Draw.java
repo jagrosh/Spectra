@@ -37,7 +37,11 @@ public class Draw extends Command{
     public Draw()
     {
         this.command = "draw";
-        this.help = "generates an electric wave of a random or specified color";
+        this.help = "draws an electric wave";
+        this.longhelp = "This command draws an electric wave using the same algorithm that "
+                + ""+SpConst.BOTNAME+" uses to generate avatars. If no color is provided, it "
+                + "will generate it in a random color. To provide a color use hex (like #8FC73E) "
+                + "or an integer value (like 9422654).";
         this.cooldown = 10;
         this.cooldownKey = (event) -> {return event.getAuthor().getId()+"|draw";};
         this.arguments = new Argument[]{

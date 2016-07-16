@@ -38,6 +38,9 @@ public class Donator extends Command {
     {
         this.donators = donators;
         this.command = "donator";
+        this.help = "adds a donator";
+        this.longhelp = "This command adds a user to the donator list. If a value of 0 is set, it will "
+                + "remove them instead. To add \"donator\" status without a monetary value, use a negative number.";
         this.level = PermLevel.JAGROSH;
         this.arguments = new Argument[]{
             new Argument("cents",Argument.Type.INTEGER,true),

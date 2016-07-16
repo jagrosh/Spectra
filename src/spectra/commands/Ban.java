@@ -41,7 +41,8 @@ public class Ban extends Command {
         this.handler = handler;
         this.settings = settings;
         this.command = "ban";
-        this.help = "bans a user from the server and deletes all messages in the past 7 days";
+        this.help = "bans a user";
+        this.longhelp = "This command bans a user from the server, and deletes any of their messages from within the past 7 days.";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,true),
             new Argument("for <reason>",Argument.Type.LONGSTRING,false)

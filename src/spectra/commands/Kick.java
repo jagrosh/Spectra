@@ -41,6 +41,7 @@ public class Kick extends Command {
         this.settings = settings;
         this.command = "kick";
         this.help = "kicks a user from the server";
+        this.longhelp = "This command kicks the specified user from the server.";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,true),
             new Argument("for <reason>",Argument.Type.LONGSTRING,false)

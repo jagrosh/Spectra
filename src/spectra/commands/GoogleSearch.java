@@ -34,7 +34,8 @@ public class GoogleSearch extends Command {
         this.googler = googler;
         this.command = "google";
         this.aliases = new String[]{"g","websearch"};
-        this.help = "find the best Google result for the given query";
+        this.help = "searches Google";
+        this.longhelp = "This command finds the top result on Google for the given query.";
         this.arguments = new Argument[]{
             new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };

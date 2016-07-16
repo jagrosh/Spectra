@@ -32,10 +32,14 @@ public class AFK extends Command {
     {
         this.afks = afks;
         this.command = "afk";
-        this.help = "relays mentions to you via DM, and can autoreply if given a message";
+        this.help = "relays mentions via DM; can autoreply message";
         this.arguments = new Argument[]{
             new Argument("message",Argument.Type.LONGSTRING,false,0,200)
         };
+        this.longhelp = "This command marks you as Away From Keyboard. While away, whenever you are directly mentioned "
+                + "(and "+SpConst.BOTNAME+" can see the mention), it will relay the info to you via a Direct Message. If "
+                + "you include a message when using the command, "+SpConst.BOTNAME+" will also autoreply to the mention with "
+                + "your message. The next time you start typing or send a message, your AFK status will be automatically revoked.";
     }
 
     @Override

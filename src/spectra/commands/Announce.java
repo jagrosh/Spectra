@@ -43,6 +43,9 @@ public class Announce extends Command {
         this.arguments = new Argument[]{
             new Argument("text",Argument.Type.LONGSTRING,true)
         };
+        this.help = "send to all announcements feeds";
+        this.longhelp = "This command sends a message to all existing announcements feeds (across all servers). "
+                + "Make sure to check for spelling mistakes first!";
     }
 
     @Override
