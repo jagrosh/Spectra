@@ -36,7 +36,7 @@ public class YoutubeSearch extends Command {
         this.aliases = new String[]{"yt"};
         this.help = "find the best YouTube result for the given query";
         this.arguments = new Argument[]{
-            new Argument("query",Argument.Type.LONGSTRING,true)
+            new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };
     }
     @Override

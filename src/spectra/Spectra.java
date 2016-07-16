@@ -43,7 +43,6 @@ import net.dv8tion.jda.events.ReadyEvent;
 import net.dv8tion.jda.events.ReconnectedEvent;
 import net.dv8tion.jda.events.ResumedEvent;
 import net.dv8tion.jda.events.ShutdownEvent;
-import net.dv8tion.jda.events.StatusChangeEvent;
 import net.dv8tion.jda.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.events.guild.member.GuildMemberBanEvent;
@@ -64,13 +63,13 @@ import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.AvatarUtil;
 import net.dv8tion.jda.utils.MiscUtil;
 import net.dv8tion.jda.utils.PermissionUtil;
-import net.dv8tion.jda.utils.SimpleLog;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.entities.Tuple;
 import spectra.tempdata.CallDepend;
 import spectra.tempdata.MessageCache;
 import spectra.tempdata.PhoneConnections;
+import spectra.tempdata.Statistics;
 import spectra.utils.OtherUtil;
 import spectra.utils.FormatUtil;
 import spectra.web.BingImageSearcher;
@@ -86,7 +85,7 @@ public class Spectra extends ListenerAdapter {
     private JDA jda;
     private Command[] commands;
     private boolean idling = false;
-    private static final OffsetDateTime start = OffsetDateTime.now();
+    //private static final OffsetDateTime start = OffsetDateTime.now();
     private OffsetDateTime lastDisconnect;
     private Color currentColor;
     private int colorCounter;
@@ -113,6 +112,7 @@ public class Spectra extends ListenerAdapter {
     //tempdata
     private final MessageCache messagecache;
     private final PhoneConnections phones;
+    private final Statistics statistics;
     
     //searchers
     private final BingImageSearcher imagesearcher;
@@ -156,6 +156,7 @@ public class Spectra extends ListenerAdapter {
         handler = new FeedHandler(feeds);
         messagecache = new MessageCache();
         phones = new PhoneConnections();
+        statistics = new Statistics();
         
         imagesearcher = new BingImageSearcher(OtherUtil.readFileLines("bing.apikey"));
         googlesearcher = new GoogleSearcher();
@@ -191,6 +192,7 @@ public class Spectra extends ListenerAdapter {
         
         commands = new Command[]{
             new About(),
+            new Achievements(profiles,tags,donators,savednames),
             new AFK(afks),
             new Archive(),
             new Avatar(),
@@ -210,6 +212,7 @@ public class Spectra extends ListenerAdapter {
             new Room(rooms, settings, handler),
             new Server(),
             new Speakerphone(phones),
+            new Stats(statistics),
             new Tag(tags, overrides, settings, handler),
             new Timefor(profiles),
             new WelcomeGuide(guides),
@@ -236,7 +239,7 @@ public class Spectra extends ListenerAdapter {
             new Announce(handler,feeds),
             new Donator(donators),
             new Eval(this),
-            new SystemCmd(this,feeds),
+            new SystemCmd(this,feeds,statistics),
         };
         
         try {
@@ -259,7 +262,7 @@ public class Spectra extends ListenerAdapter {
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
-                        + "Started up in "+FormatUtil.secondsToTime(start.until(OffsetDateTime.now(), ChronoUnit.SECONDS)));
+                        + "Started up in "+FormatUtil.secondsToTime(statistics.getUptime()));
         feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}, 0, 20, TimeUnit.SECONDS);
         unmuter.scheduleWithFixedDelay(()-> {mutes.checkUnmutes(jda, handler);},0, 10, TimeUnit.SECONDS);
         roomchecker.scheduleWithFixedDelay(() -> {rooms.checkExpires(jda, handler);}, 0, 120, TimeUnit.SECONDS);
@@ -451,7 +454,6 @@ public class Spectra extends ListenerAdapter {
             if(strippedMessage.equalsIgnoreCase("help"))//send full help message (based on access level)
             {//we don't worry about ignores for help
                 isCommand = true;
-                successful = true;
                 String helpmsg = "**Available help ("+(event.isPrivate() ? "Direct Message" : "<#"+event.getTextChannel().getId()+">")+")**:";
                 PermLevel current = PermLevel.EVERYONE;
                 for(Command com: commands)
@@ -516,6 +518,7 @@ public class Spectra extends ListenerAdapter {
                                 banned = false;
                     }
                     successful = toRun.run(args[1], event, perm, ignore, banned);
+                    statistics.ranCommand(event.isPrivate() ? "0" : event.getGuild().getId(), toRun.command, successful);
                 }
                 else if (!event.isPrivate() && (!ignore || perm.isAtLeast(PermLevel.ADMIN)))
                 {
@@ -531,15 +534,20 @@ public class Spectra extends ListenerAdapter {
                             if(tag==null)
                             {
                                 Sender.sendResponse(SpConst.ERROR+"Tag \""+cmd+"\" no longer exists!", event);
+                                successful = false;
                             }
                             else
                             {
                                 Sender.sendResponse("\u200B"+JagTag.convertText(tag[Tags.CONTENTS], args[1], event.getAuthor(), event.getGuild(), event.getChannel()), event);
+                                successful = true;
+                                
                             }
+                            statistics.ranCommand(event.getGuild().getId(), "Tag Command(s)", successful);
                         }
                 }
             }
         }
+        
         if(!event.isPrivate() && !isCommand && !ignore && !event.getAuthor().isBot())
         {
             TextChannel chan = phones.getOtherLine(event.getTextChannel());
@@ -583,6 +591,7 @@ public class Spectra extends ListenerAdapter {
         rooms.setLastActivity(event.getChannel().getId(), event.getMessage().getTime());
         if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
+        statistics.sentMessage(event.getGuild().getId());
     }
 
     @Override
@@ -798,7 +807,7 @@ public class Spectra extends ListenerAdapter {
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
                 "```diff\n- LEFT : "+guild.getName()
                 + "```Users : **"+guild.getUsers().size()
-                +  "**\nOwner : **"+guild.getOwner().getUsername()+"** (ID:"+guild.getOwnerId()
+                +  "**\nOwner : **"+(guild.getOwner()==null ? "???" : guild.getOwner().getUsername())+"** (ID:"+guild.getOwnerId()
                 +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
     }
 
@@ -826,11 +835,6 @@ public class Spectra extends ListenerAdapter {
     public void setIdling(boolean value)
     {
         idling = value;
-    }
-    
-    public OffsetDateTime getStart()
-    {
-        return start;
     }
     
     public Command[] getCommandList()

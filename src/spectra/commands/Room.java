@@ -15,6 +15,8 @@
  */
 package spectra.commands;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.PermissionOverride;
@@ -293,7 +295,7 @@ public class Room extends Command
                 return false;
             }
             
-            if(!channel.equals(event.getChannel()))
+            if(!channel.getId().equals(event.getTextChannel().getId()))
                 Sender.sendResponse(SpConst.SUCCESS+"You have removed \""+channel.getName()+"\"", event);
             rooms.remove(channel.getId());
             handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\uD83D\uDCFA Text channel **"+channel.getName()+
@@ -319,21 +321,25 @@ public class Room extends Command
             StringBuilder builder = new StringBuilder("\uD83D\uDCFA Rooms **"+event.getAuthor().getUsername()+"** can join ( use `"+SpConst.PREFIX+"room join <roomname>` to join):");
             String[] currentSettings = settings.getSettingsForGuild(event.getGuild().getId());
             PermLevel authorperm = PermLevel.getPermLevelForUser(event.getAuthor(), event.getGuild(), currentSettings);
+            List<TextChannel> list = new ArrayList<>();
             rooms.getTextRoomsOnGuild(event.getGuild()).stream().forEach((room) -> {
                 TextChannel chan = event.getJDA().getTextChannelById(room[Rooms.CHANNELID]);
                 if (room[Rooms.LOCKED].equalsIgnoreCase("false") || authorperm.isAtLeast(PermLevel.MODERATOR)) {
                     if (chan!=null && !PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_READ, chan)) {
-                        builder.append("\n**").append(chan.getName()).append("**");
-                        String topic = chan.getTopic();
-                        if (topic!=null && !topic.startsWith("Room owner:")) {
-                            topic = FormatUtil.unembed(topic.split("\n")[0]);
-                            if(topic.length()>100)
-                                topic = topic.substring(0,95)+" (...)";
-                            topic = " - "+topic;
-                            builder.append(topic);
-                        }
+                        list.add(chan);
                     }
                 }
+            });
+            Collections.sort(list, (TextChannel a, TextChannel b) -> a.getPosition()-b.getPosition() );
+            list.stream().map((chan) -> {
+                builder.append("\n**").append(chan.getName()).append("**");
+                return chan;
+            }).map((chan) -> chan.getTopic()).filter((topic) -> (topic!=null && !topic.startsWith("Room owner:"))).map((topic) -> FormatUtil.unembed(topic.split("\n")[0])).map((topic) -> {
+                if(topic.length()>100)
+                    topic = topic.substring(0,95)+" (...)";
+                return topic;
+            }).map((topic) -> " - "+topic).forEach((topic) -> {
+                builder.append(topic);
             });
             Sender.sendResponse(builder.toString(), event);
             return true;

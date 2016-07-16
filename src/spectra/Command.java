@@ -249,7 +249,6 @@ public abstract class Command {
                         timeinseconds+=num;
                     }
                     }catch(Exception e){
-                        System.out.println("Failed parsing time:\ntimestr="+timestr);
                         Sender.sendResponse(String.format(SpConst.INVALID_TIME, parts[0]), event);
                         return false;
                     }

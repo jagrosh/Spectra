@@ -15,8 +15,6 @@
  */
 package spectra.commands;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Command;
 import spectra.FeedHandler;
@@ -25,6 +23,7 @@ import spectra.Sender;
 import spectra.SpConst;
 import spectra.Spectra;
 import spectra.datasources.Feeds;
+import spectra.tempdata.Statistics;
 import spectra.utils.FormatUtil;
 
 /**
@@ -34,11 +33,12 @@ import spectra.utils.FormatUtil;
 public class SystemCmd extends Command {
     final Spectra spectra;
     final Feeds feeds;
-    
-    public SystemCmd(Spectra spectra, Feeds feeds)
+    final Statistics statistics;
+    public SystemCmd(Spectra spectra, Feeds feeds, Statistics statistics)
     {
         this.spectra = spectra;
         this.feeds = feeds;
+        this.statistics = statistics;
         this.command = "system";
         this.help = "commands for controlling the bot";
         this.level = PermLevel.JAGROSH;
@@ -117,7 +117,7 @@ public class SystemCmd extends Command {
             }
             try{
             event.getJDA().getTextChannelById(feeds.feedForGuild(event.getJDA().getGuildById(SpConst.JAGZONE_ID), Feeds.Type.BOTLOG)[Feeds.CHANNELID])
-                    .sendMessage(FeedHandler.botlogFormat(SpConst.ERROR+"**"+SpConst.BOTNAME+"** is going <@&182294168083628032>"+"\nRuntime: "+FormatUtil.secondsToTime(spectra.getStart().until(OffsetDateTime.now(), ChronoUnit.SECONDS))));
+                    .sendMessage(FeedHandler.botlogFormat(SpConst.ERROR+"**"+SpConst.BOTNAME+"** is going <@&182294168083628032>"+"\nRuntime: "+FormatUtil.secondsToTime(statistics.getUptime())));
             event.getChannel().sendMessage("\uD83D\uDCDF Shutting down...");}catch(Exception e){System.err.println(e);}
             spectra.shutdown();
             return true;

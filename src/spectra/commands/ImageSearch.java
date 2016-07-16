@@ -36,7 +36,7 @@ public class ImageSearch extends Command {
         this.aliases = new String[]{"img","pic"};
         this.help = "find an image of the given query";
         this.arguments = new Argument[]{
-            new Argument("query",Argument.Type.LONGSTRING,true)
+            new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };
     }
 

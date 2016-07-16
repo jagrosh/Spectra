@@ -113,7 +113,7 @@ public class Tag extends Command{
             this.help = "saves a tag for later recollection";
             //this.longhelp = "";
             this.arguments = new Argument[]{
-                new Argument("tagname",Argument.Type.SHORTSTRING,true),
+                new Argument("tagname",Argument.Type.SHORTSTRING,true,1,80),
                 new Argument("tag contents",Argument.Type.LONGSTRING,true)
             };
             this.cooldown = 60;

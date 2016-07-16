@@ -61,10 +61,8 @@ public class Timefor extends Command {
             Sender.sendResponse(SpConst.WARNING+"**"+user.getUsername()+"** has not set the `timezone` field in their profile", event);
             return false;
         }
-        ZoneId zi;
-        try{
-            zi = ZoneId.of(formatTimezone(zone));
-        }catch(Exception ex)
+        ZoneId zi = formatTimezone(zone);
+        if(zi==null)
         {
             Sender.sendResponse(SpConst.ERROR+"The timezone for **"+user.getUsername()+"** could not be parsed: "+zone, event);
             return false;
@@ -98,8 +96,10 @@ public class Timefor extends Command {
         
     }
     
-    private static String formatTimezone(String zone)
+    public static ZoneId formatTimezone(String zone)
     {
+        if(zone==null)
+            return null;
         int i1 = zone.indexOf(")");
         if(i1!=-1)
         {
@@ -112,7 +112,12 @@ public class Timefor extends Command {
                 .replace("(?i)utc", "UTC")
                 .replace("([+-])(\\d:\\d\\d)", "$10$2")
                 ;
-        
-        return zone;
+        try {
+            return ZoneId.of(zone);
+        }
+        catch(Exception e)
+        {
+            return null;
+        }
     }
 }
