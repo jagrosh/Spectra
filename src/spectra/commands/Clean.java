@@ -63,7 +63,7 @@ public class Clean extends Command {
         User user = (User)(args[1]);
         MessageHistory mh = new MessageHistory(event.getTextChannel());
         event.getChannel().sendTyping();
-        List<Message> messages = mh.retrieve((int)numposts);
+        List<Message> messages = mh.retrieve((int)numposts+1);
         List<Message> toDelete;
         messages.remove(event.getMessage());
         if(user==null)
@@ -96,7 +96,7 @@ public class Clean extends Command {
             index+=100;
             try{Thread.sleep(1100);}catch(Exception e){}
         }
-        Sender.sendResponse("\uD83D\uDEAE Cleaned **"+count+"**"+(user==null ? "" : " by **"+user.getUsername()+"**"), event);
+        Sender.sendResponse("\uD83D\uDEAE Cleaned **"+count+"** messages"+(user==null ? "" : " by **"+user.getUsername()+"**"), event);
         handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+count+"** messages "+(user==null ? "" : "by **"+user.getUsername()+"** ")+"in <#"+event.getTextChannel().getId()+">");
         return true;
     }

@@ -29,7 +29,8 @@ public class Invite extends Command {
     public Invite()
     {
         this.command = "invite";
-        this.help = "displays how to invite "+SpConst.BOTNAME+" to your server";
+        this.help = "invite "+SpConst.BOTNAME+" to your server";
+        this.longhelp = "This command provides a link for inviting "+SpConst.BOTNAME+" to a server, as well providing an invite to jagrosh's bot server.";
     }
 
     @Override

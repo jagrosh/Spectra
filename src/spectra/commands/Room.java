@@ -318,7 +318,7 @@ public class Room extends Command
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            StringBuilder builder = new StringBuilder("\uD83D\uDCFA Rooms **"+event.getAuthor().getUsername()+"** can join ( use `"+SpConst.PREFIX+"room join <roomname>` to join):");
+            StringBuilder builder = new StringBuilder("\uD83D\uDCFA Text Rooms **"+event.getAuthor().getUsername()+"** can join ( use `"+SpConst.PREFIX+"room join <roomname>` to join):");
             String[] currentSettings = settings.getSettingsForGuild(event.getGuild().getId());
             PermLevel authorperm = PermLevel.getPermLevelForUser(event.getAuthor(), event.getGuild(), currentSettings);
             List<TextChannel> list = new ArrayList<>();

@@ -101,6 +101,7 @@ public class Spectra extends ListenerAdapter {
     private final Overrides overrides;
     private final Profiles profiles;
     private final Reminders reminders;
+    private final RoleGroups groups;
     private final Rooms rooms;
     private final SavedNames savednames;
     private final Settings settings;
@@ -148,6 +149,7 @@ public class Spectra extends ListenerAdapter {
         overrides   = new Overrides();
         profiles    = new Profiles();
         reminders   = new Reminders();
+        groups      = new RoleGroups();
         rooms       = new Rooms();
         savednames  = new SavedNames();
         settings    = new Settings();
@@ -180,6 +182,7 @@ public class Spectra extends ListenerAdapter {
         donators.read();
         entries.read();
         feeds.read();
+        groups.read();
         guides.read();
         mutes.read();
         overrides.read();
@@ -197,6 +200,7 @@ public class Spectra extends ListenerAdapter {
             new Archive(),
             new Avatar(),
             new ChannelCmd(),
+            new ColorMe(groups),
             new Contest(contests, entries),
             new Donate(donators),
             new Draw(),
@@ -320,6 +324,7 @@ public class Spectra extends ListenerAdapter {
         donators.shutdown();
         entries.shutdown();
         feeds.shutdown();
+        groups.shutdown();
         guides.shutdown();
         mutes.shutdown();
         overrides.shutdown();
@@ -795,7 +800,7 @@ public class Spectra extends ListenerAdapter {
     public void onGuildJoin(GuildJoinEvent event) {
         Guild guild = event.getGuild();
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
-                "```diff\n+ JOINED : "+guild.getName()
+                "```diff\n+ JOINED : "+guild.getName()+" (ID:"+guild.getId()+")"
                 + "```Users : **"+guild.getUsers().size()
                 +  "**\nOwner : **"+guild.getOwner().getUsername()+"** (ID:"+guild.getOwnerId()
                 +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
@@ -805,7 +810,7 @@ public class Spectra extends ListenerAdapter {
     public void onGuildLeave(GuildLeaveEvent event) {
         Guild guild = event.getGuild();
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
-                "```diff\n- LEFT : "+guild.getName()
+                "```diff\n- LEFT : "+guild.getName()+" (ID:"+guild.getId()+")"
                 + "```Users : **"+guild.getUsers().size()
                 +  "**\nOwner : **"+(guild.getOwner()==null ? "???" : guild.getOwner().getUsername())+"** (ID:"+guild.getOwnerId()
                 +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");

@@ -118,10 +118,11 @@ public class RoleCmd extends Command {
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String name = (String)args[0];
             try{
-                event.getGuild().createRole().revoke(Permission.values()).setName(name).update();
+                event.getGuild().createRole().setPermissionsRaw(0).setName(name).update();
             } catch(Exception e)
             {
                 Sender.sendResponse(SpConst.ERROR+"I was unable to create the role", event);
+                System.err.println("Role creation error: "+e);
                 return false;
             }
             Sender.sendResponse(SpConst.SUCCESS+"New role *"+name+"* created!", event);

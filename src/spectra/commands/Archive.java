@@ -62,10 +62,11 @@ public class Archive extends Command{
         long numposts = (long)(args[0]);
         TextChannel channel = (TextChannel)(args[1]);
         MessageHistory mh;
+        String name;
         if(event.isPrivate())
         {
             mh = new MessageHistory(event.getPrivateChannel());
-            
+            name = "a Direct Message";
         }
         else
         {
@@ -83,7 +84,7 @@ public class Archive extends Command{
                 Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_HISTORY), event);
                 return false;
             }
-            
+            name = "**"+channel.getName()+"**";
             mh = new MessageHistory(channel);
         }
         
@@ -97,7 +98,7 @@ public class Archive extends Command{
                 builder.append( m.getAuthor() == null ? "????" : m.getAuthor().getUsername() ).append(" : ");
                 builder.append(m.getContent()).append(m.getAttachments()!=null && m.getAttachments().size()>0 ? " "+m.getAttachments().get(0).getUrl() : "").append("\n\n");
             }
-            String str = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages:";
+            String str = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages in "+name+":";
             File f = OtherUtil.writeArchive(builder.toString(), "archive "+event.getMessage().getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME).replace(":", ""));
             return new Tuple<>(str,f);
         },event);

@@ -16,7 +16,6 @@
 package spectra.commands;
 
 import net.dv8tion.jda.entities.Role;
-import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
@@ -36,7 +35,8 @@ public class ModCmd extends Command {
     { 
         this.settings = settings;
         this.command = "mod";
-        this.help = "adds/removes a role/user from the mod list";
+        this.help = "sets moderators";
+        this.longhelp = "This command is for giving roles or users access to "+SpConst.BOTNAME+"'s moderator commands.";
         this.children = new Command[]{
             new ModAdd(),
             new ModList(),
@@ -55,6 +55,10 @@ public class ModCmd extends Command {
         {
             this.command = "add";
             this.help = "adds a user or role to the mod list";
+            this.longhelp = "This command adds a role or user to the list of moderators. Moderators "
+                    + "can use the moderator commands. A user will have moderator status if they have a "
+                    + "role that is listed as a moderator, so it is not necessary to \"double-up\" on the "
+                    + "permission.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
@@ -77,6 +81,7 @@ public class ModCmd extends Command {
                 new Argument(command+"name",type,true)
             };
             this.help = "adds a "+command+" to the mod list";
+            this.longhelp = "This command is used to add a "+command+" to the moderator list.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
         }
@@ -114,6 +119,9 @@ public class ModCmd extends Command {
         {
             this.command = "remove";
             this.help = "removes a user or role from the mod list";
+            this.longhelp = "This command removes a user or role from the moderator list. "
+                    + "If a user is removed, but still has a moderator role, they will still "
+                    + "have access to the moderator commands";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
@@ -136,6 +144,7 @@ public class ModCmd extends Command {
                 new Argument(command+"name",type,true)
             };
             this.help = "removes a "+command+" from the mod list";
+            this.longhelp = "This command is used to remove a "+command+" from the moderator list.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
         }
@@ -173,7 +182,9 @@ public class ModCmd extends Command {
         {
             this.command = "list";
             this.availableInDM = false;
-            this.help = "shows the users and roles with moderator permissions";
+            this.help = "lists users and roles with access to moderator commands";
+            this.longhelp = "This command lists the users and roles that have access to "+SpConst.BOTNAME+"'s "
+                    + "moderator commands. Users within the roles have access, but are not listed.";
             this.level = PermLevel.ADMIN;
         }
         @Override

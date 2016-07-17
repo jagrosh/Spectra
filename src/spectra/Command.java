@@ -133,7 +133,8 @@ public abstract class Command {
         }
         if(banned)
         {
-            Sender.sendResponse(SpConst.BANNED_COMMAND + (perm.isAtLeast(PermLevel.ADMIN) ? String.format(SpConst.BANNED_COMMAND_IFADMIN, command, command) : ""), event);
+            String root = (parentChain+command).split("\\s+")[0];
+            Sender.sendResponse(SpConst.BANNED_COMMAND + (perm.isAtLeast(PermLevel.ADMIN) ? String.format(SpConst.BANNED_COMMAND_IFADMIN, root, root) : ""), event);
             return false;
         }
         if(!event.isPrivate())
@@ -141,7 +142,7 @@ public abstract class Command {
             {
                 if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), p, event.getTextChannel()))
                 {
-                    Sender.sendResponse(SpConst.NEED_PERMISSION+p ,event);
+                    Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,p) ,event);
                     return false;
                 }
             }

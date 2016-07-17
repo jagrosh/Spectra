@@ -34,7 +34,10 @@ public class Prefix extends Command {
         this.settings = settings;
         this.command = "prefix";
         this.availableInDM= false;
-        this.help = "shows or sets prefixes for the current server";
+        this.help = "shows or sets prefixes";
+        this.longhelp = "This command is for adding, removing, and viewing the prefixes for the server. "
+                + "Multiple prefixes can be set. The prefix "+SpConst.PREFIX+" is permanent and cannot be "
+                + "removed. The prefix "+SpConst.ALTPREFIX+" is enabled by default, but can be removed.";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{
             new Argument("add|list|remove",Argument.Type.SHORTSTRING,true)
@@ -53,6 +56,8 @@ public class Prefix extends Command {
             this.command = "add";
             this.availableInDM = false;
             this.help = "add a prefix";
+            this.longhelp = "This command adds a prefix. Prefixes already on the list "
+                    + "cannot be added. Prefixes may contain spaces and other special characters.";
             this.arguments = new Argument[]{
                 new Argument("prefix",Argument.Type.LONGSTRING,true)
             };
@@ -92,6 +97,7 @@ public class Prefix extends Command {
             this.command = "remove";
             this.availableInDM = false;
             this.help = "removes a prefix";
+            this.longhelp = "This command removes a prefix from the list. The prefix "+SpConst.PREFIX+" is permanent and cannot be removed.";
             this.arguments = new Argument[]{
                 new Argument("prefix",Argument.Type.LONGSTRING,true)
             };
@@ -135,7 +141,8 @@ public class Prefix extends Command {
         {
             this.command = "list";
             this.availableInDM= false;
-            this.help = "lists prefixes for the current server";
+            this.help = "lists prefixes";
+            this.longhelp = "This command lists all of the prefixes that "+SpConst.BOTNAME+" will respond to on the current server.";
             this.level = PermLevel.ADMIN;
         }
         @Override

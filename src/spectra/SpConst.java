@@ -42,7 +42,7 @@ public class SpConst {
     final public static String NEED_PERMISSION          = ERROR + "**I do not have the proper permissions to do that!**\n"
                                                                 + "Please make sure I have the following permissions:\n%s";
     final public static String BANNED_COMMAND           = ERROR + "**That command is unavailable here!**";
-    final public static String BANNED_COMMAND_IFADMIN   = "\nTo toggle this command on/off on this server, use `"+PREFIX.replace("%", "%%")+"toggle %s`\n"
+    final public static String BANNED_COMMAND_IFADMIN   = "\nTo toggle this command on/off on this server, use `"+PREFIX.replace("%", "%%")+"cmd enable %s`\n"
                                                                 + "Alternatively, add `{%s}` to a channel's topic to make it available there";
     final public static String NOT_VIA_DM               = ERROR + "**That command is not available via Direct Message!**";
     final public static String TOO_FEW_ARGS             = ERROR + "**Too few arguments provided**\nTry using `"+PREFIX.replace("%", "%%")+"%s help` for more information.";
