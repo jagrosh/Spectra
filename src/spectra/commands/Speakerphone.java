@@ -31,6 +31,9 @@ public class Speakerphone extends Command {
         this.phones = phones;
         this.command = "speakerphone";
         this.help = "picks up the phone";
+        this.longhelp = "This command (upon connection) joins the current text "
+                + "channel to another text channel where the command is used. This could be "
+                + "anywhere, so you never know who you might talk to! To hang up, use the command again.";
         this.availableInDM = false;
         this.cooldown = 0;
         this.cooldownKey = event -> event.getTextChannel().getId()+"|speakerphone";

@@ -38,6 +38,9 @@ public class Ignore extends Command {
         this.command = "ignore";
         this.availableInDM = false;
         this.help = "makes "+SpConst.BOTNAME+" ignore a user, role, or channel";
+        this.longhelp = "This command is used to make "+SpConst.BOTNAME+" ignore a user, a role, or a channel. "
+                + ""+SpConst.BOTNAME+" will not respond to commands or text by these users, users with these roles, "
+                + "or messages in these channels. However, Admins will not be ignored.";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{
             new Argument("add|list|remove",Argument.Type.SHORTSTRING,true)
@@ -56,6 +59,7 @@ public class Ignore extends Command {
             this.command = "list";
             this.availableInDM = false;
             this.help = "shows the users, roles, and channels ignored on the server";
+            this.longhelp = "This command lists the users, roles, and channels that are ignored on the server.";
             this.level = PermLevel.ADMIN;
         }
         @Override
@@ -106,6 +110,7 @@ public class Ignore extends Command {
         {
             this.command = "add";
             this.help = "adds a user, channel, or role to the ignore list";
+            this.longhelp = "This command adds a user, channel, or role to the list that "+SpConst.BOTNAME+" ignores.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
@@ -129,6 +134,9 @@ public class Ignore extends Command {
                 new Argument(command+"name",type,true)
             };
             this.help = "adds a "+command+" to the ignore list";
+            this.longhelp = "This command adds a "+command+" to the ignore list.";
+            if(command.equals("role"))
+                this.longhelp+=" If the @\u200Beveryone role is added, "+SpConst.BOTNAME+" will ignore all users without roles.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
         }
@@ -172,6 +180,7 @@ public class Ignore extends Command {
         {
             this.command = "remove";
             this.help = "removes a user, channel, or role from the ignore list";
+            this.longhelp = "This command removes a user, channel, or role from the list that "+SpConst.BOTNAME+" ignores.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
@@ -195,6 +204,7 @@ public class Ignore extends Command {
                 new Argument(command+"name",type,true)
             };
             this.help = "removes a "+command+" from the ignore list";
+            this.longhelp = "This command removes a "+command+" from the ignore list.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
         }

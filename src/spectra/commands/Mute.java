@@ -52,6 +52,10 @@ public class Mute extends Command {
         this.mutes = mutes;
         this.command = "mute";
         this.help = "mutes the specified user for the given time";
+        this.longhelp = "This command applies the \"Muted\" role to the specified user for the specified "
+                + "length of time. The muted role can be set up however you wish, although the recommended "
+                + "can be used with `"+SpConst.PREFIX+"mute setup`. If a user is muted, leaves the server, and "
+                + "rejoins during the time they should still be muted, the role will be re-applied on entry.";
         this.availableInDM = false;
         this.level = PermLevel.MODERATOR;
         this.separatorRegex = "\\s+for\\s+";
@@ -128,10 +132,11 @@ public class Mute extends Command {
     
     private class MuteList extends Command
     {
-        public MuteList()
+        private MuteList()
         {
             this.command = "list";
             this.help = "lists users with a mute on the server";
+            this.longhelp = "This command shows the list of users that are muted on the server.";
             this.availableInDM = false;
             this.level = PermLevel.MODERATOR;
         }
@@ -181,10 +186,13 @@ public class Mute extends Command {
     
     private class MuteSetup extends Command
     {
-        public MuteSetup()
+        private MuteSetup()
         {
             this.command = "setup";
             this.help = "sets up the muted role on the server";
+            this.longhelp = "This command sets up the \"Muted\" role on the server. The default configuration "
+                    + "disallows sending messages in any channels, as well as being unable to connect to voice channels. "
+                    + "It it recommened to create all channels on the server before running this setup.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{

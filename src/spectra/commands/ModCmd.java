@@ -208,7 +208,7 @@ public class ModCmd extends Command {
                 }
                 else
                 {
-                    User u = event.getJDA().getUserById(id.substring(1));
+                    User u = event.getJDA().getUserById(id.startsWith("u") ? id.substring(1) : id);
                     if(u!=null)
                         builder.append("\nUser: **").append(u.getUsername()).append("** #").append(u.getDiscriminator());
                     else

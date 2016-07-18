@@ -41,6 +41,7 @@ public class SystemCmd extends Command {
         this.statistics = statistics;
         this.command = "system";
         this.help = "commands for controlling the bot";
+        this.longhelp = "These commands are for controlling the inner-workings of the bot";
         this.level = PermLevel.JAGROSH;
         this.children = new Command[]{
             new SystemIdle(),
@@ -58,10 +59,11 @@ public class SystemCmd extends Command {
     
     private class SystemIdle extends Command
     {
-        public SystemIdle()
+        private SystemIdle()
         {
             this.command = "idle";
             this.help = "prevents the bot from receiving commands";
+            this.longhelp = "This command prevents the bot from using any commands except those by the bot owner.";
             this.level = PermLevel.JAGROSH;
         }
         @Override
@@ -80,10 +82,11 @@ public class SystemCmd extends Command {
     
     private class SystemReady extends Command
     {
-        public SystemReady()
+        private SystemReady()
         {
             this.command = "ready";
             this.help = "allows the bot to recieve commands";
+            this.longhelp = "This disables idle mode";
             this.level = PermLevel.JAGROSH;
         }
         @Override
@@ -102,10 +105,11 @@ public class SystemCmd extends Command {
     
     private class SystemShutdown extends Command
     {
-        public SystemShutdown()
+        private SystemShutdown()
         {
             this.command = "shutdown";
             this.help = "shuts down the bot safely";
+            this.longhelp = "This command shuts the bot down safely, closing any threadpools. Must be idling first.";
             this.level = PermLevel.JAGROSH;
         }
         @Override

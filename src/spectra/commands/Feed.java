@@ -32,12 +32,12 @@ import spectra.datasources.Feeds;
  * @author John Grosh (jagrosh)
  */
 public class Feed extends Command {
-    final Feeds feeds;
+    private final Feeds feeds;
     public Feed(Feeds feeds)
     {
         this.feeds = feeds;
         this.command = "feed";
-        this.help = "sets or removes a feed; `"+SpConst.PREFIX+"feed help` for more";
+        this.help = "sets or removes a feed";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{
             new Argument("feedtype",Argument.Type.SHORTSTRING,true)
@@ -54,10 +54,13 @@ public class Feed extends Command {
     }
     
     private class FeedModlog extends Command {
-        public FeedModlog()
+        private FeedModlog()
         {
             this.command = "modlog";
             this.help = "sets the `modlog` feed, which displays moderation actions taken on the server";
+            this.longhelp = "This command is used to set the `modlog` feed. This feed keeps track of moderator "
+                    + "actions taken on the server, such as kicks, bans, mutes, and cleans, as well as the reasons "
+                    + "for the actions (if included in the command).";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("channel",Argument.Type.TEXTCHANNEL,false)
@@ -88,10 +91,16 @@ public class Feed extends Command {
     }
     
     private class FeedServerlog extends Command {
-        public FeedServerlog()
+        private FeedServerlog()
         {
             this.command = "serverlog";
             this.help = "sets the `serverlog` feed, which displays various activity in the server";
+            this.longhelp = "This command sets the `serverlog` feed, which displays various activity on the server, "
+                    + "including message deletes, message edits, username changes, avatar changes, nickname changes, "
+                    + "server joins, server leaves, and room changes. Additionally, options can be provided to exclude "
+                    + "some or all users from this feed. To ignore a user's avatar changes, inclide `-aID`, where ID is "
+                    + "replaced by their User ID. To ignore nickname changes, use `-nID`, and to ignore message deletes/edits, "
+                    + "use `-mID`. To ignore all users except certain ones, use `+aID` (or the equivalent letter).";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("channel",Argument.Type.TEXTCHANNEL,false),
@@ -124,10 +133,12 @@ public class Feed extends Command {
     }
     
     private class FeedTaglog extends Command {
-        public FeedTaglog()
+        private FeedTaglog()
         {
             this.command = "taglog";
             this.help = "sets the `taglog` feed, which displays changes to tags by members of the server";
+            this.longhelp = "This command sets the `taglog` feed, which displays any tag changes by users "
+                    + "on the current server. The full tag log can be found on jagrosh's bot server.";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("channel",Argument.Type.TEXTCHANNEL,false)
@@ -158,10 +169,12 @@ public class Feed extends Command {
     }
     
     private class FeedAnnouncements extends Command {
-        public FeedAnnouncements()
+        private FeedAnnouncements()
         {
             this.command = "announcements";
             this.help = "sets the `announcements` feed, which relays important updates and information about "+SpConst.BOTNAME;
+            this.longhelp = "This command sets the `announcements` feed, which is used for jagrosh to send important information "
+                    + "and updates about "+SpConst.BOTNAME+".";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("channel",Argument.Type.TEXTCHANNEL,false)
@@ -192,10 +205,12 @@ public class Feed extends Command {
     }
     
     private class FeedList extends Command {
-        public FeedList()
+        private FeedList()
         {
             this.command = "list";
             this.help = "shows the current feeds on the server";
+            this.longhelp = "This command shows the current feeds on the server, as well as their locations, "
+                    + "and any options that have been set.";
             this.level = PermLevel.ADMIN;
             this.availableInDM = false;
         }
@@ -218,11 +233,12 @@ public class Feed extends Command {
     }
     
     private class FeedRemove extends Command {
-        public FeedRemove()
+        private FeedRemove()
         {
             this.command = "remove";
             this.aliases = new String[]{"clear","delete"};
             this.help = "removes a feed";
+            this.longhelp = "This command removes a feed from the server, and clears any option on that feed.";
             this.level = PermLevel.ADMIN;
             this.availableInDM = false;
             this.arguments = new Argument[]{

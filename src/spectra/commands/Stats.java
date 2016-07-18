@@ -37,6 +37,7 @@ public class Stats extends Command {
         this.command = "stats";
         this.aliases = new String[]{"statistics"};
         this.help = "shows "+SpConst.BOTNAME+" statistics";
+        this.longhelp = "This command shows various statistics, including uptime, command usage, and global activity.";
     }
 
     @Override

@@ -37,7 +37,7 @@ import spectra.utils.FormatUtil;
  */
 public class JagTag {
     
-    public static String description = "JagTag™ is a simple, interpreted scripting language.";
+    public static String URL = "http://jagrosh.github.io/Spectra/jagtag.html";
     
     public static String convertText(String input, String arguments, User user, Guild guild, MessageChannel channel)
     {

@@ -34,8 +34,8 @@ import spectra.datasources.Settings;
  * @author John Grosh (jagrosh)
  */
 public class Ban extends Command {
-    final FeedHandler handler;
-    final Settings settings;
+    private final FeedHandler handler;
+    private final Settings settings;
     public Ban(FeedHandler handler, Settings settings)
     {
         this.handler = handler;
@@ -101,6 +101,8 @@ public class Ban extends Command {
             this.command = "byid";
             this.aliases = new String[]{"hack"};
             this.help = "bans a user by id, even if they aren't on the server";
+            this.longhelp = "This command bans a user by their ID, even if they are not on the "
+                    + "server or "+SpConst.PREFIX+" cannot directly see their account";
             this.arguments = new Argument[]{
                 new Argument("id",Argument.Type.SHORTSTRING,true),
                 new Argument("for <reason>",Argument.Type.LONGSTRING,false)
@@ -156,6 +158,7 @@ public class Ban extends Command {
         {
             this.command = "unbanid";
             this.help = "unbans a user by id";
+            this.longhelp = "This command unbans a user, given their ID";
             this.arguments = new Argument[]{
                 new Argument("id",Argument.Type.SHORTSTRING,true),
                 new Argument("for <reason>",Argument.Type.LONGSTRING,false)
@@ -198,6 +201,7 @@ public class Ban extends Command {
         {
             this.command = "list";
             this.help = "lists the users currently banned from the server";
+            this.longhelp = "This command references the server's banlist and lsits the users.";
             this.availableInDM=false;
             this.level = PermLevel.MODERATOR;
             this.requiredPermissions = new Permission[] {

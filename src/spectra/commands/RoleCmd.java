@@ -37,6 +37,7 @@ public class RoleCmd extends Command {
     {
         this.command = "role";
         this.help = "role management";
+        this.longhelp = "This command is for basic role management on the server";
         this.availableInDM = false;
         this.level = PermLevel.ADMIN;
         this.requiredPermissions = new Permission[]{
@@ -59,6 +60,7 @@ public class RoleCmd extends Command {
         {
             this.command = "color";
             this.help = "sets the color of a role";
+            this.longhelp = "This command sets the color of a role, using a hex or integer value.";
             this.arguments = new Argument[]{
                 new Argument("color",Argument.Type.SHORTSTRING,true),
                 new Argument("rolename",Argument.Type.ROLE,true)
@@ -105,6 +107,7 @@ public class RoleCmd extends Command {
         {
             this.command = "create";
             this.help = "creates a new, blank role";
+            this.longhelp = "This command creates a new, blank role of the specified name.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.requiredPermissions = new Permission[]{
@@ -136,6 +139,7 @@ public class RoleCmd extends Command {
         {
             this.command = "give";
             this.help = "gives a role to a user";
+            this.longhelp = "This command gives the specified role to the specified user.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.requiredPermissions = new Permission[]{
@@ -179,6 +183,7 @@ public class RoleCmd extends Command {
         {
             this.command = "take";
             this.help = "takes a role from a user";
+            this.longhelp = "This command takes the specified role from the specified user.";
             this.availableInDM = false;
             this.level = PermLevel.ADMIN;
             this.requiredPermissions = new Permission[]{

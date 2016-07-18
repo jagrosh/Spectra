@@ -34,6 +34,8 @@ public class WelcomeDM extends Command {
         this.guides = guides;
         this.command = "welcomedm";
         this.help = "sets the direct message that gets sent to new users";
+        this.longhelp = "This command sets or clears a page of the Direct Message that is "
+                + "sent to users when they join the server.";
         this.availableInDM = false;
         this.level = PermLevel.ADMIN;
         this.children = new Command[]{
@@ -52,6 +54,7 @@ public class WelcomeDM extends Command {
         {
             this.command = "set";
             this.help = "sets a page of the welcome DM";
+            this.longhelp = "This command sets a page of the Direct Message that is sent to new users when they join the server";
             this.level = PermLevel.ADMIN;
             this.availableInDM = false;
             this.arguments = new Argument[]{
@@ -75,6 +78,7 @@ public class WelcomeDM extends Command {
         {
             this.command = "clear";
             this.help = "clears a page of the welcome DM";
+            this.longhelp = "This command clears a page of the Direct Message that is sent to new users when they join the server";
             this.level = PermLevel.ADMIN;
             this.availableInDM = false;
             this.arguments = new Argument[]{

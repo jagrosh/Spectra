@@ -38,7 +38,9 @@ public class Profile extends Command {
         this.profiles = profiles;
         this.command = "profile";
         this.aliases = new String[]{"p"};
-        this.help = "displays a profile; `"+SpConst.PREFIX+"profile help` for more";
+        this.help = "displays or edits a profile";
+        this.longhelp = "This command is used to keep track of user profiles, with information for various "
+                + "games and services. Profiles are maintains across all servers.";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,false)
         };
@@ -73,6 +75,7 @@ public class Profile extends Command {
         {
             this.command = "clear";
             this.help = "clears a field in the profile";
+            this.longhelp = "Thic command clears the specified field in the profile.";
             this.arguments = new Argument[]{
                 new Argument("field",Argument.Type.SHORTSTRING,true)
             };
@@ -108,6 +111,7 @@ public class Profile extends Command {
             this.command = fieldname;
             longname = Profiles.profName[Profiles.indexForField(fieldname)];
             this.help = "sets your "+longname;
+            this.longhelp = "This command sets the "+longname+" field in the profile.";
             this.arguments = new Argument[]{
                 new Argument("info",Argument.Type.LONGSTRING,true)
             };

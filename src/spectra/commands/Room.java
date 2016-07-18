@@ -52,7 +52,10 @@ public class Room extends Command
         this.settings = settings;
         this.handler = handler;
         this.command = "room";
-        this.help = "private room management; `"+SpConst.PREFIX+"room help` for more";
+        this.help = "private room management";
+        this.longhelp = "This command is used for users on the server to make and manage "
+                + "their own private text channels or temporary voice channels. These channels "
+                + "are hidden from all users (except those with the Administrator permission).";
         this.availableInDM = false;
         //this.cooldown = 1200;
         //this.cooldownKey = (event) -> {return event.getGuild().getId()+"|"+event.getAuthor().getId();};
@@ -104,6 +107,9 @@ public class Room extends Command
         {
             this.command = "mode";
             this.help = "sets the mode for rooms";
+            this.longhelp = "This command sets the mode for the room commands. In normal mode, users can "
+                    + "create both private text channels and temporary voice channels. Textonly and Voiceonly are "
+                    + "for limiting to one type, and NoCreation prevents creating new rooms.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -139,6 +145,9 @@ public class Room extends Command
         {
             this.command = "text";
             this.help = "create a private text channel";
+            this.longhelp = "This command creates a new private text channel that only the owner "
+                    + "(and any users with the Administrator permission) can see. After creation, the "
+                    + "owner can change the topic and settings for the channel.";
             this.availableInDM = false;
             this.cooldown = 1200;
             this.cooldownKey = (event) -> {return event.getGuild().getId()+"|"+event.getAuthor().getId()+"|roomtext";};
@@ -201,6 +210,8 @@ public class Room extends Command
         {
             this.command = "voice";
             this.help = "create a temporary voice channel";
+            this.longhelp = "This command creates a temporary voice channel. It will be "
+                    + "automatically deleted when there are no users left in it.";
             this.availableInDM = false;
             this.cooldown = 600;
             this.cooldownKey = (event) -> {return event.getGuild().getId()+"|"+event.getAuthor().getId()+"|roomvoice";};
@@ -256,6 +267,7 @@ public class Room extends Command
             this.command = "remove";
             this.aliases = new String[]{"delete"};
             this.help = "remove a private text channel that you created";
+            this.longhelp = "This command allows a user (or an Admin) to remove a private text room.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -310,6 +322,8 @@ public class Room extends Command
         {
             this.command = "list";
             this.help = "shows a list of private text channels that you can join";
+            this.longhelp = "This command shows the list of private rooms that you can join. "
+                    + "Locked rooms, and room you are in are not shown.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -352,6 +366,7 @@ public class Room extends Command
         {
             this.command = "topic";
             this.help = "sets the topic of a private text channel that you created";
+            this.longhelp = "This command sets the topic of a private room you created.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -396,6 +411,7 @@ public class Room extends Command
         {
             this.command = "tts";
             this.help = "sets text-to-speech in a private text channel that you created";
+            this.longhelp = "This command can be used to enable or disable text-to-speech in a private room you own";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -455,6 +471,8 @@ public class Room extends Command
         {
             this.command = "kick";
             this.help = "kicks someone from a private text channel that you created";
+            this.longhelp = "This command kicks a user from a private room you own. "
+                    + "Once kicked, they cannot join unless invited back.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -504,6 +522,9 @@ public class Room extends Command
         {
             this.command = "lock";
             this.help = "locks a private text channel that you created";
+            this.longhelp = "This command locks a private room you own. Once locked, "
+                    + "no users can join themselves; they must be invited by the owner. Also "
+                    + "the room will not appear in the room list.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -552,6 +573,7 @@ public class Room extends Command
         {
             this.command = "join";
             this.help = "joins an unlocked a private text channel";
+            this.help = "This command is used to join a private room on the server.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -601,6 +623,8 @@ public class Room extends Command
         {
             this.command = "invite";
             this.help = "adds someone a private text channel";
+            this.longhelp = "This command is used to invite a user to a private room. "
+                    + "If the room is locked, only the owner can invite";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -653,6 +677,8 @@ public class Room extends Command
         {
             this.command = "permanent";
             this.help = "creates a permanent leavable room";
+            this.longhelp = "This room is used to convert a regular (non-"+SpConst.BOTNAME+" room) "
+                    + "to a permanent room, or convert a "+SpConst.BOTNAME+" room to a regular room.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -713,6 +739,7 @@ public class Room extends Command
         {
             this.command = "leave";
             this.help = "leaves a private text channel";
+            this.longhelp = "This command removes you from a private or permanent "+SpConst.BOTNAME+" room.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,

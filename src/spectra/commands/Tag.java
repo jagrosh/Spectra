@@ -39,10 +39,10 @@ import spectra.datasources.Tags;
  * @author John Grosh (jagrosh)
  */
 public class Tag extends Command{
-    final Tags tags;
-    final Overrides overrides;
-    final Settings settings;
-    final FeedHandler handler;
+    private final Tags tags;
+    private final Overrides overrides;
+    private final Settings settings;
+    private final FeedHandler handler;
     public Tag(Tags tags, Overrides overrides, Settings settings, FeedHandler handler)
     {
         this.tags = tags;
@@ -55,7 +55,7 @@ public class Tag extends Command{
         this.longhelp = "This command is used to create, edit, and view \"tags\". "
                 + "Tags are a method of storing text for easy recollection later. "
                 + "Additionally, some scripting-esque elements can be used to provide "
-                + "extra functionality.";
+                + "extra functionality. See <"+JagTag.URL+"> for available elements.";
         this.arguments = new Argument[]{
             new Argument("tagname",Argument.Type.SHORTSTRING,true),
             new Argument("tag arguments",Argument.Type.LONGSTRING,false)
@@ -111,6 +111,11 @@ public class Tag extends Command{
             this.command = "create";
             this.aliases= new String[]{"add"};
             this.help = "saves a tag for later recollection";
+            this.longhelp = "This command creates a new tag (if it doesn't exist). This "
+                    + "tag is owned by the creator, and can only be edited or deleted by that user. "
+                    + "Note: Anyone found creating offensive or not-safe-for-work tags (without marking "
+                    + "them as NSFW using proper JagTag notation) is at risk of being blacklisted from "
+                    + "using "+SpConst.BOTNAME;
             //this.longhelp = "";
             this.arguments = new Argument[]{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true,1,80),
@@ -157,6 +162,9 @@ public class Tag extends Command{
             this.command = "delete";
             this.aliases = new String[]{"remove"};
             this.help = "deletes a tag if it belongs to you";
+            this.longhelp = "This command deletes a tag if you own it. If you are a server moderator "
+                    + "and don't want a tag to be displayed, consider using `tag override` to \"delete\" it "
+                    + "from the current server.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true)
@@ -207,6 +215,7 @@ public class Tag extends Command{
         {
             this.command = "edit";
             this.help = "edits a tag if it belongs to you";
+            this.longhelp = "This command edits a tag you own.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true),
@@ -263,6 +272,8 @@ public class Tag extends Command{
         {
             this.command = "list";
             this.help = "shows a list of all tags owned by you, or another user";
+            this.longhelp = "This command shows the list of tags you have created, or the list "
+                    + "a different user has created, if you specify a username.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
                 new Argument("username",Argument.Type.USER,false)
@@ -297,6 +308,8 @@ public class Tag extends Command{
         {
             this.command = "owner";
             this.help = "shows the owner of a tag";
+            this.longhelp = "This command shows who the owner of a tag is. If a tag is "
+                    + "overriden, the tag will appear to be \"owned\" by the server.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true)
@@ -335,6 +348,8 @@ public class Tag extends Command{
         {
             this.command = "random";
             this.help = "shows a random tag";
+            this.longhelp = "This command brings up a random tag from all of the existing "
+                    + "tags (or all the tags by users on the server in local mode).";
             //this.longhelp = "";
             this.arguments = new Argument[]{
             new Argument("tag arguments",Argument.Type.LONGSTRING,false)
@@ -371,6 +386,8 @@ public class Tag extends Command{
         {
             this.command = "raw";
             this.help = "shows the raw (non-dynamic) tag text";
+            this.longhelp = "This command shows the contents of a tag without "
+                    + "interpretting any of the scripting.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
             new Argument("tagname",Argument.Type.SHORTSTRING,true)
@@ -408,6 +425,9 @@ public class Tag extends Command{
         {
             this.command = "raw2";
             this.help = "shows the raw tag text in a code block";
+            this.longhelp = "This command shows the contents of a tag without "
+                    + "interpretting any of the scripting. It also puts it in a "
+                    + "code block to escape most formatting.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
             new Argument("tagname",Argument.Type.SHORTSTRING,true)
@@ -445,6 +465,9 @@ public class Tag extends Command{
         {
             this.command = "search";
             this.help = "searches for tags that include the given query";
+            this.longhelp = "This command searches for tag names that contain the "
+                    + "given query. If no query is provided, the full tag list will be "
+                    + "returned.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
             new Argument("query",Argument.Type.SHORTSTRING,false)
@@ -489,6 +512,8 @@ public class Tag extends Command{
         {
             this.command = "override";
             this.help = "creates an override for the current server";
+            this.longhelp = "This command overrides a tag on the server. This can be used "
+                    + "to \"disable\" unwanted tags, or to use an existing tag for something else.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true),
@@ -532,6 +557,7 @@ public class Tag extends Command{
             {
                 this.command = "list";
                 this.help = "lists tag overrides on the current server";
+                this.longhelp = "This command shows which tags have been overridden on the server.";
                 this.level = PermLevel.MODERATOR;
                 this.availableInDM = false;
             }
@@ -561,6 +587,7 @@ public class Tag extends Command{
             {
                 this.command = "restore";
                 this.help = "restores a tag from overriden state";
+                this.longhelp = "This command restores a tag from being overridden.";
                 this.arguments = new Argument[]{
                     new Argument("tagname",Argument.Type.SHORTSTRING,true),
                 };
@@ -594,6 +621,9 @@ public class Tag extends Command{
             {
                 this.command = "mode";
                 this.help = "sets the tag mode to local or global";
+                this.longhelp = "This command sets the tag mode. In global mode, all existing tags are "
+                        + "available on the server. In local mode, the only available tags will be those that "
+                        + "were created by users on the server.";
                 this.arguments = new Argument[]{
                     new Argument("mode",Argument.Type.SHORTSTRING,true),
                 };
@@ -623,6 +653,9 @@ public class Tag extends Command{
             {
                 this.command = "import";
                 this.help = "imports a tag from a tag command";
+                this.longhelp = "This command imports a tag as a psuedo-command on the server. "
+                        + "For example, if the tag `hug` was imported, you would be able to use `"
+                        + SpConst.PREFIX+"hug` instead of `"+SpConst.PREFIX+"tag hug`";
                 this.arguments = new Argument[]{
                     new Argument("tagname",Argument.Type.SHORTSTRING,true),
                 };
@@ -670,6 +703,8 @@ public class Tag extends Command{
             {
                 this.command = "list";
                 this.help = "lists tag imports on the current server";
+                this.longhelp = "This command shows the list of tags that have been imported to the server as commands. "
+                        + "There are some tags that are imported by default; you can unimport these if you wish.";
                 this.level = PermLevel.MODERATOR;
                 this.availableInDM = false;
             }
@@ -701,6 +736,7 @@ public class Tag extends Command{
             {
                 this.command = "unimport";
                 this.help = "un-imports a tag from a tag command";
+                this.longhelp = "This command un-imports a tag from being a pseudo-command.";
                 this.arguments = new Argument[]{
                     new Argument("tagname",Argument.Type.SHORTSTRING,true),
                 };

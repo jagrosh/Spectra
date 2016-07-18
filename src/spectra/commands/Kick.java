@@ -33,8 +33,8 @@ import spectra.datasources.Settings;
  * @author John Grosh (jagrosh)
  */
 public class Kick extends Command {
-    final FeedHandler handler;
-    final Settings settings;
+    private final FeedHandler handler;
+    private final Settings settings;
     public Kick(FeedHandler handler, Settings settings)
     {
         this.handler = handler;

@@ -36,6 +36,10 @@ public class Leave extends Command {
         this.command = "leave";
         this.availableInDM= false;
         this.help = "sets the leave message for the server";
+        this.longhelp = "This command sets the leave message for the server. This message "
+                + "supports JagTag and can include things like the user's name, server "
+                + "information, and more. See `"+SpConst.PREFIX+"tag help` for more information "
+                + "about JagTag.";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{
             new Argument("message",Argument.Type.LONGSTRING,true)
@@ -62,6 +66,7 @@ public class Leave extends Command {
             this.aliases = new String[]{"remove","delete"};
             this.availableInDM = false;
             this.help = "clears the server's leave message";
+            this.longhelp = "This command clears the server's leave message.";
             this.level = PermLevel.ADMIN;
         }
         @Override
@@ -79,6 +84,7 @@ public class Leave extends Command {
             this.command = "channel";
             this.availableInDM = false;
             this.help = "sets the channel for the server leave message";
+            this.longhelp = "This command sets the channel that the leave message will send to.";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("channel",Argument.Type.TEXTCHANNEL,true)

@@ -307,7 +307,7 @@ public class Spectra extends ListenerAdapter {
                 jda.getAccountManager().setAvatar(AvatarUtil.getAvatar(OtherUtil.makeWave(currentColor))).update();
             }
             colorCounter--;
-        }, 3, 3, TimeUnit.MINUTES);
+        }, 5, 5, TimeUnit.MINUTES);
     }
     
     public void shutdown()

@@ -32,11 +32,15 @@ import spectra.utils.FormatUtil;
  */
 public class Reminder extends Command {
     
-    Reminders reminders;
+    private final Reminders reminders;
     public Reminder(Reminders reminders)
     {
         this.reminders = reminders;
         this.command = "reminder";
+        this.help = "sets a reminder";
+        this.longhelp = "This command is used to set reminders. The reminder will be sent "
+                + "to the channel it was set in (or in DMs if you set it in DMs or the channel "
+                + "is no longer available).";
         this.aliases = new String[]{"remind","remindme"};
         this.cooldown = 30;
         this.cooldownKey = event -> event.getAuthor().getId()+"|reminder";
@@ -69,6 +73,7 @@ public class Reminder extends Command {
         {
             this.command = "list";
             this.help = "shows a list of your current reminders";
+            this.longhelp = "This command lists all of the reminders you have set, as well as where they are set for.";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
@@ -100,6 +105,8 @@ public class Reminder extends Command {
             this.command = "remove";
             this.aliases = new String[]{"delete","cancel","clear"};
             this.help = "cancels a reminder from the list";
+            this.longhelp = "This command cancels a reminder. The index must be the number "
+                    + "of the given reminder when using `"+SpConst.PREFIX+"remind list`";
             this.arguments = new Argument[]{
                 new Argument("index",Argument.Type.INTEGER,true,0,100)
             };

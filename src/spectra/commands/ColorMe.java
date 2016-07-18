@@ -39,7 +39,8 @@ public class ColorMe extends Command {
         this.command = "colorme";
         this.help = "changes the color of your role";
         this.availableInDM = false;
-        this.longhelp = "This command sets the color of your role. It can only be used if your color-determinant role has been added to the colorme list.";
+        this.longhelp = "This command sets the color of your role. It can only be used if your "
+                + "color-determinant role has been added to the colorme list. The colormust be a hex or integer code.";
         this.children = new Command[]{
             new ColorMeList(),
             new ColorMeAdd(),
@@ -70,7 +71,7 @@ public class ColorMe extends Command {
         Role top = event.getGuild().getColorDeterminantRoleForUser(event.getAuthor());
         if(top.getId().equals(event.getGuild().getId()))
         {
-            Sender.sendResponse(SpConst.ERROR+"You don't have any roles!", event);
+            Sender.sendResponse(SpConst.ERROR+"You don't have any colored roles!", event);
             return false;
         }
         if(!PermissionUtil.canInteract(event.getJDA().getSelfInfo(), top))
@@ -193,15 +194,11 @@ public class ColorMe extends Command {
             StringBuilder builder = new StringBuilder("\uD83D\uDD8C ColorMe roles on **"+event.getGuild().getName()+"**:");
             for(String id : list)
             {
-                boolean found = false;
-                for(Role role : event.getGuild().getRoles())
-                    if(role.getId().equals(id))
-                    {
-                        builder.append("\n").append(SpConst.LINESTART).append(role.getName());
-                        found = true;
-                    }
-                if(!found)
+                Role role = event.getGuild().getRoleById(id);
+                if(role==null)
                     groups.removeIdFromGroup(event.getGuild().getId(), "colorme", id);
+                else
+                    builder.append("\n").append(SpConst.LINESTART).append(role.getName());
             }
             builder.append("\nSee `").append(SpConst.PREFIX).append("colorme help` for how to add or remove roles");
             Sender.sendResponse(builder.toString(), event);

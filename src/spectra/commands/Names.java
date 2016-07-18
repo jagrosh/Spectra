@@ -29,7 +29,7 @@ import spectra.utils.FormatUtil;
  * @author John Grosh (jagrosh)
  */
 public class Names extends Command {
-    final SavedNames savednames;
+    private final SavedNames savednames;
     public Names(SavedNames savednames)
     {
         this.savednames = savednames;

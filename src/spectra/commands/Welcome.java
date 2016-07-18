@@ -36,6 +36,10 @@ public class Welcome extends Command {
         this.command = "welcome";
         this.availableInDM= false;
         this.help = "sets the welcome message for the server";
+        this.longhelp = "This command sets the welcome message for the server (that is sent when users join). "
+                + "This message supports JagTag and can include things like the user's name, server "
+                + "information, and more. See `"+SpConst.PREFIX+"tag help` for more information "
+                + "about JagTag.";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{
             new Argument("message",Argument.Type.LONGSTRING,true)
@@ -62,6 +66,7 @@ public class Welcome extends Command {
             this.aliases = new String[]{"remove","delete"};
             this.availableInDM = false;
             this.help = "clears the server's welcome message";
+            this.longhelp = "This command clears the server's welcome message.";
             this.level = PermLevel.ADMIN;
         }
         @Override
@@ -79,6 +84,7 @@ public class Welcome extends Command {
             this.command = "channel";
             this.availableInDM = false;
             this.help = "sets the channel for the server welcome message";
+            this.longhelp = "This command sets the channel that the welcome message will send to.";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("channel",Argument.Type.TEXTCHANNEL,true)
