@@ -142,6 +142,8 @@ public class Rooms extends DataSource{
                     remove(id);
                 continue;
             }
+            if(get(id)[OWNERID].equals(jda.getSelfInfo().getId()))
+                continue;
             boolean checked = false;
             if(getLastActivity(id)==null)
             {

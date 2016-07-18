@@ -15,6 +15,7 @@
  */
 package spectra;
 
+import spectra.entities.AsyncInterfacedEventManager;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -55,6 +56,7 @@ import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.events.message.guild.GuildMessageDeleteEvent;
 import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.events.message.guild.GuildMessageUpdateEvent;
+import net.dv8tion.jda.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.events.user.UserAvatarUpdateEvent;
 import net.dv8tion.jda.events.user.UserNameUpdateEvent;
 import net.dv8tion.jda.events.user.UserTypingEvent;
@@ -66,6 +68,7 @@ import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.entities.Tuple;
+import spectra.misc.SpecialCase;
 import spectra.tempdata.CallDepend;
 import spectra.tempdata.MessageCache;
 import spectra.tempdata.PhoneConnections;
@@ -214,7 +217,7 @@ public class Spectra extends ListenerAdapter {
             new Reminder(reminders),
             new Roll(),
             new Room(rooms, settings, handler),
-            new Server(),
+            new Server(settings),
             new Speakerphone(phones),
             new Stats(statistics),
             new Tag(tags, overrides, settings, handler),
@@ -525,7 +528,7 @@ public class Spectra extends ListenerAdapter {
                     successful = toRun.run(args[1], event, perm, ignore, banned);
                     statistics.ranCommand(event.isPrivate() ? "0" : event.getGuild().getId(), toRun.command, successful);
                 }
-                else if (!event.isPrivate() && (!ignore || perm.isAtLeast(PermLevel.ADMIN)))
+                else if (!event.isPrivate() && (!ignore || perm.isAtLeast(PermLevel.ADMIN) || event.getTextChannel().getId().equals(SpecialCase.JDA_GUILD_GENERAL_ID)))
                 {
                     String[] tagCommands = Settings.tagCommandsFromList(currentSettings[Settings.TAGIMPORTS]);
                     for(String cmd : tagCommands)
@@ -600,7 +603,14 @@ public class Spectra extends ListenerAdapter {
     }
 
     @Override
+    public void onPrivateMessageReceived(PrivateMessageReceivedEvent event) {
+        SpecialCase.giveMonsterHunterRole(event);
+    }
+    
+    @Override
     public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
+        if(event.getAuthor().getId().equals(event.getJDA().getSelfInfo().getId()))
+            return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
         {
@@ -625,8 +635,10 @@ public class Spectra extends ListenerAdapter {
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
         {
-            String id = event.getAuthor()==null ? null : event.getAuthor().getId();
             Message msg = messagecache.deleteMessage(event.getGuild().getId(), event.getMessageId());
+            String id = msg == null ? null : msg.getAuthor().getId();
+            if(event.getJDA().getSelfInfo().getId().equals(id))
+                return;
             String details = feed[Feeds.DETAILS];
             if( msg!=null && (details==null || details.contains("+m"+id) || !(details.contains("-m"+id) || details.contains("+m"))) )
             {
@@ -751,7 +763,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onUserAvatarUpdate(UserAvatarUpdateEvent event)  {
-        if(event.getUser().equals(event.getJDA().getSelfInfo()))
+        if(event.getUser().getId().equals(event.getJDA().getSelfInfo().getId()))
             return;
         String id = event.getUser().getId();
         String oldurl = event.getPreviousAvatarUrl()==null ? event.getUser().getDefaultAvatarUrl() : event.getPreviousAvatarUrl();

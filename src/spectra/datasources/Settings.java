@@ -45,7 +45,7 @@ public class Settings extends DataSource {
         String[] newSettings = new String[]{
             id, //serverid
             "", //welcome message
-            "0", //talk level
+            "NORMAL", //room settings
             "speakerphone room", //restricted commands
             "", // mod ids
             "false", //mhroles

@@ -140,10 +140,21 @@ public abstract class Command {
         if(!event.isPrivate())
             for(Permission p : requiredPermissions)
             {
-                if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), p, event.getTextChannel()))
+                if(p.isChannel())
                 {
-                    Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,p) ,event);
-                    return false;
+                    if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), p, event.getTextChannel()))
+                    {
+                        Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,p) ,event);
+                        return false;
+                    }
+                }
+                else
+                {
+                    if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), p, event.getGuild()))
+                    {
+                        Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,p) ,event);
+                        return false;
+                    }
                 }
             }
         

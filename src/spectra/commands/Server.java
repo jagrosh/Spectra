@@ -24,19 +24,25 @@ import net.dv8tion.jda.utils.MiscUtil;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.datasources.Settings;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Server extends Command {
-    public Server()
+    private final Settings settings;
+    public Server(Settings settings)
     {
+        this.settings = settings;
         this.command = "server";
         this.aliases = new String[]{"serverinfo","srvr","guildinfo"};
         this.help = "gets information about the current server";
         this.longhelp = "This command provides basic information about the current server";
         this.availableInDM = false;
+        this.children = new Command[]{
+            new ServerSettings()
+        };
     }
 
     @Override
@@ -61,5 +67,29 @@ public class Server extends Command {
         
         Sender.sendResponse(str, event);
         return true;
+    }
+    
+    private class ServerSettings extends Command
+    {
+        private ServerSettings()
+        {
+            this.command = "settings";
+            this.help = "shows the settings on the server";
+            this.longhelp = "";
+            this.availableInDM = false;
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String[] current = settings.getSettingsForGuild(event.getGuild().getId());
+            StringBuilder builder = new StringBuilder("\u2699 Settings on **"+event.getGuild().getName()+"**:\n"
+                    + SpConst.LINESTART+"**Welcome**: "+current[Settings.WELCOMEMSG]+"\n"
+                    + SpConst.LINESTART+"**Leave**: "+current[Settings.LEAVEMSG]+"\n"
+                    + SpConst.LINESTART+"**Prefixes**:");
+            for(String prfx: Settings.prefixesFromList(current[Settings.PREFIXES]))
+                builder.append(" `").append(prfx).append("`");
+            builder.append("\n").append(SpConst.LINESTART).append("**Tag Commands**: ").append(current[Settings.TAGIMPORTS]);
+            Sender.sendResponse(builder.toString(), event);
+            return true;
+        }
     }
 }
