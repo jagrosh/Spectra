@@ -300,7 +300,7 @@ public class Room extends Command
                 Sender.sendResponse(SpConst.ERROR+"You cannot remove a permanent room with this command. Please check `"+SpConst.PREFIX+"room permanent help`", event);
                 return false;
             }
-            String id = channel.getId();
+            boolean same = channel.getId().equals(event.getTextChannel().getId());
             try{
                 channel.getManager().delete();
             }catch(Exception e){
@@ -308,7 +308,7 @@ public class Room extends Command
                 return false;
             }
             
-            if(!id.equals(event.getTextChannel().getId()))
+            if(!same)
                 Sender.sendResponse(SpConst.SUCCESS+"You have removed \""+channel.getName()+"\"", event);
             rooms.remove(channel.getId());
             handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\uD83D\uDCFA Text channel **"+channel.getName()+
@@ -347,7 +347,7 @@ public class Room extends Command
             });
             Collections.sort(list, (TextChannel a, TextChannel b) -> a.getPosition()-b.getPosition() );
             list.stream().map((chan) -> {
-                builder.append("\n**").append(chan.getName()).append("**");
+                builder.append("\n**").append(rooms.get(chan.getId())[Rooms.LOCKED].equalsIgnoreCase("true") ? "\uD83D\uDD12 " : "").append(chan.getName()).append("**");
                 return chan;
             }).map((chan) -> chan.getTopic()).filter((topic) -> (topic!=null && !topic.startsWith("Room owner:"))).map((topic) -> FormatUtil.unembed(topic.split("\n")[0])).map((topic) -> {
                 if(topic.length()>100)

@@ -43,7 +43,7 @@ public class Sender {
         {
             if(event.isPrivate() || PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, event.getTextChannel()))
             {
-                event.getTextChannel().sendTyping();
+                event.getChannel().sendTyping();
                 String header = bits.get(0);
                 header = header.split("\n",2)[0];
                 if(header.length()>100)

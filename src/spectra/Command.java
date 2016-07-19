@@ -159,7 +159,7 @@ public abstract class Command {
             }
         
         String cdKey = null;
-        if(cooldownKey!=null || perm==PermLevel.JAGROSH) //no cooldowns for jagrosh
+        if(cooldownKey!=null && perm!=PermLevel.JAGROSH) //no cooldowns for jagrosh
             cdKey = cooldownKey.apply(event);
         long seconds = Cooldowns.getInstance().check(cdKey);
         if(seconds > 0)

@@ -22,10 +22,12 @@ import java.util.HashMap;
 import java.util.List;
 import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.MessageHistory;
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.utils.MiscUtil;
+import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.DataSource;
 import spectra.FeedHandler;
 import spectra.Sender;
@@ -135,7 +137,7 @@ public class Rooms extends DataSource{
         for(String id : allIds)
         {
             TextChannel tc = jda.getTextChannelById(id);
-            if(tc==null)
+            if(tc==null || !PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MESSAGE_HISTORY, tc) || !PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MESSAGE_READ, tc))
             {
                 Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
                 if(guild==null || guild.isAvailable())
