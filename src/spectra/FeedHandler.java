@@ -27,6 +27,7 @@ import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.TextChannel;
 import spectra.datasources.Feeds;
 import spectra.entities.Tuple;
+import spectra.tempdata.Statistics;
 import spectra.utils.FormatUtil;
 
 /**
@@ -35,12 +36,14 @@ import spectra.utils.FormatUtil;
  */
 public class FeedHandler {
     private final HashMap<String,String> buffers = new HashMap<>();
-    final Feeds feeds;
-    boolean useBuffer = false;
+    private final Feeds feeds;
+    private final Statistics statistics;
+    private final boolean useBuffer = false;
     
-    public FeedHandler(Feeds feeds)
+    public FeedHandler(Feeds feeds, Statistics statistics)
     {
         this.feeds = feeds;
+        this.statistics = statistics;
     }
     
     public void flush(JDA jda)
@@ -158,6 +161,10 @@ public class FeedHandler {
                     feeds.removeFeed(matching);
                     Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
                 }
+                else
+                {
+                    statistics.sentFeed(guild.getId());
+                }
             }
         }
     }
@@ -265,6 +272,10 @@ public class FeedHandler {
                 {
                     feeds.removeFeed(matching);
                     Sender.sendPrivate(SpConst.WARNING+"Feed `"+matching[Feeds.FEEDTYPE]+"` has been removed from <#"+target.getId()+"> because I cannot send messages there.", guild.getOwner().getPrivateChannel());
+                }
+                else
+                {
+                    statistics.sentFeed(guild.getId());
                 }
             }
         }

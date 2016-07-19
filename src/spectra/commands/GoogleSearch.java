@@ -39,6 +39,8 @@ public class GoogleSearch extends Command {
         this.arguments = new Argument[]{
             new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };
+        this.cooldown = 10;
+        this.cooldownKey = event -> event.getAuthor().getId()+"|google";
     }
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {

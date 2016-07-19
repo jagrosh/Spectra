@@ -84,6 +84,8 @@ public class Settings extends DataSource {
     
     public static String[] prefixesFromList(String prefixList)
     {
+        if(prefixList==null || prefixList.equals(""))
+            return new String[]{SpConst.PREFIX};
         String[] list = (prefixList+(char)29+SpConst.PREFIX).split((char)29+"+");
         Arrays.parallelSort(list);
         return list;

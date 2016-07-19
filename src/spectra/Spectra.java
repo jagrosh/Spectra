@@ -158,10 +158,10 @@ public class Spectra extends ListenerAdapter {
         settings    = new Settings();
         tags        = new Tags();
         
-        handler = new FeedHandler(feeds);
+        statistics = new Statistics();
+        handler = new FeedHandler(feeds,statistics);
         messagecache = new MessageCache();
         phones = new PhoneConnections();
-        statistics = new Statistics();
         
         imagesearcher = new BingImageSearcher(OtherUtil.readFileLines("bing.apikey"));
         googlesearcher = new GoogleSearcher();

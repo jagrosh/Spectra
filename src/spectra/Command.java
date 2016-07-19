@@ -137,7 +137,7 @@ public abstract class Command {
             Sender.sendResponse(SpConst.BANNED_COMMAND + (perm.isAtLeast(PermLevel.ADMIN) ? String.format(SpConst.BANNED_COMMAND_IFADMIN, root, root) : ""), event);
             return false;
         }
-        if(!event.isPrivate())
+        if(!event.isPrivate() && !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.ADMINISTRATOR, event.getGuild()))
             for(Permission p : requiredPermissions)
             {
                 if(p.isChannel())
@@ -159,7 +159,7 @@ public abstract class Command {
             }
         
         String cdKey = null;
-        if(cooldownKey!=null)// || perm==PermLevel.JAGROSH) //no cooldowns for jagrosh
+        if(cooldownKey!=null || perm==PermLevel.JAGROSH) //no cooldowns for jagrosh
             cdKey = cooldownKey.apply(event);
         long seconds = Cooldowns.getInstance().check(cdKey);
         if(seconds > 0)
@@ -252,11 +252,11 @@ public abstract class Command {
                     for(int j=0; j<vals.length; j+=2)
                     {
                         long num = Long.parseLong(vals[j]);
-                        if(vals[j+1].startsWith("m"))
+                        if(vals[j+1].toLowerCase().startsWith("m"))
                             num*=60;
-                        else if(vals[j+1].startsWith("h"))
+                        else if(vals[j+1].toLowerCase().startsWith("h"))
                             num*=60*60;
-                        else if(vals[j+1].startsWith("d"))
+                        else if(vals[j+1].toLowerCase().startsWith("d"))
                             num*=60*60*24;
                         timeinseconds+=num;
                     }

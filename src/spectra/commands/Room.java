@@ -300,6 +300,7 @@ public class Room extends Command
                 Sender.sendResponse(SpConst.ERROR+"You cannot remove a permanent room with this command. Please check `"+SpConst.PREFIX+"room permanent help`", event);
                 return false;
             }
+            String id = channel.getId();
             try{
                 channel.getManager().delete();
             }catch(Exception e){
@@ -307,7 +308,7 @@ public class Room extends Command
                 return false;
             }
             
-            if(!channel.getId().equals(event.getTextChannel().getId()))
+            if(!id.equals(event.getTextChannel().getId()))
                 Sender.sendResponse(SpConst.SUCCESS+"You have removed \""+channel.getName()+"\"", event);
             rooms.remove(channel.getId());
             handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\uD83D\uDCFA Text channel **"+channel.getName()+

@@ -48,7 +48,8 @@ public class Stats extends Command {
                 .append(SpConst.LINESTART).append("Servers: **").append(event.getJDA().getGuilds().size()).append("**\n")
                 .append(SpConst.LINESTART).append("Channels: **").append(event.getJDA().getTextChannels().size()).append("** Text, **").append(event.getJDA().getVoiceChannels().size()).append("** Voice\n")
                 .append(SpConst.LINESTART).append("Unique Users: **").append(event.getJDA().getUsers().size()).append("**\n")
-                .append(SpConst.LINESTART).append("Messages/Hr: **").append(statistics.messagesPerHour()).append("**\n\n\u2328 **Command Statistics**\n")
+                .append(SpConst.LINESTART).append("Messages/Hr: **").append(statistics.messagesPerHour()).append("**\n")
+                .append(SpConst.LINESTART).append("Feeds/Hr: **").append(statistics.feedsPerHour()).append("**\n\n\u2328 **Command Statistics**\n")
                 .append(SpConst.LINESTART).append("Commands/Hr: **").append(statistics.commandsPerHour()).append("**\n");
         List<Tuple<String,Integer>> list = statistics.mostUsedCommands(4);
         if(!list.isEmpty())
@@ -69,10 +70,13 @@ public class Stats extends Command {
         String loudname = event.getJDA().getGuildById(loudest.getFirst())==null ? "???" : event.getJDA().getGuildById(loudest.getFirst()).getName();
         Tuple<String,Integer> dependent = statistics.mostCommandsGuild();
         String dependname = dependent.getFirst().equals("0") ? "Direct Messages" : (event.getJDA().getGuildById(dependent.getFirst())==null ? "???" : event.getJDA().getGuildById(dependent.getFirst()).getName());
+        Tuple<String,Integer> mostFeeds = statistics.mostFeedsGuild();
+        String mostFeedsName = event.getJDA().getGuildById(mostFeeds.getFirst())==null ? "???" : event.getJDA().getGuildById(mostFeeds.getFirst()).getName();
         builder.append("\n\uD83D\uDDA5 **Server Statistics**:\n")
                 .append(SpConst.LINESTART).append("Largest: **").append(name).append("** (").append(size).append(" users)\n")
                 .append(SpConst.LINESTART).append("Loudest: **").append(loudname).append("** (").append(loudest.getSecond()).append("% of messages)\n")
                 .append(SpConst.LINESTART).append("Most Used: **").append(dependname).append("** (").append(dependent.getSecond()).append("% of commands)\n")
+                .append(SpConst.LINESTART).append("Most Feed: **").append(mostFeedsName).append("** (").append(mostFeeds.getSecond()).append("% of feed messages)")
                 ;
         Sender.sendResponse(builder.toString(), event);
         return true;

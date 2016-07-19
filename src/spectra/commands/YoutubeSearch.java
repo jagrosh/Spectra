@@ -38,6 +38,8 @@ public class YoutubeSearch extends Command {
         this.arguments = new Argument[]{
             new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };
+        this.cooldown = 10;
+        this.cooldownKey = event -> event.getAuthor().getId()+"|youtube";
     }
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
