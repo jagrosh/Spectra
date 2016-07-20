@@ -65,24 +65,26 @@ public class SpecialCase {
         if(hr==0)
             return;
         Role member = mhgh.getRoleById(MEMBER);
-        if(!mhgh.getRolesForUser(user).contains(member))
-            mhgh.getManager().addRoleToUser(user, member);
-        boolean gotten=false;
-        for(int i=MH_LEVELS.length-1; i>=0; i--)
-        {
-            Role role = mhgh.getRoleById(HR_ROLES[i]);
-            if(hr>=MH_LEVELS[i] && !gotten)
+        synchronized(mhgh.getManager()){
+            if(!mhgh.getRolesForUser(user).contains(member))
+                mhgh.getManager().addRoleToUser(user, member);
+            boolean gotten=false;
+            for(int i=MH_LEVELS.length-1; i>=0; i--)
             {
-                if(!mhgh.getRolesForUser(user).contains(role))
-                    mhgh.getManager().addRoleToUser(user, role);
-                gotten=true;
+                Role role = mhgh.getRoleById(HR_ROLES[i]);
+                if(hr>=MH_LEVELS[i] && !gotten)
+                {
+                    if(!mhgh.getRolesForUser(user).contains(role))
+                        mhgh.getManager().addRoleToUser(user, role);
+                    gotten=true;
+                }
+                else
+                {
+                    if(mhgh.getRolesForUser(user).contains(role))
+                        mhgh.getManager().removeRoleFromUser(user, role);
+                }
             }
-            else
-            {
-                if(mhgh.getRolesForUser(user).contains(role))
-                    mhgh.getManager().removeRoleFromUser(user, role);
-            }
+            mhgh.getManager().update();
         }
-        mhgh.getManager().update();
     }
 }

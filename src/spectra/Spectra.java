@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javafx.util.Pair;
 import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.JDA;
@@ -67,7 +68,6 @@ import net.dv8tion.jda.utils.MiscUtil;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.commands.*;
 import spectra.datasources.*;
-import spectra.entities.Tuple;
 import spectra.misc.SpecialCase;
 import spectra.tempdata.CallDepend;
 import spectra.tempdata.MessageCache;
@@ -535,7 +535,7 @@ public class Spectra extends ListenerAdapter {
                         if(cmd.equalsIgnoreCase(args[0]))
                         {
                             isCommand=true;
-                            boolean nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
+                            boolean nsfw = event.getTextChannel().getName().contains("nsfw") || (event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}"));
                             String[] tag = overrides.findTag(event.getGuild(), cmd, nsfw);
                             if(tag==null)
                                 tag = tags.findTag(cmd, null, false, nsfw);
@@ -658,7 +658,7 @@ public class Spectra extends ListenerAdapter {
             if(PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MANAGE_ROLES, event.getGuild()))
                 event.getGuild().getRoles().stream().filter((role) -> (role.getName().equalsIgnoreCase("muted") 
                         && PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))).forEach((role) -> {
-                    event.getGuild().getManager().addRoleToUser(event.getUser(), role);
+                    event.getGuild().getManager().addRoleToUser(event.getUser(), role).update();
         });
         String[] currentsettings = settings.getSettingsForGuild(event.getGuild().getId());
         String current = currentsettings==null ? null : currentsettings[Settings.WELCOMEMSG];
@@ -732,7 +732,7 @@ public class Spectra extends ListenerAdapter {
         if(servlogon)
             handler.submitFile(Feeds.Type.SERVERLOG, event.getChannel().getGuild(), ()->{
                 File f = OtherUtil.writeArchive(builder.toString(), "deleted_messages");
-                return new Tuple<>(header,f);}, header);
+                return new Pair<>(header,f);}, header);
     }
 
     @Override
@@ -801,7 +801,7 @@ public class Spectra extends ListenerAdapter {
                 } catch (IOException ex) {
                     System.out.println("[ERROR] An error occured drawing the avatar.");
                 }
-                return new Tuple<>("\uD83D\uDDBC **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") has changed avatars:",f);
+                return new Pair<>("\uD83D\uDDBC **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") has changed avatars:",f);
                 }, 
                 "\uD83D\uDDBC **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") has changed avatars:"
                     + "\nOld: "+event.getPreviousAvatarUrl()

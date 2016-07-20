@@ -19,6 +19,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import javafx.util.Pair;
 import javax.imageio.ImageIO;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
@@ -26,7 +27,6 @@ import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
-import spectra.entities.Tuple;
 import spectra.utils.OtherUtil;
 
 /**
@@ -77,7 +77,7 @@ public class Draw extends Command{
                 } catch (IOException ex) {
                     System.out.println("[ERROR] An error occured drawing the wave.");
                 }
-            return new Tuple<>(null,f);
+            return new Pair<>(null,f);
         }, event);
         return true;
     }

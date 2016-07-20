@@ -28,17 +28,17 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import javafx.util.Pair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import spectra.entities.Tuple;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class BingImageSearcher {
-    private final HashMap<String,Tuple<ArrayList<String>,OffsetDateTime>> cache;
+    private final HashMap<String,Pair<ArrayList<String>,OffsetDateTime>> cache;
     private final List<String> apiKeysEncrypted;
     private final String bingImagePattern = "https://api.datamarket.azure.com/Bing/Search/v1/Image?Query=%%27%s%%27&$format=JSON";
     public BingImageSearcher(List<String> apiKeys)
@@ -61,7 +61,7 @@ public class BingImageSearcher {
         }
         synchronized(cache)
         {
-            list = cache.get(truequery)==null ? null : cache.get(truequery).getFirst();
+            list = cache.get(truequery)==null ? null : cache.get(truequery).getKey();
         }
         if(list!=null)
             return list;
@@ -89,7 +89,7 @@ public class BingImageSearcher {
             }
             synchronized(cache)
             {
-                cache.put(truequery, new Tuple<>(list,OffsetDateTime.now()));
+                cache.put(truequery, new Pair<>(list,OffsetDateTime.now()));
             }
             return list;
         } catch (IOException | JSONException ex) {
@@ -104,8 +104,8 @@ public class BingImageSearcher {
             ArrayList<String> deleteList = new ArrayList<>();
             OffsetDateTime now = OffsetDateTime.now();
             cache.keySet().stream().forEach((truequery) -> {
-                Tuple<ArrayList<String>,OffsetDateTime> tuple = cache.get(truequery);
-                if (now.isAfter(tuple.getSecond().plusHours(6))) {
+                Pair<ArrayList<String>,OffsetDateTime> tuple = cache.get(truequery);
+                if (now.isAfter(tuple.getValue().plusHours(6))) {
                     deleteList.add(truequery);
                 }
             });

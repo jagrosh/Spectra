@@ -18,13 +18,13 @@ package spectra.commands;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import javafx.util.Pair;
 import javax.imageio.ImageIO;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
-import spectra.entities.Tuple;
 import spectra.utils.OtherUtil;
 
 /**
@@ -63,7 +63,7 @@ public class Avatar extends Command {
                 try {
                     ImageIO.write(bi, "png", f);
                 } catch (IOException ex) {System.out.println("[ERROR] Could not save avatar");}
-                return new Tuple<>(str,f);
+                return new Pair<>(str,f);
             }, str+"\n"+url, event);
         }
         return true;

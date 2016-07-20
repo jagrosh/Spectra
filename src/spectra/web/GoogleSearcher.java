@@ -22,18 +22,18 @@ import java.net.URLEncoder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import javafx.util.Pair;
 import net.dv8tion.jda.utils.SimpleLog;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import spectra.entities.Tuple;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class GoogleSearcher {
-    private final HashMap<String,Tuple<ArrayList<String>,OffsetDateTime>> cache;
+    private final HashMap<String,Pair<ArrayList<String>,OffsetDateTime>> cache;
     public GoogleSearcher()
     {
         cache = new HashMap<>();
@@ -42,7 +42,7 @@ public class GoogleSearcher {
     public ArrayList<String> getDataFromGoogle(String query) {
         synchronized(cache)
         {
-            ArrayList<String> cachedresult = cache.get(query.toLowerCase())==null ? null : cache.get(query.toLowerCase()).getFirst();
+            ArrayList<String> cachedresult = cache.get(query.toLowerCase())==null ? null : cache.get(query.toLowerCase()).getKey();
             if(cachedresult!=null)
                 return cachedresult;
         }
@@ -80,7 +80,7 @@ public class GoogleSearcher {
         }
         synchronized(cache)
             {
-                cache.put(query.toLowerCase(), new Tuple<>(result,OffsetDateTime.now()));
+                cache.put(query.toLowerCase(), new Pair<>(result,OffsetDateTime.now()));
             }
         return result;
     }
@@ -92,8 +92,8 @@ public class GoogleSearcher {
             ArrayList<String> deleteList = new ArrayList<>();
             OffsetDateTime now = OffsetDateTime.now();
             cache.keySet().stream().forEach((truequery) -> {
-                Tuple<ArrayList<String>,OffsetDateTime> tuple = cache.get(truequery);
-                if (now.isAfter(tuple.getSecond().plusHours(6))) {
+                Pair<ArrayList<String>,OffsetDateTime> tuple = cache.get(truequery);
+                if (now.isAfter(tuple.getValue().plusHours(6))) {
                     deleteList.add(truequery);
                 }
             });

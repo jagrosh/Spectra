@@ -18,6 +18,7 @@ package spectra.commands;
 import java.io.File;
 import java.time.OffsetDateTime;
 import java.util.List;
+import javafx.util.Pair;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
@@ -27,7 +28,6 @@ import spectra.Sender;
 import spectra.SpConst;
 import spectra.datasources.Contests;
 import spectra.datasources.Entries;
-import spectra.entities.Tuple;
 import spectra.utils.FormatUtil;
 import spectra.utils.OtherUtil;
 
@@ -290,7 +290,7 @@ public class Contest extends Command {
                             .append(" (ID:").append(entry[Entries.USERID]).append(") : ").append(entry[Entries.ENTRY]);
                 });
                 File f = OtherUtil.writeArchive(builder.toString(), contest[Contests.CONTESTNAME]+"_entries.txt");
-                return new Tuple<>("Entries for **"+contest[Contests.CONTESTNAME]+"**",f);
+                return new Pair<>("Entries for **"+contest[Contests.CONTESTNAME]+"**",f);
             }, event);
             return true;
         }

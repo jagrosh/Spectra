@@ -18,6 +18,7 @@ package spectra.commands;
 import java.io.File;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import javafx.util.Pair;
 import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Message;
@@ -28,7 +29,6 @@ import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
-import spectra.entities.Tuple;
 import spectra.utils.OtherUtil;
 
 /**
@@ -100,7 +100,7 @@ public class Archive extends Command{
             }
             String str = SpConst.SUCCESS+"Archive of the past "+messages.size()+" messages in "+name+":";
             File f = OtherUtil.writeArchive(builder.toString(), "archive "+event.getMessage().getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME).replace(":", ""));
-            return new Tuple<>(str,f);
+            return new Pair<>(str,f);
         },event);
         return true;
     }

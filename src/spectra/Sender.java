@@ -19,13 +19,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import javafx.util.Pair;
 import net.dv8tion.jda.MessageBuilder;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
-import spectra.entities.Tuple;
 import spectra.tempdata.CallDepend;
 import spectra.utils.OtherUtil;
 
@@ -75,13 +75,13 @@ public class Sender {
     }
     
     //reply with a file (or permission error)
-    public static void sendFileResponse(Supplier<Tuple<String,File>> message, MessageReceivedEvent event)
+    public static void sendFileResponse(Supplier<Pair<String,File>> message, MessageReceivedEvent event)
     {
         sendFileResponseWithAlternate(message, null, event);
     }
     
     //reply with a file, or text if a file can't be sent
-    public static void sendFileResponseWithAlternate(Supplier<Tuple<String,File>> message, String alternate, MessageReceivedEvent event)
+    public static void sendFileResponseWithAlternate(Supplier<Pair<String,File>> message, String alternate, MessageReceivedEvent event)
     {
         if(!event.isPrivate())
         {
@@ -92,9 +92,9 @@ public class Sender {
             }
         }
         event.getChannel().sendTyping();
-        Tuple<String,File> tuple = message.get();
-        String msg = tuple.getFirst();
-        File file = tuple.getSecond();
+        Pair<String,File> tuple = message.get();
+        String msg = tuple.getKey();
+        File file = tuple.getValue();
         event.getChannel().sendFileAsync(file, msg==null ? null : new MessageBuilder().appendString(msg.length() > 2000 ? msg.substring(0, 2000) : msg).build(), m -> {
                 if(!event.isPrivate())
                     CallDepend.getInstance().add(event.getMessage().getId(), m);

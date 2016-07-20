@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import spectra.entities.Tuple;
+import javafx.util.Pair;
 
 /**
  *
@@ -88,17 +88,17 @@ public class Statistics {
         return (int)(feedsSent / (getUptime()/3600.0));
     }
     
-    public synchronized List<Tuple<String,Integer>> mostUsedCommands(int num)
+    public synchronized List<Pair<String,Integer>> mostUsedCommands(int num)
     {
         List<String> keys = new ArrayList<>(commandUsage.keySet());
         Collections.sort(keys, (String a, String b) -> commandUsage.get(b).compareTo(commandUsage.get(a)));
-        List<Tuple<String,Integer>> list = new ArrayList<>();
+        List<Pair<String,Integer>> list = new ArrayList<>();
         for(int i=0; i<num && i<keys.size(); i++)
-            list.add(new Tuple<>(keys.get(i),(int)((double)commandUsage.get(keys.get(i))*100/commandSuccess)));
+            list.add(new Pair<>(keys.get(i),(int)((double)commandUsage.get(keys.get(i))*100/commandSuccess)));
         return list;
     }
     
-    public synchronized Tuple<String,Integer> mostMessagesGuild()
+    public synchronized Pair<String,Integer> mostMessagesGuild()
     {
         long max = 0;
         String maxId=null;
@@ -108,10 +108,10 @@ public class Statistics {
                 maxId = id;
                 max = guildMessages.get(id);
             }
-        return new Tuple<>(maxId,(int)((double)max*100/messagesReceived));
+        return new Pair<>(maxId,(int)((double)max*100/messagesReceived));
     }
     
-    public synchronized Tuple<String,Integer> mostCommandsGuild()
+    public synchronized Pair<String,Integer> mostCommandsGuild()
     {
         long max = 0;
         String maxId="0";
@@ -121,10 +121,10 @@ public class Statistics {
                 maxId = id;
                 max = guildCommands.get(id);
             }
-        return new Tuple<>(maxId,(int)((double)max*100/commandsRun));
+        return new Pair<>(maxId,(int)((double)max*100/commandsRun));
     }
     
-    public synchronized Tuple<String,Integer> mostFeedsGuild()
+    public synchronized Pair<String,Integer> mostFeedsGuild()
     {
         long max = 0;
         String maxId="0";
@@ -134,7 +134,7 @@ public class Statistics {
                 maxId = id;
                 max = guildFeeds.get(id);
             }
-        return new Tuple<>(maxId,(int)((double)max*100/feedsSent));
+        return new Pair<>(maxId,(int)((double)max*100/feedsSent));
     }
     
     public long getUptime()

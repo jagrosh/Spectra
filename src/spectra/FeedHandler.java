@@ -22,11 +22,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
+import javafx.util.Pair;
 import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.TextChannel;
 import spectra.datasources.Feeds;
-import spectra.entities.Tuple;
 import spectra.tempdata.Statistics;
 import spectra.utils.FormatUtil;
 
@@ -71,7 +71,7 @@ public class FeedHandler {
         submitText(type,Collections.singletonList(guild),text);
     }
     
-    public void submitFile(Feeds.Type type, Guild guild, Supplier<Tuple<String,File>> message, String alternative)
+    public void submitFile(Feeds.Type type, Guild guild, Supplier<Pair<String,File>> message, String alternative)
     {
         submitFile(type, Collections.singletonList(guild), message, alternative);
     }
@@ -169,7 +169,7 @@ public class FeedHandler {
         }
     }
     
-    public void submitFile(Feeds.Type type, List<Guild> guilds, Supplier<Tuple<String,File>> message, String alternative)
+    public void submitFile(Feeds.Type type, List<Guild> guilds, Supplier<Pair<String,File>> message, String alternative)
     {
         if(type==Feeds.Type.MODLOG || type== Feeds.Type.SERVERLOG || type==Feeds.Type.TAGLOG)
             alternative = logFormat(alternative);
@@ -204,9 +204,9 @@ public class FeedHandler {
 
                     if(file==null)
                     {
-                        Tuple<String,File> item = message.get();
-                        file = item.getSecond();
-                        normal = item.getFirst();
+                        Pair<String,File> item = message.get();
+                        file = item.getValue();
+                        normal = item.getKey();
                         if(type==Feeds.Type.MODLOG || type== Feeds.Type.SERVERLOG || type==Feeds.Type.TAGLOG)
                             normal = logFormat(normal);
                         else if (type==Feeds.Type.BOTLOG)
@@ -258,9 +258,9 @@ public class FeedHandler {
                 
                 if(file==null)
                 {
-                    Tuple<String,File> item = message.get();
-                    file = item.getSecond();
-                    normal = item.getFirst();
+                    Pair<String,File> item = message.get();
+                    file = item.getValue();
+                    normal = item.getKey();
                     if(type==Feeds.Type.MODLOG || type== Feeds.Type.SERVERLOG || type==Feeds.Type.TAGLOG)
                         normal = logFormat(normal);
                     else if (type==Feeds.Type.BOTLOG)
