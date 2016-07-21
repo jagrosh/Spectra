@@ -99,6 +99,7 @@ public class Spectra extends ListenerAdapter {
     private final Donators donators;
     private final Entries entries;
     private final Feeds feeds;
+    private final GlobalLists globallists;
     private final Guides guides;
     private final Mutes mutes;
     private final Overrides overrides;
@@ -152,6 +153,7 @@ public class Spectra extends ListenerAdapter {
         overrides   = new Overrides();
         profiles    = new Profiles();
         reminders   = new Reminders();
+        globallists = new GlobalLists();
         groups      = new RoleGroups();
         rooms       = new Rooms();
         savednames  = new SavedNames();
@@ -159,7 +161,7 @@ public class Spectra extends ListenerAdapter {
         tags        = new Tags();
         
         statistics = new Statistics();
-        handler = new FeedHandler(feeds,statistics);
+        handler = new FeedHandler(feeds,statistics,globallists);
         messagecache = new MessageCache();
         phones = new PhoneConnections();
         
@@ -185,6 +187,7 @@ public class Spectra extends ListenerAdapter {
         donators.read();
         entries.read();
         feeds.read();
+        globallists.read();
         groups.read();
         guides.read();
         mutes.read();
@@ -244,6 +247,7 @@ public class Spectra extends ListenerAdapter {
             new WelcomeDM(guides),
                 
             new Announce(handler,feeds),
+            new BlackList(globallists),
             new Donator(donators),
             new Eval(this),
             new SystemCmd(this,feeds,statistics),
@@ -327,6 +331,7 @@ public class Spectra extends ListenerAdapter {
         donators.shutdown();
         entries.shutdown();
         feeds.shutdown();
+        globallists.shutdown();
         groups.shutdown();
         guides.shutdown();
         mutes.shutdown();
@@ -397,7 +402,12 @@ public class Spectra extends ListenerAdapter {
                 Sender.sendPrivate(relate, u.getPrivateChannel());
         });
         
-        if(idling && !event.getAuthor().getId().equals(SpConst.JAGROSH_ID))
+        //blacklist everyone while idling
+        //blacklist users while not
+        if((idling 
+                || globallists.isBlacklisted(event.getAuthor().getId()) 
+                || (!event.isPrivate() && globallists.isBlacklisted(event.getGuild().getId()))) 
+                && !event.getAuthor().getId().equals(SpConst.JAGROSH_ID))
             return;
         //get the settings for the server
         //settings will be null for private messages
@@ -535,7 +545,7 @@ public class Spectra extends ListenerAdapter {
                         if(cmd.equalsIgnoreCase(args[0]))
                         {
                             isCommand=true;
-                            boolean nsfw = event.getTextChannel().getName().contains("nsfw") || (event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}"));
+                            boolean nsfw = JagTag.isNSFWAllowed(event);
                             String[] tag = overrides.findTag(event.getGuild(), cmd, nsfw);
                             if(tag==null)
                                 tag = tags.findTag(cmd, null, false, nsfw);
@@ -596,6 +606,8 @@ public class Spectra extends ListenerAdapter {
     
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
         rooms.setLastActivity(event.getChannel().getId(), event.getMessage().getTime());
         if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
@@ -610,6 +622,8 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
         if(event.getAuthor().getId().equals(event.getJDA().getSelfInfo().getId()))
+            return;
+        if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
@@ -632,6 +646,8 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
         CallDepend.getInstance().delete(event.getMessageId());
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
         {
@@ -652,6 +668,8 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), 
                 "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server.");
         if(mutes.getMute(event.getUser().getId(), event.getGuild().getId())!=null)
@@ -681,6 +699,8 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberLeave(GuildMemberLeaveEvent event) {
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
                 "\uD83D\uDCE4 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") left or was kicked from the server.");
         String[] currentsettings = settings.getSettingsForGuild(event.getGuild().getId());
@@ -699,18 +719,24 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberBan(GuildMemberBanEvent event) {
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
         handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                 "\uD83D\uDD28 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was banned from the server.");
     }
 
     @Override
     public void onGuildMemberUnban(GuildMemberUnbanEvent event) {
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
         handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                 "\uD83D\uDD27 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was unbanned from the server.");
     }
 
     @Override
     public void onMessageBulkDelete(MessageBulkDeleteEvent event) {
+        if(globallists.isBlacklisted(event.getChannel().getGuild().getId()))
+            return;
         int size = event.getMessageIds().size();
         boolean servlogon = feeds.feedForGuild(event.getChannel().getGuild(), Feeds.Type.SERVERLOG)!=null;
         String guildid = event.getChannel().getGuild().getId();
@@ -737,6 +763,8 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberNickChange(GuildMemberNickChangeEvent event) {
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
         {

@@ -83,12 +83,10 @@ public class Tag extends Command{
         String tagname = (String)(args[0]);
         String tagargs = args[1]==null?null:(String)(args[1]);
         boolean local = false;
-        boolean nsfw = true;
+        boolean nsfw = JagTag.isNSFWAllowed(event);
         if(!event.isPrivate())
-        {
             local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-            nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
-        }
+        
         String[] tag = null;
         if(!event.isPrivate())
             tag = overrides.findTag(event.getGuild(), tagname, nsfw);
@@ -287,9 +285,7 @@ public class Tag extends Command{
             User user = (User)(args[0]);
             if(user==null)
                 user = event.getAuthor();
-            boolean nsfw = true;
-            if(!event.isPrivate())
-                nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
+            boolean nsfw = JagTag.isNSFWAllowed(event);
             ArrayList<String> taglist = tags.findTagsByOwner(user, nsfw);
             Collections.sort(taglist);
             StringBuilder builder;
@@ -360,12 +356,9 @@ public class Tag extends Command{
         {
             String tagargs = args[0]==null?null:(String)(args[0]);
             boolean local = false;
-            boolean nsfw = true;
+            boolean nsfw = JagTag.isNSFWAllowed(event);
             if(!event.isPrivate())
-            {
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-                nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
-            }
             List<String[]> taglist = tags.findTags(null, event.getGuild(), local, nsfw);
             if(taglist.isEmpty())
             {
@@ -398,12 +391,9 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             boolean local = false;
-            boolean nsfw = true;
+            boolean nsfw = JagTag.isNSFWAllowed(event);
             if(!event.isPrivate())
-            {
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-                nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
-            }
             String[] tag = null;
             if(!event.isPrivate())
                 tag = overrides.findTag(event.getGuild(), tagname, nsfw);
@@ -438,12 +428,9 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             boolean local = false;
-            boolean nsfw = true;
+            boolean nsfw = JagTag.isNSFWAllowed(event);
             if(!event.isPrivate())
-            {
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-                nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
-            }
             String[] tag = null;
             if(!event.isPrivate())
                 tag = overrides.findTag(event.getGuild(), tagname, nsfw);
@@ -480,12 +467,9 @@ public class Tag extends Command{
         {
             String query = args[0]==null?null:(String)(args[0]);
             boolean local = false;
-            boolean nsfw = true;
+            boolean nsfw = JagTag.isNSFWAllowed(event);
             if(!event.isPrivate())
-            {
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-                nsfw = event.getTextChannel().getName().contains("nsfw") || event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}");
-            }
             List<String[]> taglist = tags.findTags(query, event.getGuild(), local, nsfw);
             if(taglist.isEmpty())
             {

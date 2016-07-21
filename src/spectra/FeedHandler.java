@@ -27,6 +27,7 @@ import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.TextChannel;
 import spectra.datasources.Feeds;
+import spectra.datasources.GlobalLists;
 import spectra.tempdata.Statistics;
 import spectra.utils.FormatUtil;
 
@@ -38,12 +39,14 @@ public class FeedHandler {
     private final HashMap<String,String> buffers = new HashMap<>();
     private final Feeds feeds;
     private final Statistics statistics;
+    private final GlobalLists lists;
     private final boolean useBuffer = false;
     
-    public FeedHandler(Feeds feeds, Statistics statistics)
+    public FeedHandler(Feeds feeds, Statistics statistics, GlobalLists lists)
     {
         this.feeds = feeds;
         this.statistics = statistics;
+        this.lists = lists;
     }
     
     public void flush(JDA jda)
@@ -88,6 +91,8 @@ public class FeedHandler {
             {
                 for(Guild guild : guilds)
                 {
+                    if(lists.isBlacklisted(guild.getId()))
+                        continue;
                     String[] matching = feeds.feedForGuild(guild, type);
                     if(matching==null)
                         continue;
@@ -143,6 +148,8 @@ public class FeedHandler {
         {
             for(Guild guild : guilds)
             {
+                if(lists.isBlacklisted(guild.getId()))
+                    continue;
                 String[] matching = feeds.feedForGuild(guild, type);
                 if(matching==null)
                     continue;
@@ -183,6 +190,8 @@ public class FeedHandler {
             {
                 for(Guild guild : guilds)
                 {
+                    if(lists.isBlacklisted(guild.getId()))
+                        continue;
                     String[] matching = feeds.feedForGuild(guild, type);
                     if(matching==null)
                         continue;
@@ -243,6 +252,8 @@ public class FeedHandler {
         {
             for(Guild guild : guilds)
             {
+                if(lists.isBlacklisted(guild.getId()))
+                    continue;
                 String[] matching = feeds.feedForGuild(guild, type);
                 if(matching==null)
                     continue;

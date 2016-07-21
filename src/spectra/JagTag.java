@@ -28,6 +28,7 @@ import net.dv8tion.jda.entities.MessageChannel;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.utils.FinderUtil;
 import spectra.utils.FormatUtil;
 
@@ -383,6 +384,17 @@ public class JagTag {
             case "|<|":
                 return (s1.compareTo(s2)<0);
         }
+        return false;
+    }
+    
+    public static boolean isNSFWAllowed(MessageReceivedEvent event)
+    {
+        if(event.isPrivate())
+            return true;
+        if(event.getTextChannel().getName().contains("nsfw"))
+            return true;
+        if(event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}"))
+            return true;
         return false;
     }
 }

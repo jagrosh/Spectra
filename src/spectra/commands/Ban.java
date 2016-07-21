@@ -105,7 +105,7 @@ public class Ban extends Command {
                     + "server or "+SpConst.PREFIX+" cannot directly see their account";
             this.arguments = new Argument[]{
                 new Argument("id",Argument.Type.SHORTSTRING,true),
-                new Argument("for <reason>",Argument.Type.LONGSTRING,false)
+                new Argument("reason",Argument.Type.LONGSTRING,false)
             };
             this.separatorRegex = "\\s+for\\s+";
             this.availableInDM=false;
@@ -120,6 +120,8 @@ public class Ban extends Command {
             String reason = args[1]==null?null:(String)(args[1]);
             if(reason==null)
                 reason = "[no reason specified]";
+            else if(reason.toLowerCase().startsWith("for"))
+                reason = reason.substring(3).trim();
             User target = event.getJDA().getUserById(id);
             if(target!=null && event.getGuild().isMember(target))
             {
