@@ -101,7 +101,7 @@ public class Contest extends Command {
             }
             else if (type.equalsIgnoreCase("upcoming"))
             {
-                List<String[]> list = contests.getCurrentContestsForGuild(event.getGuild().getId());
+                List<String[]> list = contests.getUpcomingContestsForGuild(event.getGuild().getId());
                 if(list.isEmpty())
                 {
                     Sender.sendResponse(SpConst.WARNING+"There are no upcoming contests on **"+event.getGuild().getName()+"**", event);
@@ -120,7 +120,7 @@ public class Contest extends Command {
             }
             else if (type.equalsIgnoreCase("ended"))
             {
-                List<String[]> list = contests.getCurrentContestsForGuild(event.getGuild().getId());
+                List<String[]> list = contests.getEndedContestsForGuild(event.getGuild().getId());
                 if(list.isEmpty())
                 {
                     Sender.sendResponse(SpConst.WARNING+"There are no ended contests on **"+event.getGuild().getName()+"**", event);

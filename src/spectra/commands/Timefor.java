@@ -38,6 +38,8 @@ public class Timefor extends Command {
         this.command = "timefor";
         this.aliases = new String[]{"tf","time"};
         this.help = "shows the current time for a user if they have set the `timezone` field in their profile";
+        this.longhelp = "This command uses the current time in conjunction with the 'timezone' field in a user's "
+                + "profile to determine what time it is for them.";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,false)
         };
