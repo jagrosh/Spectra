@@ -89,13 +89,13 @@ public class Rooms extends DataSource{
         }
     }
     
-    public List<String> getAllRoomIds()
+    public List<String> getAllTextRoomIds()
     {
         ArrayList<String> ids = new ArrayList<>();
         synchronized(data)
         {
-            data.values().stream().forEach((room) -> {
-                ids.add(room[CHANNELID]);
+            data.values().stream().filter((item) -> (!item[LOCKED].equalsIgnoreCase("voice"))).forEach((item) -> {
+                ids.add(item[CHANNELID]);
             });
         }
         return ids;
@@ -133,7 +133,7 @@ public class Rooms extends DataSource{
             return;
         int warn = 36;
         int delete = 12;
-        List<String> allIds = getAllRoomIds();
+        List<String> allIds = getAllTextRoomIds();
         for(String id : allIds)
         {
             TextChannel tc = jda.getTextChannelById(id);

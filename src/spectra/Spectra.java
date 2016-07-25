@@ -215,6 +215,7 @@ public class Spectra extends ListenerAdapter {
             new Info(),
             new Invite(),
             new Names(savednames),
+            new Nick(),
             new Ping(),
             new Profile(profiles),
             new Reminder(reminders),
@@ -864,6 +865,8 @@ public class Spectra extends ListenerAdapter {
             if(room!=null)
             {
                 event.getOldChannel().getManager().delete();
+                handler.submitText(Feeds.Type.SERVERLOG, event.getOldChannel().getGuild(), "\uD83C\uDF99 Voice channel **"+event.getOldChannel().getName()+
+                            "** (ID:"+event.getOldChannel().getId()+") is empty and has been removed.");
                 rooms.remove(event.getOldChannel().getId());
             }
         }

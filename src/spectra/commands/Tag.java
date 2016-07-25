@@ -183,7 +183,7 @@ public class Tag extends Command{
                 tags.removeTag(tag[Tags.TAGNAME]);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
-                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
+                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGROSH_ID))).forEach((g) -> {
                     guildlist.add(g);
                 });
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 

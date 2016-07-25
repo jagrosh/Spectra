@@ -15,7 +15,12 @@
  */
 package spectra.commands;
 
+import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.entities.VoiceChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.utils.InviteUtil;
+import spectra.Argument;
 import spectra.Command;
 import spectra.FeedHandler;
 import spectra.PermLevel;
@@ -46,15 +51,63 @@ public class SystemCmd extends Command {
         this.children = new Command[]{
             new SystemIdle(),
             new SystemReady(),
+            new SystemInvite(),
             new SystemShutdown()
         };
     }
     
-    @Override
-    protected boolean execute(Object[] args, MessageReceivedEvent event) 
+    private class SystemInvite extends Command
     {
-        Sender.sendResponse("\uD83D\uDCDF Please specify a system command.", event);
-        return false;
+        private SystemInvite()
+        {
+            this.command = "serverinvite";
+            this.help = "gets an invite for a server";
+            this.longhelp = "";
+            this.level = PermLevel.JAGROSH;
+            this.arguments = new Argument[]{
+                new Argument("id",Argument.Type.SHORTSTRING,true)
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String id = (String)args[0];
+            Guild guild = event.getJDA().getGuildById(id);
+            if(guild==null)
+            {
+                Sender.sendResponse(SpConst.ERROR+"Guild not found", event);
+                return false;
+            }
+            String code = null;
+            try{
+                code = guild.getInvites().get(0).getCode();
+            } catch (Exception e){}
+            if(code==null)
+            {
+                for(TextChannel tc : guild.getTextChannels())
+                    try{
+                        code = InviteUtil.createInvite(tc).getCode();
+                        break;
+                    }catch(Exception e){}
+            }
+            if(code==null)
+            {
+                for(VoiceChannel tc : guild.getVoiceChannels())
+                    try{
+                        code = InviteUtil.createInvite(tc).getCode();
+                        break;
+                    }catch(Exception e){}
+            }
+            if(code==null)
+            {
+                Sender.sendResponse(SpConst.WARNING+"Invites could not be found nor created.", event);
+                return false;
+            }
+            else
+            {
+                Sender.sendResponse("http://discord.gg/"+code, event);
+                return true;
+            }
+        }
     }
     
     private class SystemIdle extends Command

@@ -66,7 +66,7 @@ public class BingImageSearcher {
         if(list!=null)
             return list;
         try {
-            System.out.println("New Image Request: "+truequery);
+            //System.out.println("New Image Request: "+truequery);
             String searchUrl = String.format(bingImagePattern, truequery);
             URL url = new URL(searchUrl);
             final URLConnection connection = url.openConnection();

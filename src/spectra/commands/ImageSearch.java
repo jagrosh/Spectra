@@ -17,6 +17,7 @@ package spectra.commands;
 
 import java.util.List;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.utils.SimpleLog;
 import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
@@ -47,6 +48,7 @@ public class ImageSearch extends Command {
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String query = (String)args[0];
         event.getChannel().sendTyping();
+        SimpleLog.getLog("ImageLog").info(event.getAuthor().getUsername()+" (ID:"+event.getAuthor().getId()+"): "+query);
         List<String> urls = bingsearch.search(query);
         if(urls==null)
         {
