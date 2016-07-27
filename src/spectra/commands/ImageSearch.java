@@ -42,11 +42,17 @@ public class ImageSearch extends Command {
         };
         this.cooldown = 10;
         this.cooldownKey = event -> event.getAuthor().getId()+"|image";
+        this.availableInDM = false;
     }
 
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String query = (String)args[0];
+        if(!event.getGuild().isMember(event.getJDA().getUserById(SpConst.JAGROSH_ID)))
+        {
+            Sender.sendResponse(SpConst.ERROR+"This command is currently unavailable due to excessive spam.", event);
+            return false;
+        }
         event.getChannel().sendTyping();
         SimpleLog.getLog("ImageLog").info(event.getAuthor().getUsername()+" (ID:"+event.getAuthor().getId()+"): "+query);
         List<String> urls = bingsearch.search(query);

@@ -180,6 +180,7 @@ public class Tag extends Command{
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()))
             {
+                tagname = tag[Tags.TAGNAME];
                 tags.removeTag(tag[Tags.TAGNAME]);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
@@ -233,6 +234,7 @@ public class Tag extends Command{
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
+                tagname = tag[Tags.TAGNAME];
                 tags.set(new String[]{
                 tag[Tags.OWNERID],
                 tag[Tags.TAGNAME],
@@ -526,6 +528,7 @@ public class Tag extends Command{
             }
             else
             {
+                tagname = tag[Tags.TAGNAME];
                 overrides.setTag(new String[]{"g"+event.getGuild().getId(),tag[Overrides.TAGNAME],contents});
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event);
                 handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
@@ -589,6 +592,7 @@ public class Tag extends Command{
             }
             else
             {
+                tagname = tag[Tags.TAGNAME];
                 overrides.removeTag(tag);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" restored successfully.", event);
                 handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
@@ -669,6 +673,7 @@ public class Tag extends Command{
                 }
                 else
                 {
+                    tagname = tag[Tags.TAGNAME];
                     String cmds = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
                     settings.setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds==null?tag[Tags.TAGNAME]:cmds+" "+tag[Tags.TAGNAME]);
                     Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" has been added a tag command", event);
@@ -736,7 +741,10 @@ public class Tag extends Command{
             for(String tag : imports)
             {
                 if(tag.equalsIgnoreCase(tagname))
+                {
                     found = true;
+                    tagname = tag;
+                }
                 else
                     builder.append(tag).append(" ");
             }

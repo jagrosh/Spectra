@@ -255,7 +255,7 @@ public class Feed extends Command {
                 return true;
             }
             for(String[] feed : feedlist)
-                if((feed[Feeds.FEEDTYPE]+((feed[Feeds.DETAILS]!=null && !feed[Feeds.DETAILS].equals("")) ? " "+feed[Feeds.DETAILS] : "")).equalsIgnoreCase(feedname))
+                if(feed[Feeds.FEEDTYPE].equalsIgnoreCase(feedname))
                 {
                     feeds.removeFeed(feed);
                     Sender.sendResponse(SpConst.SUCCESS+"Removed feed `"+feed[Feeds.FEEDTYPE]+"` from <#"+feed[Feeds.CHANNELID]+">", event);

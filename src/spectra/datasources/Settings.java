@@ -48,7 +48,7 @@ public class Settings extends DataSource {
             "NORMAL", //room settings
             "speakerphone room", //restricted commands
             "", // mod ids
-            "false", //mhroles
+            "false", //keeproles
             "", // leave message
             SpConst.ALTPREFIX, //prefixes
             "", // ignore list
@@ -118,7 +118,7 @@ public class Settings extends DataSource {
     final public static int ROOMSETTING  = 2;
     final public static int BANNEDCMDS = 3;
     final public static int MODIDS     = 4;
-    final public static int MHROLES    = 5;// -> whitelist
+    final public static int KEEPROLES    = 5;
     final public static int LEAVEMSG   = 6;
     final public static int PREFIXES   = 7;
     final public static int IGNORELIST = 8;

@@ -44,6 +44,7 @@ public class JagTag {
     {
         String[] args = new String[0];
         
+        
         if(arguments!=null && !arguments.trim().equals(""))
         {
             arguments = arguments.trim().replace("{","\u0013").replace("}","\u0014");
@@ -51,7 +52,7 @@ public class JagTag {
         }
         if(arguments==null)
             arguments = "";
-        String output = input;
+        String output = input.replace("\\|","\u0012").replace("\\{","\u0013").replace("\\}","\u0014"); //escape some characters
         
         //direct replacements
         output = output.replace("{nsfw}","")
@@ -286,7 +287,7 @@ public class JagTag {
             }
         }
 
-        lastoutput = lastoutput.replace("\u0013","{").replace("\u0014","}").replaceAll("\n\n\n+", "\n\n\n");
+        lastoutput = lastoutput.replace("\u0012","|").replace("\u0013","{").replace("\u0014","}").replaceAll("\n\n\n+", "\n\n\n");
         if(lastoutput.length()>2000)
             lastoutput = lastoutput.substring(0,2000);
         return lastoutput;
@@ -353,6 +354,8 @@ public class JagTag {
         if(index==-1)
             index = statement.indexOf("|~|");
         if(index==-1)
+            index = statement.indexOf("|?|");
+        if(index==-1)
             return false;
         String s1 = statement.substring(0, index);
         String s2 = statement.substring(index+3);
@@ -361,7 +364,7 @@ public class JagTag {
             double i1 = Double.parseDouble(s1);
             double i2 = Double.parseDouble(s2);
             switch(statement.substring(index, index+3))
-        {
+            {
             case "|=|":
                 return (i1==i2);
             case "|~|":
@@ -370,7 +373,7 @@ public class JagTag {
                 return (i1>i2);
             case "|<|":
                 return (i1<i2);
-        }
+            }
         }catch(NumberFormatException e){}
         
         switch(statement.substring(index, index+3))
@@ -383,6 +386,8 @@ public class JagTag {
                 return (s1.compareTo(s2)>0);
             case "|<|":
                 return (s1.compareTo(s2)<0);
+            case "|?|":
+                return s1.matches(s2);
         }
         return false;
     }

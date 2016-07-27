@@ -561,7 +561,7 @@ public class Spectra extends ListenerAdapter {
                                 successful = true;
                                 
                             }
-                            statistics.ranCommand(event.getGuild().getId(), "Tag Command(s)", successful);
+                            statistics.ranCommand(event.getGuild().getId(), "tag", successful);
                         }
                 }
             }
@@ -632,7 +632,20 @@ public class Spectra extends ListenerAdapter {
             String id = event.getAuthor().getId();
             Message msg = messagecache.updateMessage(event.getGuild().getId(), event.getMessage());
             String details = feed[Feeds.DETAILS];
-            if(msg!=null && !msg.getRawContent().equals(event.getMessage().getRawContent()) && (details==null || details.contains("+m"+id) || !(details.contains("-m"+id) || details.contains("+m"))))
+            boolean show = false;
+            if(details==null)
+            {
+                show = !event.getAuthor().isBot();
+            }
+            else if (details.contains("+m"+id))
+            {
+                show = true;
+            }
+            else if (!(details.contains("-m"+id) || details.contains("+m") || (event.getAuthor().isBot() && !details.contains("+bots"))))
+            {
+                show = true;
+            }
+            if(msg!=null && !msg.getRawContent().equals(event.getMessage().getRawContent()) && show)
             {
                 String old = FormatUtil.appendAttachmentUrls(msg);
                 String newmsg = FormatUtil.appendAttachmentUrls(event.getMessage());
@@ -654,10 +667,24 @@ public class Spectra extends ListenerAdapter {
         {
             Message msg = messagecache.deleteMessage(event.getGuild().getId(), event.getMessageId());
             String id = msg == null ? null : msg.getAuthor().getId();
+            boolean bot = msg == null ? false : msg.getAuthor().isBot();
             if(event.getJDA().getSelfInfo().getId().equals(id))
                 return;
             String details = feed[Feeds.DETAILS];
-            if( msg!=null && (details==null || details.contains("+m"+id) || !(details.contains("-m"+id) || details.contains("+m"))) )
+            boolean show = false;
+            if(details==null)
+            {
+                show = !bot;
+            }
+            else if (details.contains("+m"+id))
+            {
+                show = true;
+            }
+            else if (!(details.contains("-m"+id) || details.contains("+m") || (bot && !details.contains("+bots"))))
+            {
+                show = true;
+            }
+            if( msg!=null && show )
             {
                 String del = FormatUtil.appendAttachmentUrls(msg);
                 handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
@@ -702,6 +729,7 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMemberLeave(GuildMemberLeaveEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
+        
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
                 "\uD83D\uDCE4 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") left or was kicked from the server.");
         String[] currentsettings = settings.getSettingsForGuild(event.getGuild().getId());
@@ -771,7 +799,20 @@ public class Spectra extends ListenerAdapter {
         {
             String id = event.getUser().getId();
             String details = feed[Feeds.DETAILS];
-            if( details==null || details.contains("+n"+id) || !(details.contains("-n"+id) || details.contains("+n")) )
+            boolean show = false;
+            if(details==null)
+            {
+                show = !event.getUser().isBot();
+            }
+            else if (details.contains("+n"+id))
+            {
+                show = true;
+            }
+            else if (!(details.contains("-n"+id) || details.contains("+n") || (event.getUser().isBot() && !details.contains("+bots"))))
+            {
+                show = true;
+            }
+            if( show )
                 handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\u270D **"+event.getUser().getUsername()+"** (ID:"
                         +event.getUser().getId()+") has changed nicknames from "+(event.getPrevNick()==null ? "[none]" : "**"+event.getPrevNick()+"**")+" to "+
                         (event.getNewNick()==null ? "[none]" : "**"+event.getNewNick()+"**"));
@@ -803,7 +844,16 @@ public class Spectra extends ListenerAdapter {
             if(feed!=null)
             {
                 String details = feed[Feeds.DETAILS];
-                if (details==null || details.contains("+a"+id) || !(details.contains("-a"+id) || details.contains("+a"))) 
+                if(details==null)
+                {
+                    if(!event.getUser().isBot())
+                        guilds.add(g);
+                }
+                else if (details.contains("+a"+id))
+                {
+                    guilds.add(g);
+                }
+                else if (!(details.contains("-a"+id) || details.contains("+a") || (event.getUser().isBot() && !details.contains("+bots"))))
                 {
                     guilds.add(g);
                 }

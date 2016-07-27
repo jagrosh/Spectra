@@ -112,7 +112,7 @@ public class BlackList extends Command {
             }
             String type = lists.get(id)[GlobalLists.IDTYPE];
             lists.remove(id);
-            Sender.sendResponse(SpConst.SUCCESS+type+" with ID `"+id+"` added to blacklist", event);
+            Sender.sendResponse(SpConst.SUCCESS+type+" with ID `"+id+"` removed from blacklist", event);
             return true;
         }
     }
