@@ -66,6 +66,7 @@ import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.utils.AvatarUtil;
 import net.dv8tion.jda.utils.MiscUtil;
 import net.dv8tion.jda.utils.PermissionUtil;
+import net.dv8tion.jda.utils.SimpleLog;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.misc.SpecialCase;
@@ -242,7 +243,7 @@ public class Spectra extends ListenerAdapter {
             new Leave(settings),
             new ModCmd(settings),
             new Prefix(settings),
-            new RoleCmd(),
+            new RoleCmd(settings),
             new Say(),
             new Welcome(settings),
             new WelcomeDM(guides),
@@ -307,7 +308,11 @@ public class Spectra extends ListenerAdapter {
                 }
                 jda.getAccountManager().setAvatar(AvatarUtil.getAvatar(OtherUtil.makeWave(currentColor))).update();
                 modifiable.stream().forEach((r) -> {
+                    try{
                     r.getManager().setPermissionsRaw(r.getPermissionsRaw()).setColor(currentColor.brighter()).update();
+                    }catch(Exception e){
+                        SimpleLog.getLog("ColorChange").fatal(e);
+                    }
                 });
             }
             else

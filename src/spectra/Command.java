@@ -121,7 +121,7 @@ public abstract class Command {
         }
         if(!perm.isAtLeast(level))//not enough permission
             return false;
-        if(ignore && (!perm.isAtLeast(PermLevel.ADMIN)))//ignore commands by non-admins
+        if(ignore && (!perm.isAtLeast(PermLevel.MODERATOR)))//ignore commands by non-mods
             return false;
         if(!event.isPrivate())
         {
