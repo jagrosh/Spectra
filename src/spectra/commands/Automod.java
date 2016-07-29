@@ -41,51 +41,26 @@ public class Automod extends Command {
                 + "for the current server. Please keep in mind that these features can potentially "
                 + "have unwanted effects, and the features are currently __in Beta__. Use at your own risk.";
         this.children = new Command[]{
-            new AMPermRoles()
+            //new AMPermRoles()
         };
     }
     
-    private class AMPermRoles extends Command 
-    {
-        private AMPermRoles(){
-            this.command = "keeproles";
-            this.aliases = new String[]{"permaroles"};
-            this.level = PermLevel.ADMIN;
-            this.availableInDM = false;
-            this.help = "sets if users keep roles when leaving and returning";
-            this.longhelp = "This command is to set the role permanence setting on the server. "
-                    + "This means that if a user leaves the server, and returns, any roles they had "
-                    + "before they left (excluding any roles including or above "+SpConst.BOTNAME+"'s highest) "
-                    + "will be reapplied. Note that if a user is off the server for more than a week, "
-                    + "the roles will \"expire\" and no longer be applied.";
-            this.requiredPermissions = new Permission[]{
-                Permission.MANAGE_ROLES
-            };
-            this.arguments = new Argument[]{
-                new Argument("true|false",Argument.Type.SHORTSTRING,true)
-            };
-        }
+    // no cancer - unicode filled names can be automatically replaced
+    // -- percentage to replace on (50-100), or 0 for off
+    // no ads - links to other servers will be removed + punishment (configurable)
+    // no spam - spam detection and automatic cleanup and punishment (configuable)
+    // word filter - delete messages with specified words + punishment (configurable)
+    // 
+    // configurable ->
+    // -- mute on X offenses
+    // -- kick on X offenses
+    // -- ban on X offenses
+    // -- ignore roles
+    // -- [ignore|apply] channels
 
-        @Override
-        protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            String choice = (String)args[0];
-            if(choice.equalsIgnoreCase("true"))
-            {
-                settings.setSetting(event.getGuild().getId(), Settings.KEEPROLES, "true");
-                Sender.sendResponse(SpConst.SUCCESS+"Users will now retain roles if they leave and return", event);
-                return true;
-            }
-            else if (choice.equalsIgnoreCase("false"))
-            {
-                settings.setSetting(event.getGuild().getId(), Settings.KEEPROLES, "false");
-                Sender.sendResponse(SpConst.SUCCESS+"No role actions on a user's return will be taken", event);
-                return true;
-            }
-            else
-            {
-                Sender.sendResponse(SpConst.ERROR+"Valid options are `true` and `false`", event);
-                return false;
-            }
-        }
+    
+    private class AMNoCancer extends Command
+    {
+        
     }
 }

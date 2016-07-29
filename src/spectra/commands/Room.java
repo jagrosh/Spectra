@@ -695,7 +695,7 @@ public class Room extends Command
             String value = ((String)args[0]).toUpperCase();
             if(!value.equals("TRUE") && !value.equals("FALSE"))
             {
-                Sender.sendResponse(SpConst.ERROR+"permanent setting must be `TRUE` or `FALSE`", event);
+                Sender.sendResponse(SpConst.ERROR+"Permanent setting must be `TRUE` or `FALSE`", event);
                 return false;
             }
             String[] room = rooms.get(event.getTextChannel().getId());

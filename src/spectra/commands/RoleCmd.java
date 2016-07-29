@@ -26,15 +26,17 @@ import spectra.Command;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.datasources.Settings;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class RoleCmd extends Command {
-    
-    public RoleCmd()
+    private final Settings settings;
+    public RoleCmd(Settings settings)
     {
+        this.settings = settings;
         this.command = "role";
         this.help = "role management";
         this.longhelp = "This command is for basic role management on the server";
@@ -218,6 +220,50 @@ public class RoleCmd extends Command {
             }
             Sender.sendResponse(SpConst.SUCCESS+"Role *"+role.getName()+"* taken from **"+user.getUsername()+"**", event);
             return true;
+        }
+    }
+    
+    private class RoleKeep extends Command 
+    {
+        private RoleKeep(){
+            this.command = "keeproles";
+            this.aliases = new String[]{"permaroles"};
+            this.level = PermLevel.ADMIN;
+            this.availableInDM = false;
+            this.help = "sets if users keep roles when leaving and returning";
+            this.longhelp = "This command is to set the role permanence setting on the server. "
+                    + "This means that if a user leaves the server, and returns, any roles they had "
+                    + "before they left (excluding any roles including or above "+SpConst.BOTNAME+"'s highest) "
+                    + "will be reapplied. Note that if a user is off the server for more than a week, "
+                    + "the roles will \"expire\" and no longer be applied.";
+            this.requiredPermissions = new Permission[]{
+                Permission.MANAGE_ROLES
+            };
+            this.arguments = new Argument[]{
+                new Argument("true|false",Argument.Type.SHORTSTRING,true)
+            };
+        }
+
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String choice = (String)args[0];
+            if(choice.equalsIgnoreCase("true"))
+            {
+                settings.setSetting(event.getGuild().getId(), Settings.KEEPROLES, "true");
+                Sender.sendResponse(SpConst.SUCCESS+"Users will now retain roles if they leave and return", event);
+                return true;
+            }
+            else if (choice.equalsIgnoreCase("false"))
+            {
+                settings.setSetting(event.getGuild().getId(), Settings.KEEPROLES, "false");
+                Sender.sendResponse(SpConst.SUCCESS+"No role actions on a user's return will be taken", event);
+                return true;
+            }
+            else
+            {
+                Sender.sendResponse(SpConst.ERROR+"Valid options are `true` and `false`", event);
+                return false;
+            }
         }
     }
 }
