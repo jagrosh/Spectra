@@ -16,6 +16,7 @@
 package spectra.commands;
 
 import java.util.ArrayList;
+import java.util.List;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
@@ -37,13 +38,27 @@ public class Roll extends Command {
                 + "sets like this can be used, and should be separated by commas. Additionally, any missing "
                 + "numbers will be replaced by the defaults (1d6+0). So, `d30` will roll 1d30+0.";
         this.arguments = new Argument[]{
-            new Argument("[numDice][<d|D>numSides][<+|->modifier]",Argument.Type.LONGSTRING,true)
+            new Argument("[numRolls]#[numDice][<d|D>numSides][<+|->modifier]",Argument.Type.LONGSTRING,true)
         };
     }
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String input = (String)args[0];
-        String diceinput[] = input.split("\\s*,\\s*");
+        String[] splitinput = input.split("\\s*,\\s*");
+        List<String> diceinput = new ArrayList<>();
+        for(String str : splitinput)
+        {
+            if(str.matches("\\d{1,4}\\s*#.+"))
+            {
+                int num = Integer.parseInt(str.substring(0,str.indexOf("#")));
+                for(int i=0; i<num; i++)
+                    diceinput.add(str.substring(str.indexOf("#")+1).trim());
+            }
+            else
+            {
+                diceinput.add(str);
+            }
+        }
         ArrayList<Die> dice = new ArrayList<>();
         for(String dieinput : diceinput)
         {
@@ -68,9 +83,9 @@ public class Roll extends Command {
                 Sender.sendResponse(SpConst.ERROR+"`"+dieinput+"` was unable to be parsed.", event);
                 return false;
             }
-            if(die.sides>100 || die.number>100 || die.modifier>100 || die.modifier<-100)
+            if(die.sides>100 || die.number>100 || die.modifier>999 || die.modifier<-999)
             {
-                Sender.sendResponse(SpConst.ERROR+"Each set of dice can only be up to 100 rolls, with 100 sides, and a modifier of up to 100", event);
+                Sender.sendResponse(SpConst.ERROR+"Each set of dice can only be up to 100 rolls, with 100 sides, and a modifier of up to 999", event);
                 return false;
             }
             dice.add(die);

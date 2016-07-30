@@ -49,9 +49,11 @@ public class SystemCmd extends Command {
         this.longhelp = "These commands are for controlling the inner-workings of the bot";
         this.level = PermLevel.JAGROSH;
         this.children = new Command[]{
+            new SystemDebug(),
             new SystemIdle(),
             new SystemReady(),
             new SystemInvite(),
+            new SystemSafe(),
             new SystemShutdown()
         };
     }
@@ -153,6 +155,58 @@ public class SystemCmd extends Command {
             event.getJDA().getAccountManager().setIdle(false);
             Sender.sendResponse(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now `READY`", event);
             return true;
+        }
+    }
+    
+    private class SystemDebug extends Command
+    {
+        private SystemDebug()
+        {
+            this.command = "debug";
+            this.help = "sets debug mode";
+            this.longhelp = "This command toggles debug mode in console";
+            this.level = PermLevel.JAGROSH;
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            if(spectra.isDebug())
+            {
+                spectra.setDebug(false);
+                Sender.sendResponse(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is no longer in Debug Mode", event);
+                return true;
+            }
+            else
+            {
+                spectra.setDebug(true);
+                Sender.sendResponse("\uD83D\uDCDF **"+SpConst.BOTNAME+"** is now in Debug Mode", event);
+                return true;
+            }
+        }
+    }
+    
+    private class SystemSafe extends Command
+    {
+        private SystemSafe()
+        {
+            this.command = "safe";
+            this.help = "sets safe mode";
+            this.longhelp = "This command toggles safe mode";
+            this.level = PermLevel.JAGROSH;
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            if(spectra.isSafety())
+            {
+                spectra.setSafeMode(false);
+                Sender.sendResponse(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is no longer in Safe Mode", event);
+                return true;
+            }
+            else
+            {
+                spectra.setSafeMode(true);
+                Sender.sendResponse("\uD83D\uDCDF **"+SpConst.BOTNAME+"** is now in Safe Mode", event);
+                return true;
+            }
         }
     }
     

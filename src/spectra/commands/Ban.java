@@ -44,10 +44,9 @@ public class Ban extends Command {
         this.help = "bans a user";
         this.longhelp = "This command bans a user from the server, and deletes any of their messages from within the past 7 days.";
         this.arguments = new Argument[]{
-            new Argument("username",Argument.Type.LOCALUSER,true),
-            new Argument("for <reason>",Argument.Type.LONGSTRING,false)
+            new Argument("username",Argument.Type.LOCALUSER,true,"for"),
+            new Argument("reason",Argument.Type.LONGSTRING,false)
         };
-        this.separatorRegex = "\\s+for\\s+";
         this.availableInDM=false;
         this.level = PermLevel.MODERATOR;
         this.requiredPermissions = new Permission[] {
@@ -104,10 +103,9 @@ public class Ban extends Command {
             this.longhelp = "This command bans a user by their ID, even if they are not on the "
                     + "server or "+SpConst.PREFIX+" cannot directly see their account";
             this.arguments = new Argument[]{
-                new Argument("id",Argument.Type.SHORTSTRING,true),
+                new Argument("id",Argument.Type.SHORTSTRING,true,"for"),
                 new Argument("reason",Argument.Type.LONGSTRING,false)
             };
-            this.separatorRegex = "\\s+for\\s+";
             this.availableInDM=false;
             this.level = PermLevel.MODERATOR;
             this.requiredPermissions = new Permission[] {
@@ -162,10 +160,9 @@ public class Ban extends Command {
             this.help = "unbans a user by id";
             this.longhelp = "This command unbans a user, given their ID";
             this.arguments = new Argument[]{
-                new Argument("id",Argument.Type.SHORTSTRING,true),
-                new Argument("for <reason>",Argument.Type.LONGSTRING,false)
+                new Argument("id",Argument.Type.SHORTSTRING,true,"for"),
+                new Argument("reason",Argument.Type.LONGSTRING,false)
             };
-            this.separatorRegex = "\\s+for\\s+";
             this.availableInDM=false;
             this.level = PermLevel.MODERATOR;
             this.requiredPermissions = new Permission[] {

@@ -43,7 +43,6 @@ public abstract class Command {
     protected PermLevel level = PermLevel.EVERYONE;
     protected boolean availableInDM = true;
     protected int cooldown = 0; //seconds
-    protected String separatorRegex = null;
     protected Function<MessageReceivedEvent,String> cooldownKey;
     protected boolean hidden = false;
     
@@ -173,6 +172,7 @@ public abstract class Command {
         String workingSet = args;
         for(int i=0; i<arguments.length; i++)
         {
+            String separatorRegex = arguments[i].separator==null ? null : "(?i)\\s+"+arguments[i].separator+"\\s+";
             if(workingSet==null)
             {
                 if (arguments[i].required)
@@ -202,6 +202,7 @@ public abstract class Command {
                     parsedArgs[i] = num;
                     workingSet = parts[1];
                     break;}
+                
                 case SHORTSTRING:{
                     String[] parts = FormatUtil.cleanSplit(workingSet);
                     parsedArgs[i] = parts[0];
@@ -212,6 +213,7 @@ public abstract class Command {
                     }
                     workingSet = parts[1];
                     break;}
+                
                 case LONGSTRING:{
                     String[] parts;
                     if(separatorRegex==null)
@@ -226,6 +228,7 @@ public abstract class Command {
                     parsedArgs[i] = parts[0];
                     workingSet = parts[1];
                     break;}
+                
                 case TIME:{
                     String[] parts;
                     if(separatorRegex==null)
@@ -272,12 +275,18 @@ public abstract class Command {
                     parsedArgs[i] = timeinseconds;
                     workingSet = parts[1];
                     break;}
+                
                 case USER:{
                     String[] parts;
                     if(separatorRegex==null)
                         parts = new String[]{workingSet,null};
                     else
                         parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    if(parts[0].matches(FinderUtil.USER_MENTION+".+"))
+                    {
+                        parts[0] = parts[0].replaceAll("("+FinderUtil.USER_MENTION+").+", "$1");
+                        parts[1] = workingSet.substring(parts[0].length()).trim();
+                    }
                     List<User> ulist = null;
                     if(!event.isPrivate())
                         ulist = FinderUtil.findUsers(parts[0], event.getGuild());
@@ -296,6 +305,7 @@ public abstract class Command {
                     parsedArgs[i] = ulist.get(0);
                     workingSet = parts[1];
                     break;}
+                
                 case LOCALUSER:{
                     if(event.isPrivate())
                     {
@@ -307,6 +317,11 @@ public abstract class Command {
                         parts = new String[]{workingSet,null};
                     else
                         parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    if(parts[0].matches(FinderUtil.USER_MENTION+".+"))
+                    {
+                        parts[0] = parts[0].replaceAll("("+FinderUtil.USER_MENTION+").+", "$1");
+                        parts[1] = workingSet.substring(parts[0].length()).trim();
+                    }
                     List<User> ulist = FinderUtil.findUsers(parts[0], event.getGuild());
                     if(ulist.isEmpty())
                     {
@@ -321,6 +336,7 @@ public abstract class Command {
                     parsedArgs[i] = ulist.get(0);
                     workingSet = parts[1];
                     break;}
+                
                 case TEXTCHANNEL:{
                     if(event.isPrivate())
                     {
@@ -342,6 +358,7 @@ public abstract class Command {
                     parsedArgs[i] = tclist.get(0);
                     workingSet = parts[1];
                     break;}
+                
                 case ROLE:{
                     if(event.isPrivate())
                     {

@@ -17,6 +17,8 @@ package spectra.commands;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import net.dv8tion.jda.EmbedType;
 import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Message;
@@ -51,9 +53,15 @@ public class Clean extends Command {
         this.availableInDM = false;
         this.level = PermLevel.MODERATOR;
         this.cooldown=10;
-        this.cooldownKey = event -> event.getAuthor()+"|"+event.getTextChannel().getId()+"|clean";
+        this.cooldownKey = event -> event.getGuild().getId()+"|clean";
         this.requiredPermissions = new Permission[]{
             Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
+        };
+        this.children = new Command[]{
+            new CleanBots(),
+            new CleanImages(),
+            new CleanLinks(),
+            new CleanRegex()
         };
     }
     
@@ -99,5 +107,158 @@ public class Clean extends Command {
         Sender.sendResponse("\uD83D\uDEAE Cleaned **"+count+"** messages"+(user==null ? "" : " by **"+user.getUsername()+"**"), event);
         handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+count+"** messages "+(user==null ? "" : "by **"+user.getUsername()+"** ")+"in <#"+event.getTextChannel().getId()+">");
         return true;
+    }
+    
+    private class CleanLinks extends Command {
+        private CleanLinks()
+        {
+            this.command = "links";
+            this.help = "deletes recent posts with links";
+            this.longhelp = "This command deletes posts (within the last 100) that contain links";
+            this.availableInDM = false;
+            this.level = PermLevel.MODERATOR;
+            this.cooldown=2;
+            this.cooldownKey = event -> event.getGuild().getId()+"|clean";
+            this.requiredPermissions = new Permission[]{
+                Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve(100)
+                    .stream().filter((m) -> {return m.getRawContent().matches("(?s).*https?:\\/\\/.+");}).collect(Collectors.toList());
+            if(toDelete.isEmpty())
+            {
+                Sender.sendResponse(SpConst.WARNING+"There were no messages to delete", event);
+                return false;
+            }
+            if(toDelete.size()==1)
+                toDelete.get(0).deleteMessage();
+            else
+                event.getTextChannel().deleteMessages(toDelete);
+            Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing links", event);
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *containing links* in <#"+event.getTextChannel().getId()+">");
+            return true;
+        }
+    }
+    
+    private class CleanImages extends Command {
+        private CleanImages()
+        {
+            this.command = "images";
+            this.aliases = new String[]{"image","img","embeds"};
+            this.help = "deletes recent posts with image uploads or embeds";
+            this.longhelp = "This command deletes posts (within the last 100) that contain image uploads or embeds";
+            this.availableInDM = false;
+            this.level = PermLevel.MODERATOR;
+            this.cooldown=2;
+            this.cooldownKey = event -> event.getGuild().getId()+"|clean";
+            this.requiredPermissions = new Permission[]{
+                Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve(100)
+                .stream().filter((m) -> {
+                    return  m.getEmbeds().stream().anyMatch((me) -> (me.getType()==EmbedType.IMAGE || me.getType()==EmbedType.VIDEO)) || 
+                        m.getAttachments().stream().anyMatch((a) -> (a.isImage()));
+                }).collect(Collectors.toList());
+            if(toDelete.isEmpty())
+            {
+                Sender.sendResponse(SpConst.WARNING+"There were no messages to delete", event);
+                return false;
+            }
+            if(toDelete.size()==1)
+                toDelete.get(0).deleteMessage();
+            else
+                event.getTextChannel().deleteMessages(toDelete);
+            Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing images", event);
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *containing images* in <#"+event.getTextChannel().getId()+">");
+            return true;
+        }
+    }
+    
+    private class CleanBots extends Command {
+        private CleanBots()
+        {
+            this.command = "bots";
+            this.aliases = new String[]{"bot"};
+            this.help = "deletes posts by bots, and most commands";
+            this.longhelp = "This command deletes posts (within the last 100) that were posted by a bot, or that begin with punctuation";
+            this.availableInDM = false;
+            this.level = PermLevel.MODERATOR;
+            this.cooldown=2;
+            this.cooldownKey = event -> event.getGuild().getId()+"|clean";
+            this.requiredPermissions = new Permission[]{
+                Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve(100);
+            toDelete.remove(event.getMessage());
+            toDelete = toDelete.stream().filter((m) -> {
+                    return (m.getAuthor()!=null && m.getAuthor().isBot()) || !m.getRawContent().matches("^([A-Za-z0-9]|(<@\\d+>)).*");
+                }).collect(Collectors.toList());
+            if(toDelete.isEmpty())
+            {
+                Sender.sendResponse(SpConst.WARNING+"There were no messages to delete", event);
+                return false;
+            }
+            if(toDelete.size()==1)
+                toDelete.get(0).deleteMessage();
+            else
+                event.getTextChannel().deleteMessages(toDelete);
+            Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing bot posts or commands", event);
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *containing bot posts or commands* in <#"+event.getTextChannel().getId()+">");
+            return true;
+        }
+    }
+    
+    private class CleanRegex extends Command {
+        private CleanRegex()
+        {
+            this.command = "matching";
+            this.aliases = new String[]{"regex"};
+            this.help = "deletes posts matching the given regex";
+            this.longhelp = "This command deletes posts (within the last 100) that match the given regex";
+            this.availableInDM = false;
+            this.level = PermLevel.MODERATOR;
+            this.cooldown=2;
+            this.cooldownKey = event -> event.getGuild().getId()+"|clean";
+            this.requiredPermissions = new Permission[]{
+                Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
+            };
+            this.arguments = new Argument[]{
+                new Argument("regex",Argument.Type.LONGSTRING,true)
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String regex = (String)args[0];
+            List<Message> toDelete;
+            try{
+                 toDelete = event.getTextChannel().getHistory().retrieve(100)
+                    .stream().filter((m) -> {
+                        return m.getRawContent().matches(regex);
+                    }).collect(Collectors.toList());
+            } catch (Exception e){
+                Sender.sendResponse(SpConst.WARNING+"Invalid regex", event);
+                return false;
+            }
+            if(toDelete.isEmpty())
+            {
+                Sender.sendResponse(SpConst.WARNING+"There were no messages to delete", event);
+                return false;
+            }
+            if(toDelete.size()==1)
+                toDelete.get(0).deleteMessage();
+            else
+                event.getTextChannel().deleteMessages(toDelete);
+            Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages matching `"+regex+"`", event);
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *matching* `"+regex+"` in <#"+event.getTextChannel().getId()+">");
+            return true;
+        }
     }
 }

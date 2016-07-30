@@ -15,6 +15,14 @@
  */
 package spectra;
 
+import java.util.List;
+import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import spectra.utils.FinderUtil;
+import spectra.utils.FormatUtil;
+
 
 /**
  *
@@ -25,18 +33,31 @@ public class Argument {
     final String name;
     final Type type;
     
+    final String separator;
+    
     final long min,max;
     
     public Argument(String name, Type type, boolean required)
     {
-        this(name,type,required,Long.MIN_VALUE,Long.MAX_VALUE);
+        this(name, type, required, null, Long.MIN_VALUE, Long.MAX_VALUE);
+    }
+    
+    public Argument(String name, Type type, boolean required, String separator)
+    {
+        this(name, type, required, separator, Long.MIN_VALUE, Long.MAX_VALUE);
     }
     
     public Argument(String name, Type type, boolean required, long min, long max)
     {
+        this(name, type, required, null, min, max);
+    }
+    
+    public Argument(String name, Type type, boolean required, String separator, long min, long max)
+    {
         this.name = name;
         this.type = type;
         this.required = required;
+        this.separator = separator;
         this.min = min;
         this.max = max;
     }
@@ -49,6 +70,8 @@ public class Argument {
             str = "<"+name+">";
         else
             str = "["+name+"]";
+        if(separator!=null)
+            str+=" "+separator;
         return str;
     }
     
@@ -66,4 +89,5 @@ public class Argument {
     public enum Type {
         INTEGER, SHORTSTRING, LONGSTRING, TIME, USER, LOCALUSER, TEXTCHANNEL, ROLE
     }
+    
 }

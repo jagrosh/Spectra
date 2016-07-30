@@ -23,8 +23,8 @@ public class SpConst {
     //bot items
     final public static String BOTNAME = "Spectra";
     final public static String VERSION = "3.0.1";
-    final public static String PREFIX = "%";
-    final public static String ALTPREFIX = "/";
+    final public static String PREFIX = "%%";
+    final public static String ALTPREFIX = "//";
     
     
     //discord items

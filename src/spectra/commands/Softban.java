@@ -51,10 +51,9 @@ public class Softban extends Command {
                 + "is applied (they will be muted if they return to the server within 24 hours). This "
                 + "command is essentially clean, kick, and mute wrapped into one easy command.";
         this.arguments = new Argument[]{
-            new Argument("username",Argument.Type.LOCALUSER,true),
-            new Argument("for <reason>",Argument.Type.LONGSTRING,false)
+            new Argument("username",Argument.Type.LOCALUSER,true,"for"),
+            new Argument("reason",Argument.Type.LONGSTRING,false)
         };
-        this.separatorRegex = "\\s+for\\s+";
         this.availableInDM=false;
         this.level = PermLevel.MODERATOR;
         this.requiredPermissions = new Permission[] {
@@ -94,6 +93,7 @@ public class Softban extends Command {
             handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                     "\uD83C\uDF4C **"+event.getAuthor().getUsername()+"** softbanned **"+target.getUsername()+"** for "+reason);
             new Thread(){
+            @Override
             public void run(){
                 try{Thread.sleep(10000);}catch(InterruptedException e){}
                 event.getGuild().getManager().unBan(id);

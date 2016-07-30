@@ -148,10 +148,9 @@ public class RoleCmd extends Command {
                 Permission.MANAGE_ROLES
             };
             this.arguments = new Argument[]{
-                new Argument("rolename",Argument.Type.ROLE,true),
-                new Argument("to <username>",Argument.Type.LOCALUSER,true)
+                new Argument("rolename",Argument.Type.ROLE,true,"to"),
+                new Argument("username",Argument.Type.LOCALUSER,true)
             };
-            this.separatorRegex = "\\s+to\\s+";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
@@ -192,10 +191,9 @@ public class RoleCmd extends Command {
                 Permission.MANAGE_ROLES
             };
             this.arguments = new Argument[]{
-                new Argument("rolename",Argument.Type.ROLE,true),
-                new Argument("from <username>",Argument.Type.LOCALUSER,true)
+                new Argument("rolename",Argument.Type.ROLE,true,"from"),
+                new Argument("username",Argument.Type.LOCALUSER,true)
             };
-            this.separatorRegex = "\\s+from\\s+";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {

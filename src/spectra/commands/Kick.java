@@ -43,10 +43,9 @@ public class Kick extends Command {
         this.help = "kicks a user from the server";
         this.longhelp = "This command kicks the specified user from the server.";
         this.arguments = new Argument[]{
-            new Argument("username",Argument.Type.LOCALUSER,true),
-            new Argument("for <reason>",Argument.Type.LONGSTRING,false)
+            new Argument("username",Argument.Type.LOCALUSER,true,"for"),
+            new Argument("reason",Argument.Type.LONGSTRING,false)
         };
-        this.separatorRegex = "\\s+for\\s+";
         this.availableInDM=false;
         this.level = PermLevel.MODERATOR;
         this.requiredPermissions = new Permission[]{

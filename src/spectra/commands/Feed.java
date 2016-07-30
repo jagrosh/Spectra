@@ -84,7 +84,9 @@ public class Feed extends Command {
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.MODLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
             feeds.set(new String[]{tchan.getId(),Feeds.Type.MODLOG.toString(),event.getGuild().getId(),""});
-            str+=SpConst.SUCCESS+"Feed "+Feeds.Type.MODLOG+" has been added to <#"+tchan.getId()+">";
+            str+=SpConst.SUCCESS+"Feed "+Feeds.Type.MODLOG+" has been added to <#"+tchan.getId()+">"
+                    + "\n*The `modlog` feed is for tracking bans, and other moderator commands like kicks, mutes, and cleans*"
+                    + "\n*If you want a feed to track message edits, message deletes, avatar changes, and more, use the `serverlog` feed.*";
             Sender.sendResponse(str, event);
             return true;
         }

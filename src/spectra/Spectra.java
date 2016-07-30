@@ -89,6 +89,8 @@ public class Spectra extends ListenerAdapter {
     private JDA jda;
     private Command[] commands;
     private boolean idling = false;
+    private boolean safetyMode = false;
+    private boolean debugMode = false;
     //private static final OffsetDateTime start = OffsetDateTime.now();
     private OffsetDateTime lastDisconnect;
     private Color currentColor;
@@ -542,6 +544,8 @@ public class Spectra extends ListenerAdapter {
                                 banned = false;
                     }
                     successful = toRun.run(args[1], event, perm, ignore, banned);
+                    if(debugMode)
+                        SimpleLog.getLog("Command").info(event.getGuild()+" "+event.getAuthor()+" "+event.getMessage().getContent());
                     statistics.ranCommand(event.isPrivate() ? "0" : event.getGuild().getId(), toRun.command, successful);
                 }
                 else if (!event.isPrivate() && (!ignore || perm.isAtLeast(PermLevel.ADMIN) || event.getTextChannel().getId().equals(SpecialCase.JDA_GUILD_GENERAL_ID)))
@@ -602,12 +606,13 @@ public class Spectra extends ListenerAdapter {
             Sender.sendPrivate(SpConst.SUCCESS+"Welcome back, I have removed your AFK status.", event.getUser().getPrivateChannel());
             afks.remove(event.getUser().getId());
         }
-        if(event.getChannel() instanceof TextChannel)
-        {
-            TextChannel other = phones.getOtherLine(((TextChannel)event.getChannel()));
-            if(other!=null && !event.getUser().isBot())
-                other.sendTyping();
-        }
+        if(!idling)
+            if(event.getChannel() instanceof TextChannel)
+            {
+                TextChannel other = phones.getOtherLine(((TextChannel)event.getChannel()));
+                if(other!=null && !event.getUser().isBot())
+                    other.sendTyping();
+            }
     }
     
     @Override
@@ -790,9 +795,17 @@ public class Spectra extends ListenerAdapter {
                 }
         });
         if(servlogon)
-            handler.submitFile(Feeds.Type.SERVERLOG, event.getChannel().getGuild(), ()->{
+        {
+            if(safetyMode)
+            {
+                handler.submitText(Feeds.Type.SERVERLOG, event.getChannel().getGuild(), builder.toString().length()>2000 ? builder.toString().substring(0,2000) : builder.toString());
+            }
+            else
+                handler.submitFile(Feeds.Type.SERVERLOG, event.getChannel().getGuild(), ()->{
                 File f = OtherUtil.writeArchive(builder.toString(), "deleted_messages");
                 return new Pair<>(header,f);}, header);
+        }
+            
     }
 
     @Override
@@ -838,6 +851,8 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onUserAvatarUpdate(UserAvatarUpdateEvent event)  {
+        if(debugMode)
+            SimpleLog.getLog("FeedLog").info(event.getUser()+" has changed avatars");
         if(event.getUser().getId().equals(event.getJDA().getSelfInfo().getId()))
             return;
         String id = event.getUser().getId();
@@ -864,7 +879,14 @@ public class Spectra extends ListenerAdapter {
                 }
             }
         });
-        handler.submitFile(Feeds.Type.SERVERLOG, guilds, ()->{
+        if(safetyMode)
+        {
+            handler.submitText(Feeds.Type.SERVERLOG, guilds, "\uD83D\uDDBC **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") has changed avatars:"
+                    + "\nOld: "+event.getPreviousAvatarUrl()
+                    + "\nNew: "+event.getUser().getAvatarUrl());
+        }
+        else
+            handler.submitFile(Feeds.Type.SERVERLOG, guilds, ()->{
                 BufferedImage oldimg = OtherUtil.imageFromUrl(oldurl);
                 BufferedImage newimg = OtherUtil.imageFromUrl(newurl);
                 BufferedImage combo = new BufferedImage(256,128,BufferedImage.TYPE_INT_ARGB_PRE);
@@ -938,6 +960,26 @@ public class Spectra extends ListenerAdapter {
     public void setIdling(boolean value)
     {
         idling = value;
+    }
+    
+    public boolean isDebug()
+    {
+        return debugMode;
+    }
+    
+    public void setDebug(boolean value)
+    {
+        debugMode = value;
+    }
+    
+    public boolean isSafety()
+    {
+        return safetyMode;
+    }
+    
+    public void setSafeMode(boolean value)
+    {
+        safetyMode = value;
     }
     
     public Command[] getCommandList()

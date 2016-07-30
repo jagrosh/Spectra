@@ -58,11 +58,10 @@ public class Mute extends Command {
                 + "rejoins during the time they should still be muted, the role will be re-applied on entry.";
         this.availableInDM = false;
         this.level = PermLevel.MODERATOR;
-        this.separatorRegex = "\\s+for\\s+";
         this.arguments = new Argument[]{
-            new Argument("username",Argument.Type.LOCALUSER,true),
-            new Argument("for <time>", Argument.Type.TIME, true,0,43200),
-            new Argument("for <reason>", Argument.Type.LONGSTRING,false)
+            new Argument("username",Argument.Type.LOCALUSER,true,"for"),
+            new Argument("time", Argument.Type.TIME, true, "for", 0, 43200),
+            new Argument("reason", Argument.Type.LONGSTRING,false)
         };
         this.children = new Command[]{
             new MuteList(),

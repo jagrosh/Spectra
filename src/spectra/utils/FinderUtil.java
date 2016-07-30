@@ -30,13 +30,15 @@ import net.dv8tion.jda.entities.User;
  */
 public class FinderUtil {
     
+    public final static String USER_MENTION = "<@!?(\\d+)>";
+    
     public static List<User> findUsers(String query, JDA jda)
     {
         String id;
         String discrim = null;
-        if(query.matches("<@!?\\d+>"))
+        if(query.matches(USER_MENTION))
         {
-            id = query.replaceAll("<@!?(\\d+)>", "$1");
+            id = query.replaceAll(USER_MENTION, "$1");
             User u = jda.getUserById(id);
             if(u!=null)
                 return Collections.singletonList(u);
@@ -77,9 +79,9 @@ public class FinderUtil {
     {
         String id;
         String discrim = null;
-        if(query.matches("<@!?\\d+>"))
+        if(query.matches(USER_MENTION))
         {
-            id = query.replaceAll("<@!?(\\d+)>", "$1");
+            id = query.replaceAll(USER_MENTION, "$1");
             User u = guild.getJDA().getUserById(id);
             if(guild.isMember(u))
                 return Collections.singletonList(u);

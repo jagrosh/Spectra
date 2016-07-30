@@ -311,11 +311,10 @@ public class Contest extends Command {
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("contestname",Argument.Type.SHORTSTRING,true),
-                new Argument("time until start",Argument.Type.TIME,true,0,2592000),
-                new Argument("| length of contest",Argument.Type.TIME,true,0,31536000),
+                new Argument("time until start",Argument.Type.TIME,true,"|",0,2592000),
+                new Argument("length of contest",Argument.Type.TIME,true,0,31536000),
                 new Argument("rules",Argument.Type.LONGSTRING,true)
             };
-            this.separatorRegex = "\\s+\\|\\s+";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
@@ -358,11 +357,10 @@ public class Contest extends Command {
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("contestname",Argument.Type.SHORTSTRING,true),
-                new Argument("change in starttime",Argument.Type.TIME,true),
-                new Argument("| change in endtime",Argument.Type.TIME,true),
+                new Argument("change in starttime",Argument.Type.TIME,true,"|"),
+                new Argument("change in endtime",Argument.Type.TIME,true),
                 new Argument("rules",Argument.Type.LONGSTRING,false)
             };
-            this.separatorRegex = "\\s+\\|\\s+";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {

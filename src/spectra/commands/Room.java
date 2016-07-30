@@ -95,6 +95,12 @@ public class Room extends Command
             if(!textlist.isEmpty() || !voicelist.isEmpty())
                 str+="\nThere are **"+textlist.size()+"** text rooms and **"+voicelist.size()+"** voice rooms on **"+event.getGuild().getName()+"**";
         }
+        else if (invalidcommand.equalsIgnoreCase("create"))
+        {
+            str = SpConst.WARNING+"There are two types of rooms that can be made:\n"
+                    + "Use `"+SpConst.PREFIX+"room text <room-name-here>` to create a private text room.\n"
+                    + "Use `"+SpConst.PREFIX+"room voice <Room Name Here>` to create a temporary voice room.";
+        }
         else str = SpConst.ERROR+"That is not a valid room command!";
         Sender.sendResponse(str + "\nPlease use `"+SpConst.PREFIX+"room help` for a valid list of commands", event);
         return true;
@@ -322,13 +328,16 @@ public class Room extends Command
         private RoomList()
         {
             this.command = "list";
-            this.help = "shows a list of private text channels that you can join";
+            this.help = "shows a list of permanent text channels that you can join";
             this.longhelp = "This command shows the list of private rooms that you can join. "
-                    + "Locked rooms, and room you are in are not shown.";
+                    + "Locked rooms, user-created rooms, and rooms you are in are not shown.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
                 Permission.MANAGE_ROLES
+            };
+            this.children = new Command[]{
+                new RoomListAll()
             };
         }
         @Override
@@ -339,11 +348,14 @@ public class Room extends Command
             List<TextChannel> list = new ArrayList<>();
             rooms.getTextRoomsOnGuild(event.getGuild()).stream().forEach((room) -> {
                 TextChannel chan = event.getJDA().getTextChannelById(room[Rooms.CHANNELID]);
-                if (room[Rooms.LOCKED].equalsIgnoreCase("false") || authorperm.isAtLeast(PermLevel.MODERATOR)) {
-                    if (chan!=null && !PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_READ, chan)) {
-                        list.add(chan);
+                if(room[Rooms.OWNERID].equals(event.getJDA().getSelfInfo().getId()))
+                    if (room[Rooms.LOCKED].equalsIgnoreCase("false") || authorperm.isAtLeast(PermLevel.MODERATOR)) 
+                    {
+                        if (chan!=null && !PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_READ, chan)) 
+                        {
+                            list.add(chan);
+                        }
                     }
-                }
             });
             Collections.sort(list, (TextChannel a, TextChannel b) -> a.getPosition()-b.getPosition() );
             list.stream().map((chan) -> {
@@ -356,8 +368,54 @@ public class Room extends Command
             }).map((topic) -> " - "+topic).forEach((topic) -> {
                 builder.append(topic);
             });
+            builder.append("\nTo see the full list, use `"+SpConst.PREFIX+"room list all`");
             Sender.sendResponse(builder.toString(), event);
             return true;
+        }
+        
+        private class RoomListAll extends Command
+        {
+            private RoomListAll()
+            {
+                this.command = "all";
+                this.aliases = new String[]{"full"};
+                this.help = "shows a list of private text channels that you can join";
+                this.longhelp = "This command shows the full list of private rooms that you can join. "
+                        + "Locked rooms, and room you are already in are not shown.";
+                this.availableInDM = false;
+                this.requiredPermissions = new Permission[]{
+                    Permission.MANAGE_CHANNEL,
+                    Permission.MANAGE_ROLES
+                };
+            }
+            @Override
+            protected boolean execute(Object[] args, MessageReceivedEvent event) {
+                StringBuilder builder = new StringBuilder("\uD83D\uDCFA Text Rooms **"+event.getAuthor().getUsername()+"** can join ( use `"+SpConst.PREFIX+"room join <roomname>` to join):");
+                String[] currentSettings = settings.getSettingsForGuild(event.getGuild().getId());
+                PermLevel authorperm = PermLevel.getPermLevelForUser(event.getAuthor(), event.getGuild(), currentSettings);
+                List<TextChannel> list = new ArrayList<>();
+                rooms.getTextRoomsOnGuild(event.getGuild()).stream().forEach((room) -> {
+                    TextChannel chan = event.getJDA().getTextChannelById(room[Rooms.CHANNELID]);
+                    if (room[Rooms.LOCKED].equalsIgnoreCase("false") || authorperm.isAtLeast(PermLevel.MODERATOR)) {
+                        if (chan!=null && !PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_READ, chan)) {
+                            list.add(chan);
+                        }
+                    }
+                });
+                Collections.sort(list, (TextChannel a, TextChannel b) -> a.getPosition()-b.getPosition() );
+                list.stream().map((chan) -> {
+                    builder.append("\n**").append(rooms.get(chan.getId())[Rooms.LOCKED].equalsIgnoreCase("true") ? "\uD83D\uDD12 " : "").append(chan.getName()).append("**");
+                    return chan;
+                }).map((chan) -> chan.getTopic()).filter((topic) -> (topic!=null && !topic.startsWith("Room owner:"))).map((topic) -> FormatUtil.unembed(topic.split("\n")[0])).map((topic) -> {
+                    if(topic.length()>100)
+                        topic = topic.substring(0,95)+" (...)";
+                    return topic;
+                }).map((topic) -> " - "+topic).forEach((topic) -> {
+                    builder.append(topic);
+                });
+                Sender.sendResponse(builder.toString(), event);
+                return true;
+            }
         }
     }
     
@@ -632,10 +690,9 @@ public class Room extends Command
                 Permission.MANAGE_ROLES
             };
             this.arguments = new Argument[]{
-                new Argument("username",Argument.Type.LOCALUSER,true),
-                new Argument("to <channel>",Argument.Type.TEXTCHANNEL,false)
+                new Argument("username",Argument.Type.LOCALUSER,true,"to"),
+                new Argument("channel",Argument.Type.TEXTCHANNEL,false)
             };
-            this.separatorRegex = "\\s+to\\s+";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
