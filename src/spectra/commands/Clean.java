@@ -122,10 +122,14 @@ public class Clean extends Command {
             this.requiredPermissions = new Permission[]{
                 Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
             };
+            this.arguments= new Argument[]{
+                new Argument("numposts",Argument.Type.INTEGER,false,2,100)
+            };
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            List<Message> toDelete = event.getTextChannel().getHistory().retrieve(100)
+            long posts = args[0]==null ? 100 : (long)args[0];
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve((int)posts)
                     .stream().filter((m) -> {return m.getRawContent().matches("(?s).*https?:\\/\\/.+");}).collect(Collectors.toList());
             if(toDelete.isEmpty())
             {
@@ -156,10 +160,14 @@ public class Clean extends Command {
             this.requiredPermissions = new Permission[]{
                 Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
             };
+            this.arguments= new Argument[]{
+                new Argument("numposts",Argument.Type.INTEGER,false,2,100)
+            };
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            List<Message> toDelete = event.getTextChannel().getHistory().retrieve(100)
+            long posts = args[0]==null ? 100 : (long)args[0];
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve((int)posts)
                 .stream().filter((m) -> {
                     return  m.getEmbeds().stream().anyMatch((me) -> (me.getType()==EmbedType.IMAGE || me.getType()==EmbedType.VIDEO)) || 
                         m.getAttachments().stream().anyMatch((a) -> (a.isImage()));
@@ -193,10 +201,14 @@ public class Clean extends Command {
             this.requiredPermissions = new Permission[]{
                 Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
             };
+            this.arguments= new Argument[]{
+                new Argument("numposts",Argument.Type.INTEGER,false,2,100)
+            };
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            List<Message> toDelete = event.getTextChannel().getHistory().retrieve(100);
+            long posts = args[0]==null ? 100 : (long)args[0];
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve((int)posts);
             toDelete.remove(event.getMessage());
             toDelete = toDelete.stream().filter((m) -> {
                     return (m.getAuthor()!=null && m.getAuthor().isBot()) || !m.getRawContent().matches("^([A-Za-z0-9]|(<@\\d+>)).*");
