@@ -50,7 +50,7 @@ public class Avatar extends Command {
         User user = (User)(args[0]);
         if(user==null)
             user = event.getAuthor();
-        String url = (user.getAvatarUrl()==null?user.getDefaultAvatarUrl():user.getAvatarUrl());
+        String url = (user.getAvatarUrl()==null ? (user.getId().equals("1") ? "https://discordapp.com/assets/f78426a064bc9dd24847519259bc42af.png" : user.getDefaultAvatarUrl()) : user.getAvatarUrl());
         String str = "Avatar for **"+user.getUsername()+"**:";
         BufferedImage bi = OtherUtil.imageFromUrl(url);
         if(bi==null)

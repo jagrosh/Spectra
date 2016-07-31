@@ -257,6 +257,8 @@ public class Spectra extends ListenerAdapter {
             new SystemCmd(this,feeds,statistics),
         };
         
+        OtherUtil.writeArchive(OtherUtil.compileCommands(commands), "Commands");
+        
         try {
             jda = new JDABuilder()
                     .addListener(this)
@@ -623,6 +625,35 @@ public class Spectra extends ListenerAdapter {
         if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
         statistics.sentMessage(event.getGuild().getId());
+        String[] currsettings = settings.getSettingsForGuild(event.getGuild().getId());
+        if(currsettings!=null)
+        {
+            String autorole = currsettings[Settings.AUTOROLE];
+            if(autorole!=null)
+            {
+                String[] parts = autorole.split("\\|");
+                Role role = event.getGuild().getRoleById(parts[0]);
+                if(role!=null)
+                {
+                    if(parts.length<2 || parts[1].equals(""))
+                    {
+                        if(event.getMessage().getTime().isBefore(event.getGuild().getJoinDateForUser(event.getAuthor()).plusMinutes(30)))
+                        {
+                            if(!event.getGuild().getRolesForUser(event.getAuthor()).contains(role))
+                                event.getGuild().getManager().addRoleToUser(event.getAuthor(), role).update();
+                        }
+                    }
+                    else if(event.getMessage().getRawContent().equals(parts[1]))
+                    {
+                        if(!event.getGuild().getRolesForUser(event.getAuthor()).contains(role))
+                        {
+                            event.getGuild().getManager().addRoleToUser(event.getAuthor(), role).update();
+                            Sender.sendPrivate(SpConst.SUCCESS+"I have given you the role *"+role.getName()+"* on **"+event.getGuild().getName()+"**", event.getAuthor().getPrivateChannel());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override

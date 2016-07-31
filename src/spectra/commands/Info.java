@@ -106,7 +106,7 @@ public class Info extends Command{
                 str+=" > "+name;
             }
         }
-        String url = user.getAvatarUrl();
+        String url = (user.getId().equals("1") ? "https://discordapp.com/assets/f78426a064bc9dd24847519259bc42af.png" : user.getAvatarUrl());
         if(url!=null)
             str+="\n"+SpConst.LINESTART+"Avatar: "+url;
         

@@ -172,7 +172,7 @@ public abstract class Command {
         String workingSet = args;
         for(int i=0; i<arguments.length; i++)
         {
-            String separatorRegex = arguments[i].separator==null ? null : "(?i)\\s+"+arguments[i].separator+"\\s+";
+            String separatorRegex = arguments[i].separator==null ? null : "(?i)\\s+"+arguments[i].separator.replace("|", "\\|")+"\\s+";
             if(workingSet==null)
             {
                 if (arguments[i].required)
@@ -419,5 +419,35 @@ public abstract class Command {
     public PermLevel getLevel()
     {
         return level;
+    }
+    
+    public Command[] getChildren()
+    {
+        return children;
+    }
+    
+    public Argument[] getArguments()
+    {
+        return arguments;
+    }
+    
+    public String[] getAliases()
+    {
+        return aliases;
+    }
+    
+    public int getCooldown()
+    {
+        return cooldown;
+    }
+    
+    public String getHelp()
+    {
+        return help;
+    }
+    
+    public String getLongHelp()
+    {
+        return longhelp;
     }
 }

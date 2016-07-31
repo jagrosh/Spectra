@@ -19,10 +19,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import net.dv8tion.jda.JDA;
+import net.dv8tion.jda.OnlineStatus;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.entities.impl.JDAImpl;
+import net.dv8tion.jda.entities.impl.UserImpl;
 
 /**
  *
@@ -39,6 +42,15 @@ public class FinderUtil {
         if(query.matches(USER_MENTION))
         {
             id = query.replaceAll(USER_MENTION, "$1");
+            if(id.equals("1"))
+            {
+                UserImpl clyde = new UserImpl("1", (JDAImpl) jda);
+                clyde.setDiscriminator("0000");
+                clyde.setIsBot(true);
+                clyde.setUserName("Clyde");
+                clyde.setOnlineStatus(OnlineStatus.ONLINE);
+                return Collections.singletonList(clyde);
+            }
             User u = jda.getUserById(id);
             if(u!=null)
                 return Collections.singletonList(u);

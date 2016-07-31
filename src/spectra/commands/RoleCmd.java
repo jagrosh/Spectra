@@ -46,14 +46,73 @@ public class RoleCmd extends Command {
             Permission.MANAGE_ROLES
         };
         this.arguments = new Argument[]{
-            new Argument("color|create|give|take",Argument.Type.SHORTSTRING,true)
+            new Argument("auto|color|create|give|take",Argument.Type.SHORTSTRING,true)
         };
         this.children = new Command[]{
+            new RoleAuto(),
             new RoleColor(),
             new RoleCreate(),
             new RoleGive(),
             new RoleTake()
         };
+    }
+    
+    private class RoleAuto extends Command
+    {
+        private RoleAuto()
+        {
+            this.command = "auto";
+            this.availableInDM= false;
+            this.level = PermLevel.ADMIN;
+            this.help = "sets a role to be automatically given when a user sends a message";
+            this.longhelp = "This command is used to set a role that can automatically be given to users. "
+                    + "If no phrase is assigned, the role will be given the first time they send any message "
+                    + "(within 30 minutes of joining). If a phrase is provided, they will be given the role "
+                    + "when they type that exact phrase.";
+            this.requiredPermissions = new Permission[]{
+                Permission.MANAGE_ROLES
+            };
+            this.arguments = new Argument[]{
+                new Argument("rolename",Argument.Type.ROLE,true,"|"),
+                new Argument("phrase",Argument.Type.LONGSTRING,false)
+            };
+            this.children = new Command[]{
+                new RoleAutoClear()
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            Role role = (Role)args[0];
+            String phrase = args[1]==null ? null : (String)args[1];
+            String str = role.getId()+(phrase==null ? "" : "|"+phrase);
+            settings.setSetting(event.getGuild().getId(), Settings.AUTOROLE, str);
+            Sender.sendResponse(SpConst.SUCCESS+"I will give the role *"+role.getName()
+                    +"* to users when they "+(phrase==null ? "type or send any message" : "type `"+phrase+"`"), event);
+            return true;
+        }
+        
+        private class RoleAutoClear extends Command
+        {
+            private RoleAutoClear()
+            {
+                this.command = "clear";
+                this.availableInDM= false;
+                this.level = PermLevel.ADMIN;
+                this.help = "clears the auto-role";
+                this.longhelp = "This command clears the auto-role, so that no roles are given to users when "
+                        + "they say a phrase or send a message";
+                this.requiredPermissions = new Permission[]{
+                    Permission.MANAGE_ROLES
+                };
+            }
+
+            @Override
+            protected boolean execute(Object[] args, MessageReceivedEvent event) {
+                settings.setSetting(event.getGuild().getId(), Settings.AUTOROLE, "");
+                Sender.sendResponse(SpConst.SUCCESS+"I will not give any roles automatically.", event);
+                return true;
+            }
+        }
     }
     
     private class RoleColor extends Command

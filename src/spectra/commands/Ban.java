@@ -64,7 +64,7 @@ public class Ban extends Command {
         String reason = args[1]==null?null:(String)(args[1]);
         if(reason==null)
             reason = "[no reason specified]";
-        PermLevel targetLevel = PermLevel.getPermLevelForUser(target, event.getGuild(),settings.getSettingsForGuild(event.getGuild().getId()));
+        PermLevel targetLevel = PermLevel.getPermLevelForUser(target, event.getGuild(), settings.getSettingsForGuild(event.getGuild().getId()));
         //check perm level of other user
         if(targetLevel.isAtLeast(level))
         {

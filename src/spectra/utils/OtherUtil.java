@@ -32,7 +32,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import javax.imageio.ImageIO;
+import spectra.Argument;
+import spectra.Command;
+import spectra.SpConst;
 
 /**
  *
@@ -133,5 +137,27 @@ public class OtherUtil {
             }
         }
         return bi;
+    }
+    
+    public static String compileCommands(Command[] commands)
+    {
+        StringBuilder builder = new StringBuilder("Spectra Commands (v"+SpConst.VERSION+")");
+        for(Command cmd : commands)
+        {
+            builder.append("\n").append(compileCommand(cmd,""));
+        }
+        return builder.toString();
+    }
+    
+    private static String compileCommand(Command command, String lineStart)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("\n").append(lineStart).append(command.getName()).append(" - ").append(command.getHelp()).append(command.getAliases().length==0 ? "" : " (Aliases: "+Arrays.toString(command.getAliases())+")");
+        builder.append("\n").append(lineStart).append("├Level: ").append(command.getLevel()).append(" Usage:").append(Argument.arrayToString(command.getArguments()));
+        builder.append("\n").append(lineStart).append("├").append(command.getLongHelp());
+        
+        for(Command cmd: command.getChildren())
+            builder.append("\n│").append(compileCommand(cmd,lineStart+"│"));
+        return builder.toString();
     }
 }

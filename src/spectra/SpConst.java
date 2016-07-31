@@ -22,7 +22,7 @@ package spectra;
 public class SpConst {
     //bot items
     final public static String BOTNAME = "Spectra";
-    final public static String VERSION = "3.0.2";
+    final public static String VERSION = "3.0.3";
     final public static String PREFIX = "%";
     final public static String ALTPREFIX = "/";
     

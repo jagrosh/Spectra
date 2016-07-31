@@ -37,6 +37,7 @@ public class Feed extends Command {
     {
         this.feeds = feeds;
         this.command = "feed";
+        this.aliases = new String[]{"log"};
         this.help = "sets or removes a feed";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{

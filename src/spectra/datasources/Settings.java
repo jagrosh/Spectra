@@ -28,7 +28,7 @@ public class Settings extends DataSource {
     public Settings()
     {
         filename = "discordbot.serversettings";
-        size = 11;
+        size = 12;
         generateKey = (item) -> {return item[SERVERID];};
     }
 
@@ -53,7 +53,8 @@ public class Settings extends DataSource {
             SpConst.ALTPREFIX, //prefixes
             "", // ignore list
             "hug hi5 pat punch btth 8ball choose meme rate ship", // tag commands
-            "global" // tag mode
+            "global", // tag mode
+            "" //autorole
         };
         synchronized(data)
         {
@@ -115,13 +116,14 @@ public class Settings extends DataSource {
     
     final public static int SERVERID   = 0;
     final public static int WELCOMEMSG = 1;
-    final public static int ROOMSETTING  = 2;
+    final public static int ROOMSETTING= 2;
     final public static int BANNEDCMDS = 3;
     final public static int MODIDS     = 4;
-    final public static int KEEPROLES    = 5;
+    final public static int KEEPROLES  = 5;
     final public static int LEAVEMSG   = 6;
     final public static int PREFIXES   = 7;
     final public static int IGNORELIST = 8;
     final public static int TAGIMPORTS = 9;
     final public static int TAGMODE    = 10;
+    final public static int AUTOROLE   = 11;
 }

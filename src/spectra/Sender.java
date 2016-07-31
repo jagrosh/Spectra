@@ -130,7 +130,7 @@ public class Sender {
     //send automatic message
     public static boolean sendMsg(String message, TextChannel tchan)
     {
-        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
+        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan) && PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
         {
             ArrayList<String> bits = splitMessage(message);
             bits.stream().forEach((bit) -> {
@@ -144,7 +144,7 @@ public class Sender {
     //send automatic message with file
     public static boolean sendMsgFile(String message, File file, String alternate, TextChannel tchan)
     {
-        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
+        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan) && PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
         {
             ArrayList<String> bits = splitMessage(message);
             
