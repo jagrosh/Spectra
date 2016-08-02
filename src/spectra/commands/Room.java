@@ -79,6 +79,8 @@ public class Room extends Command
             new RoomTTS(),
             new RoomVoice(),
             
+            new RoomAssign(),
+            new RoomCheck(),
             new RoomMode(),
             new RoomPermanent()
         };
@@ -837,6 +839,74 @@ public class Room extends Command
             {
                 Sender.sendResponse(SpConst.SUCCESS+"You have left \""+channel.getName()+"\"", event);
             }
+            return true;
+        }
+    }
+    
+    private class RoomCheck extends Command
+    {
+        private RoomCheck()
+        {
+            this.command = "check";
+            this.help = "checks the status of a room";
+            this.longhelp = "This command checks if a room is a "+SpConst.BOTNAME+" room";
+            this.availableInDM = false;
+            this.requiredPermissions = new Permission[]{
+                Permission.MANAGE_CHANNEL,
+                Permission.MANAGE_ROLES
+            };
+            this.level = PermLevel.ADMIN;
+            this.hidden= true;
+        }
+
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String[] room = rooms.get(event.getTextChannel().getId());
+            if(room==null)
+            {
+                Sender.sendResponse(SpConst.WARNING+"This is not a "+SpConst.BOTNAME+" room.", event);
+                return true;
+            }
+            Sender.sendResponse(SpConst.SUCCESS+"This is a "+SpConst.BOTNAME+" room.\nIt's owned by <@"+room[Rooms.OWNERID]+"> (owned by "+SpConst.BOTNAME+"=permanent)", event);
+            return true;
+        }
+    }
+    
+    private class RoomAssign extends Command
+    {
+        private RoomAssign()
+        {
+            this.command = "assign";
+            this.help = "converts a non-"+SpConst.BOTNAME+" room to a room owned by the given user";
+            this.longhelp = "This command converts a non-"+SpConst.BOTNAME+" room to a room owned by the given user";
+            this.availableInDM = false;
+            this.requiredPermissions = new Permission[]{
+                Permission.MANAGE_CHANNEL,
+                Permission.MANAGE_ROLES
+            };
+            this.level = PermLevel.ADMIN;
+            this.hidden= true;
+            this.arguments = new Argument[]{
+                new Argument("user",Argument.Type.LOCALUSER,true)
+            };
+        }
+
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            User u = (User)args[0];
+            String[] room = rooms.get(event.getTextChannel().getId());
+            if(room!=null)
+            {
+                Sender.sendResponse(SpConst.ERROR+"This is already a "+SpConst.BOTNAME+" room.", event);
+                return true;
+            }
+            String[] newroom = new String[4];
+            newroom[Rooms.CHANNELID] = event.getTextChannel().getId();
+            newroom[Rooms.LOCKED] = "false";
+            newroom[Rooms.SERVERID] = event.getGuild().getId();
+            newroom[Rooms.OWNERID] = u.getId();
+            rooms.set(newroom);
+            Sender.sendResponse(SpConst.SUCCESS+"This room has been assigned to **"+u.getUsername()+"**", event);
             return true;
         }
     }

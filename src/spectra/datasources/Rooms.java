@@ -139,9 +139,9 @@ public class Rooms extends DataSource{
             TextChannel tc = jda.getTextChannelById(id);
             if(tc==null || !PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MESSAGE_HISTORY, tc) || !PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MESSAGE_READ, tc))
             {
-                Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
-                if(guild==null || guild.isAvailable())
-                    remove(id);
+                //Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
+                //if(guild==null)
+                //    remove(id); I could do this safely if Discord actually did their job
                 continue;
             }
             if(get(id)[OWNERID].equals(jda.getSelfInfo().getId()))

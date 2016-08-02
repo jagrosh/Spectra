@@ -50,7 +50,7 @@ public class Roll extends Command {
         {
             if(str.matches("\\d{1,4}\\s*#.+"))
             {
-                int num = Integer.parseInt(str.substring(0,str.indexOf("#")));
+                int num = Integer.parseInt(str.substring(0,str.indexOf("#")).trim());
                 for(int i=0; i<num; i++)
                     diceinput.add(str.substring(str.indexOf("#")+1).trim());
             }

@@ -663,7 +663,7 @@ public class Spectra extends ListenerAdapter {
     
     @Override
     public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
-        if(event.getAuthor().getId().equals(event.getJDA().getSelfInfo().getId()))
+        if(event.getAuthor()==null || event.getAuthor().getId().equals(event.getJDA().getSelfInfo().getId()))
             return;
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;

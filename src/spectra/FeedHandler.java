@@ -42,6 +42,8 @@ public class FeedHandler {
     private final GlobalLists lists;
     private final boolean useBuffer = false;
     
+    private final HashMap<String,OffsetDateTime> limits = new HashMap<>();
+    
     public FeedHandler(Feeds feeds, Statistics statistics, GlobalLists lists)
     {
         this.feeds = feeds;
@@ -267,6 +269,9 @@ public class FeedHandler {
                     continue;
                 }
                 
+                if(limits.get(target.getId())!=null && limits.get(target.getId()).plusSeconds(3).isAfter(OffsetDateTime.now()))
+                    continue;
+                
                 if(file==null)
                 {
                     Pair<String,File> item = message.get();
@@ -278,6 +283,7 @@ public class FeedHandler {
                         normal = botlogFormat(normal);
                 }
                 
+                limits.put(target.getId(), OffsetDateTime.now());
                 boolean safe = Sender.sendMsgFile(normal, file, alternative, target);
                 if(!safe)
                 {

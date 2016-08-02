@@ -181,7 +181,7 @@ public class Ban extends Command {
                 {
                     try{
                         event.getGuild().getManager().unBan(id);
-                        Sender.sendResponse(SpConst.SUCCESS+(u.getUsername()==null ? "User with ID:"+id : "**"+u.getUsername()+"**")+" was banned from the server \uD83D\uDD27", event);
+                        Sender.sendResponse(SpConst.SUCCESS+(u.getUsername()==null ? "User with ID:"+id : "**"+u.getUsername()+"**")+" was unbanned from the server \uD83D\uDD27", event);
                         handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                             "\uD83D\uDD27 **"+event.getAuthor().getUsername()+"** unbanned "+(u.getUsername()==null ? "User with ID:"+id : "**"+u.getUsername()+"**")+" for "+reason);
                         return true;
