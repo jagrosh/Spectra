@@ -239,7 +239,7 @@
 </tr>
 <tr>
 <td>{if:VAL|COMP|VAL|then:TEXT|else:TEXT}</td>
-<td>Performs a conditional check. Values can be textual or numerical. Possible comparitors are <, >, =, or ~. For numbers, ~ is a check for equality when rounding to 2 decimal places. For strings, ~ is a case-insensitive equals</td>
+<td>Performs a conditional check. Values can be textual or numerical. Possible comparitors are <, >, =, ?, or ~. For numbers, ~ is a check for equality when rounding to 2 decimal places. For strings, ~ is a case-insensitive equals. For both types, ? is matching a regex</td>
 <td>I'm feeling {if:THIS|~|this|then:like this|else:like that}.</td>
 <td>I'm feeling like this</td>
 </tr>
