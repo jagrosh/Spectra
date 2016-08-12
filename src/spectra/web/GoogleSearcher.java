@@ -48,7 +48,7 @@ public class GoogleSearcher {
         }
         String request;
         try {
-            request = "https://www.google.com/search?q=" + URLEncoder.encode(query, "UTF-8") + "&num=20";
+            request = "https://www.google.com/search?q=" + URLEncoder.encode(query, "UTF-8") + "&num=10";
         } catch (UnsupportedEncodingException ex) {
             System.err.println(ex);
             return null;
@@ -70,7 +70,9 @@ public class GoogleSearcher {
             links.stream().map((link) -> link.attr("href")).filter((temp) -> (temp.startsWith("/url?q="))).forEach((temp) -> {
                 try {
                     //result.add(temp.substring(7,temp.indexOf("&sa="))+"\n");
-                    result.add(URLDecoder.decode(temp.substring(7,temp.indexOf("&sa=")),"UTF-8")+"\n");
+                    String rslt = URLDecoder.decode(temp.substring(7,temp.indexOf("&sa=")),"UTF-8");
+                    if(!rslt.equals("/settings/ads/preferences?hl=en"))
+                        result.add(rslt);
                 } catch (UnsupportedEncodingException ex) {
                 }
             });
@@ -79,9 +81,9 @@ public class GoogleSearcher {
             return null;
         }
         synchronized(cache)
-            {
-                cache.put(query.toLowerCase(), new Pair<>(result,OffsetDateTime.now()));
-            }
+        {
+            cache.put(query.toLowerCase(), new Pair<>(result,OffsetDateTime.now()));
+        }
         return result;
     }
     

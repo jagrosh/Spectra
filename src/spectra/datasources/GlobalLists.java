@@ -17,7 +17,6 @@ package spectra.datasources;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.dv8tion.jda.JDA;
 import spectra.DataSource;
 
 /**
@@ -41,6 +40,22 @@ public class GlobalLists extends DataSource {
         return entry[LISTTYPE].equalsIgnoreCase("blacklist");
     }
     
+    public boolean isWhitelisted(String id)
+    {
+        String[] entry = get(id);
+        if(entry==null)
+            return false;
+        return entry[LISTTYPE].equalsIgnoreCase("whitelist");
+    }
+    
+    public boolean isAuthorized(String id)
+    {
+        String[] entry = get(id);
+        if(entry==null)
+            return false;
+        return entry[LISTTYPE].equalsIgnoreCase("authorized") || entry[LISTTYPE].equalsIgnoreCase("whitelist");
+    }
+    
     public String getBlacklistReason(String id)
     {
         String[] entry = get(id);
@@ -58,6 +73,18 @@ public class GlobalLists extends DataSource {
         {
             data.values().stream().filter((entry) -> (entry[LISTTYPE].equalsIgnoreCase("blacklist"))).forEach((entry) -> {
                 list.add(entry[IDTYPE]+"`"+entry[ID]+"`");
+            });
+        }
+        return list;
+    }
+    
+    public List<String> getWhitelist()
+    {
+        ArrayList<String> list = new ArrayList<>();
+        synchronized(data)
+        {
+            data.values().stream().filter((entry) -> (entry[LISTTYPE].equalsIgnoreCase("whitelist"))).forEach((entry) -> {
+                list.add(entry[IDTYPE]+"`"+entry[ID]+"` "+entry[REASON]);
             });
         }
         return list;

@@ -62,6 +62,12 @@ public class Server extends Command {
                 +SpConst.LINESTART+"Users: **"+guild.getUsers().size()+"** ("+onlineCount+" online)\n"
                 +SpConst.LINESTART+"Channels: **"+guild.getTextChannels().size()+"** Text, **"+guild.getVoiceChannels().size()+"** Voice\n"
                 +SpConst.LINESTART+"Verification: **"+(guild.getVerificationLevel().equals(VerificationLevel.HIGH)?"(╯°□°）╯︵ ┻━┻":guild.getVerificationLevel())+"**";
+        if(!event.getGuild().getEmotes().isEmpty())
+        {
+            StringBuilder builder = new StringBuilder();
+            event.getGuild().getEmotes().forEach( e -> builder.append(" ").append(e.getAsEmote()));
+            str+="\n"+SpConst.LINESTART+"Emotes:"+builder.toString();
+        }
         if(guild.getIconUrl()!=null)
             str+="\n"+SpConst.LINESTART+"Server Icon: "+guild.getIconUrl();
         

@@ -43,8 +43,10 @@ public abstract class Command {
     protected PermLevel level = PermLevel.EVERYONE;
     protected boolean availableInDM = true;
     protected int cooldown = 0; //seconds
+    protected int whitelistCooldown = 0; //seconds
     protected Function<MessageReceivedEvent,String> cooldownKey;
     protected boolean hidden = false;
+    protected boolean whitelistOnly = false;
     
     protected boolean execute(Object[] args, MessageReceivedEvent event)
     {
@@ -55,12 +57,12 @@ public abstract class Command {
         return false;
     }
     
-    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned)
+    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, boolean whitelisted)
     {
-        return run(args, event, perm, ignore, banned, "");
+        return run(args, event, perm, ignore, banned, whitelisted, "");
     }
     
-    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, String parentChain)
+    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, boolean whitelisted, String parentChain)
     {
         if("help".equalsIgnoreCase(args))//display help text if applicable
         {
@@ -110,9 +112,8 @@ public abstract class Command {
             String[] argv = FormatUtil.cleanSplit(args);
             for(Command child: children)
                 if(child.isCommandFor(argv[0]))
-                    return child.run(argv[1], event, perm, ignore, banned, parentChain+command+" ");
+                    return child.run(argv[1], event, perm, ignore, banned, whitelisted, parentChain+command+" ");
         }
-        
         if(!availableInDM && event.isPrivate())//can't use in dm
         {
             Sender.sendPrivate(SpConst.NOT_VIA_DM, event.getPrivateChannel());
@@ -129,6 +130,11 @@ public abstract class Command {
                 Sender.sendPrivate(String.format(SpConst.CANT_SEND, event.getTextChannel().getAsMention()), event.getAuthor().getPrivateChannel());
                 return false;
             }
+        }
+        if(whitelistOnly && !whitelisted)
+        {
+            Sender.sendResponse(SpConst.ERROR+SpConst.ONLY_WHITELIST, event);
+            return false;
         }
         if(banned)
         {
@@ -235,7 +241,7 @@ public abstract class Command {
                         parts = new String[]{workingSet,null};
                     else
                         parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
-                    String timestr = parts[0].replaceAll("(?i)^((\\s*\\d+\\s*(d(ays?)?|h((ou)?rs?)?|m(in(ute)?s?)?|s(ec(ond)?s?)?)\\s?,?)*).*", "$1");
+                    String timestr = parts[0].replaceAll("(?is)^((\\s*-?\\s*\\d+\\s*(d(ays?)?|h((ou)?rs?)?|m(in(ute)?s?)?|s(ec(ond)?s?)?)\\s*,?\\s*(and)?)*).*", "$1");
                     if(timestr.equals(""))
                     {
                         Sender.sendResponse(String.format(SpConst.INVALID_TIME, parts[0]), event);
@@ -247,8 +253,8 @@ public abstract class Command {
                         if(parts[1].equals(""))
                             parts[1] = null;
                     }
-                    
-                    timestr = timestr.replaceAll("(?i)(\\d)([a-z])", "$1 $2").replaceAll("(?i)([a-z])(\\d)", "$1 $2").trim();
+                    timestr = timestr.replaceAll("(\\s|,|and)","")
+                            .replaceAll("(?is)(-?\\d+|[a-z]+)", "$1 ").trim();
                     String[] vals = timestr.split("\\s+");
                     long timeinseconds = 0;
                     try{
@@ -387,8 +393,8 @@ public abstract class Command {
             }
         }
         
-        
-        seconds = Cooldowns.getInstance().checkAndApply(cdKey,cooldown);
+        int actualCooldown = (whitelistCooldown==0 || !whitelisted) ? cooldown :whitelistCooldown;
+        seconds = Cooldowns.getInstance().checkAndApply(cdKey,actualCooldown);
         if(seconds > 0)
         {
             Sender.sendResponse(String.format(SpConst.ON_COOLDOWN, FormatUtil.secondsToTime(seconds)), event);

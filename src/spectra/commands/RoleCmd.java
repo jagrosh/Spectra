@@ -68,7 +68,8 @@ public class RoleCmd extends Command {
             this.longhelp = "This command is used to set a role that can automatically be given to users. "
                     + "If no phrase is assigned, the role will be given the first time they send any message "
                     + "(within 30 minutes of joining). If a phrase is provided, they will be given the role "
-                    + "when they type that exact phrase.";
+                    + "when they type that exact phrase. Only 1 auto role can be set; any new auto role will "
+                    + "override the previous.";
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_ROLES
             };

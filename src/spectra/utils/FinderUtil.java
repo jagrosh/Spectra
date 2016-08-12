@@ -145,14 +145,15 @@ public class FinderUtil {
         ArrayList<TextChannel> wrongcase = new ArrayList<>();
         ArrayList<TextChannel> startswith = new ArrayList<>();
         ArrayList<TextChannel> contains = new ArrayList<>();
+        String lowerquery = query.toLowerCase();
         guild.getTextChannels().stream().forEach((tc) -> {
-            if(tc.getName().equals(query))
+            if(tc.getName().equals(lowerquery))
                 exact.add(tc);
-            else if (tc.getName().equalsIgnoreCase(query) && exact.isEmpty())
+            else if (tc.getName().equalsIgnoreCase(lowerquery) && exact.isEmpty())
                 wrongcase.add(tc);
-            else if (tc.getName().toLowerCase().startsWith(query) && wrongcase.isEmpty())
+            else if (tc.getName().toLowerCase().startsWith(lowerquery) && wrongcase.isEmpty())
                 startswith.add(tc);
-            else if (tc.getName().toLowerCase().contains(query) && startswith.isEmpty())
+            else if (tc.getName().toLowerCase().contains(lowerquery) && startswith.isEmpty())
                 contains.add(tc);
         });
         if(!exact.isEmpty())
@@ -185,14 +186,15 @@ public class FinderUtil {
         ArrayList<Role> wrongcase = new ArrayList<>();
         ArrayList<Role> startswith = new ArrayList<>();
         ArrayList<Role> contains = new ArrayList<>();
+        String lowerQuery = query.toLowerCase();
         roles.stream().forEach((role) -> {
             if(role.getName().equals(query))
                 exact.add(role);
             else if (role.getName().equalsIgnoreCase(query) && exact.isEmpty())
                 wrongcase.add(role);
-            else if (role.getName().toLowerCase().startsWith(query) && wrongcase.isEmpty())
+            else if (role.getName().toLowerCase().startsWith(lowerQuery) && wrongcase.isEmpty())
                 startswith.add(role);
-            else if (role.getName().toLowerCase().contains(query) && startswith.isEmpty())
+            else if (role.getName().toLowerCase().contains(lowerQuery) && startswith.isEmpty())
                 contains.add(role);
         });
         if(!exact.isEmpty())

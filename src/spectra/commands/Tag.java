@@ -178,13 +178,13 @@ public class Tag extends Command{
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()))
+            else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
                 tagname = tag[Tags.TAGNAME];
                 tags.removeTag(tag[Tags.TAGNAME]);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
-                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGROSH_ID))).forEach((g) -> {
+                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
                 });
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 

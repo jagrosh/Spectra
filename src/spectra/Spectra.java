@@ -216,7 +216,7 @@ public class Spectra extends ListenerAdapter {
             new GoogleSearch(googlesearcher),
             new ImageSearch(imagesearcher),
             new Info(),
-            new Invite(),
+            //new Invite(),
             new Names(savednames),
             new Nick(),
             new Ping(),
@@ -255,6 +255,7 @@ public class Spectra extends ListenerAdapter {
             new Donator(donators),
             new Eval(this),
             new SystemCmd(this,feeds,statistics),
+            new WhiteList(globallists),
         };
         
         OtherUtil.writeArchive(OtherUtil.compileCommands(commands), "Commands");
@@ -325,6 +326,7 @@ public class Spectra extends ListenerAdapter {
             }
             colorCounter--;
         }, 5, 5, TimeUnit.MINUTES);
+        sendStats();
     }
     
     public void shutdown()
@@ -536,16 +538,23 @@ public class Spectra extends ListenerAdapter {
                     isCommand = true;
                     //check if banned
                     boolean banned = false;
+                    boolean whitelisted = false;
                     if(!event.isPrivate())
                     {
-                        for(String bannedCmd : Settings.restrCmdsFromList(currentSettings[Settings.BANNEDCMDS]))
-                            if(bannedCmd.equalsIgnoreCase(toRun.command))
-                                banned = true;
-                        if(banned)
-                            if(event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().contains("{"+toRun.command+"}"))
-                                banned = false;
+                        whitelisted = globallists.isWhitelisted(event.getGuild().getId());
+                        if(event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().contains("{-"+toRun.command+"}"))
+                            banned = true;
+                        else
+                        {
+                            for(String bannedCmd : Settings.restrCmdsFromList(currentSettings[Settings.BANNEDCMDS]))
+                                if(bannedCmd.equalsIgnoreCase(toRun.command))
+                                    banned = true;
+                            if(banned)
+                                if(event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().contains("{"+toRun.command+"}"))
+                                    banned = false;
+                        }
                     }
-                    successful = toRun.run(args[1], event, perm, ignore, banned);
+                    successful = toRun.run(args[1], event, perm, ignore, banned, whitelisted);
                     if(debugMode)
                         SimpleLog.getLog("Command").info(event.getGuild()+" "+event.getAuthor()+" "+event.getMessage().getContent());
                     statistics.ranCommand(event.isPrivate() ? "0" : event.getGuild().getId(), toRun.command, successful);
@@ -953,6 +962,7 @@ public class Spectra extends ListenerAdapter {
                 + "```Users : **"+guild.getUsers().size()
                 +  "**\nOwner : **"+guild.getOwner().getUsername()+"** (ID:"+guild.getOwnerId()
                 +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
+        sendStats();
     }
 
     @Override
@@ -963,6 +973,7 @@ public class Spectra extends ListenerAdapter {
                 + "```Users : **"+guild.getUsers().size()
                 +  "**\nOwner : **"+(guild.getOwner()==null ? "???" : guild.getOwner().getUsername())+"** (ID:"+guild.getOwnerId()
                 +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
+        sendStats();
     }
 
     @Override
@@ -980,7 +991,10 @@ public class Spectra extends ListenerAdapter {
         }
     }
     
-    
+    private void sendStats()
+    {
+        //not currently implemented
+    }
     
     
     public boolean isIdling()

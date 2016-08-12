@@ -481,6 +481,8 @@ public class Room extends Command
             this.arguments = new Argument[]{
                 new Argument("true|false",Argument.Type.SHORTSTRING,true)
             };
+            this.cooldown = 20;
+            this.cooldownKey = event -> event.getTextChannel().getId();
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {

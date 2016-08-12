@@ -289,7 +289,7 @@ public class Contest extends Command {
                             .append(event.getJDA().getUserById(entry[Entries.USERID])==null ? "AN UNKNOWN USER" : event.getJDA().getUserById(entry[Entries.USERID]).getUsername())
                             .append(" (ID:").append(entry[Entries.USERID]).append(") : ").append(entry[Entries.ENTRY]);
                 });
-                File f = OtherUtil.writeArchive(builder.toString(), contest[Contests.CONTESTNAME]+"_entries.txt");
+                File f = OtherUtil.writeArchive(builder.toString(), contest[Contests.CONTESTNAME]+"_entries");
                 return new Pair<>("Entries for **"+contest[Contests.CONTESTNAME]+"**",f);
             }, event);
             return true;
@@ -334,7 +334,7 @@ public class Contest extends Command {
             contest[Contests.DETAILS] = rules;
             contest[Contests.SERVERID] = event.getGuild().getId();
             contest[Contests.STATUS] = "0";
-            long start = event.getMessage().getTime().toInstant().toEpochMilli()+(secTilStart*1000);
+            long start = OffsetDateTime.now().toInstant().toEpochMilli()+(secTilStart*1000);
             contest[Contests.STARTTIME] = start+"";
             contest[Contests.ENDTIME] = (start+(secLength*1000))+"";
             contests.set(contest);
@@ -383,7 +383,7 @@ public class Contest extends Command {
             if(changeInStart!=0)
                 contest[Contests.STARTTIME] = (Long.parseLong(contest[Contests.STARTTIME])+(changeInStart*1000))+"";
             if(changeInEnd!=0)
-                contest[Contests.ENDTIME] = (Long.parseLong(contest[Contests.ENDTIME])+(changeInStart*1000))+"";
+                contest[Contests.ENDTIME] = (Long.parseLong(contest[Contests.ENDTIME])+(changeInEnd*1000))+"";
             contests.set(contest);
             Sender.sendResponse(SpConst.SUCCESS+"Contest \""+name+"\" edited.", event);
             return true;

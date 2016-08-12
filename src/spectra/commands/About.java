@@ -38,7 +38,7 @@ public class About extends Command{
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String aboutText =
             "Hello! I am **"+SpConst.BOTNAME+"**, a bot built by **jagrosh**!"+
-            "\nI was written for Discord in Java, using the JDA library <:jdaLogo:209384728388829184>"+
+            "\nI was written for Discord in Java, using the JDA library <:jdaLogo:209377360967892992>"+
             "\nI'm currently at version "+SpConst.VERSION+
             "\n"+
             "\nMy default prefixes are `"+SpConst.PREFIX+"` and `"+SpConst.ALTPREFIX+"`"+
