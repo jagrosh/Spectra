@@ -387,7 +387,7 @@ public class JagTag {
             case "|<|":
                 return (s1.compareTo(s2)<0);
             case "|?|":
-                return s1.matches(s2);
+                try{return s1.matches(s2);}catch(Exception e){return false;}
         }
         return false;
     }

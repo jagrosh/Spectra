@@ -253,7 +253,7 @@ public abstract class Command {
                         if(parts[1].equals(""))
                             parts[1] = null;
                     }
-                    timestr = timestr.replaceAll("(\\s|,|and)","")
+                    timestr = timestr.replaceAll("(?i)(\\s|,|and)","")
                             .replaceAll("(?is)(-?\\d+|[a-z]+)", "$1 ").trim();
                     String[] vals = timestr.split("\\s+");
                     long timeinseconds = 0;

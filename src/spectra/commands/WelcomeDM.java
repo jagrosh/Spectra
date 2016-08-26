@@ -44,7 +44,7 @@ public class WelcomeDM extends Command {
         };
         this.arguments = new Argument[]{
             new Argument("clear|set",Argument.Type.SHORTSTRING,true),
-            new Argument("pagenum",Argument.Type.INTEGER,true)
+            new Argument("pagenum",Argument.Type.INTEGER,true,1,5)
         };
     }
     
