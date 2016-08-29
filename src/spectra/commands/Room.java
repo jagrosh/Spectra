@@ -507,7 +507,7 @@ public class Room extends Command
             }
             try{
                 PermissionOverride ovr = event.getTextChannel().getOverrideForRole(event.getGuild().getPublicRole());
-                PermissionOverrideManager mng = event.getTextChannel().createPermissionOverride(event.getGuild().getPublicRole());
+                PermissionOverrideManager mng = ovr.getManager();
                 ovr.getAllowed().stream().forEach((p) -> {
                     mng.grant(p);
                 });
@@ -778,7 +778,7 @@ public class Room extends Command
                 event.getTextChannel().getManager().setTopic(event.getTextChannel().getTopic()
                         +"  \nType `"+SpConst.PREFIX+"room leave` in here or mute this channel if you don't want to get notifications.").update();
                 }catch(Exception e){}//set topic if we can
-                Sender.sendResponse(SpConst.SUCCESS+"<#"+event.getTextChannel().getId()+"> is now a permanent room.", event);
+                Sender.sendResponse(SpConst.SUCCESS+"<#"+event.getTextChannel().getId()+"> is now a permanent "+SpConst.BOTNAME+" room.", event);
                 return true;
             }
             else

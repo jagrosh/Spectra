@@ -53,7 +53,7 @@ public class GoogleSearcher {
             System.err.println(ex);
             return null;
         }
-        System.out.println("Sending request..." + request);
+        //System.out.println("Sending request..." + request);
         ArrayList<String> result;
         try {
 

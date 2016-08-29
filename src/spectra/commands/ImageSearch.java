@@ -50,7 +50,7 @@ public class ImageSearch extends Command {
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String query = (String)args[0];
         event.getChannel().sendTyping();
-        SimpleLog.getLog("ImageLog").info(event.getAuthor().getUsername()+" (ID:"+event.getAuthor().getId()+"): "+query);
+        //SimpleLog.getLog("ImageLog").info(event.getAuthor().getUsername()+" (ID:"+event.getAuthor().getId()+"): "+query);
         List<String> urls = bingsearch.search(query);
         if(urls==null)
         {

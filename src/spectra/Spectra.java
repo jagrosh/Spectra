@@ -69,16 +69,10 @@ import net.dv8tion.jda.utils.PermissionUtil;
 import net.dv8tion.jda.utils.SimpleLog;
 import spectra.commands.*;
 import spectra.datasources.*;
-import spectra.misc.SpecialCase;
-import spectra.tempdata.CallDepend;
-import spectra.tempdata.MessageCache;
-import spectra.tempdata.PhoneConnections;
-import spectra.tempdata.Statistics;
-import spectra.utils.OtherUtil;
-import spectra.utils.FormatUtil;
-import spectra.web.BingImageSearcher;
-import spectra.web.GoogleSearcher;
-import spectra.web.YoutubeSearcher;
+import spectra.misc.*;
+import spectra.tempdata.*;
+import spectra.utils.*;
+import spectra.web.*;
 
 /**
  *
@@ -263,7 +257,7 @@ public class Spectra extends ListenerAdapter {
         try {
             jda = new JDABuilder()
                     .addListener(this)
-                    .setBotToken(OtherUtil.readFileLines("discordbot.login").get(1))
+                    .setBotToken(OtherUtil.readFileLines("discordbot.login").get(0))
                     .setBulkDeleteSplittingEnabled(false)
                     .setEventManager(eventmanager)
                     .buildAsync();
@@ -325,7 +319,7 @@ public class Spectra extends ListenerAdapter {
                 jda.getAccountManager().setAvatar(AvatarUtil.getAvatar(OtherUtil.makeWave(currentColor))).update();
             }
             colorCounter--;
-        }, 5, 5, TimeUnit.MINUTES);
+        }, 5, 10, TimeUnit.MINUTES);
         sendStats();
     }
     
@@ -542,17 +536,16 @@ public class Spectra extends ListenerAdapter {
                     if(!event.isPrivate())
                     {
                         whitelisted = globallists.isWhitelisted(event.getGuild().getId());
-                        if(event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().contains("{-"+toRun.command+"}"))
+                        if(event.getTextChannel().getTopic()!=null && (event.getTextChannel().getTopic().contains("{-"+toRun.command+"}") || event.getTextChannel().getTopic().contains("{-all}")))
                             banned = true;
                         else
                         {
                             for(String bannedCmd : Settings.restrCmdsFromList(currentSettings[Settings.BANNEDCMDS]))
                                 if(bannedCmd.equalsIgnoreCase(toRun.command))
                                     banned = true;
-                            if(banned)
-                                if(event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().contains("{"+toRun.command+"}"))
-                                    banned = false;
                         }
+                        if(banned && event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().contains("{"+toRun.command+"}"))
+                            banned = false;
                     }
                     successful = toRun.run(args[1], event, perm, ignore, banned, whitelisted);
                     if(debugMode)
@@ -630,7 +623,8 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
-        rooms.setLastActivity(event.getChannel().getId(), event.getMessage().getTime());
+        if(!event.getMessage().getRawContent().startsWith("\u180E"))
+            rooms.setLastActivity(event.getChannel().getId(), event.getMessage().getTime());
         if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
         statistics.sentMessage(event.getGuild().getId());

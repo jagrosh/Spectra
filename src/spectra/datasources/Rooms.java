@@ -213,6 +213,7 @@ public class Rooms extends DataSource{
                     {
                         //warn
                         Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+get(id)[Rooms.OWNERID]+">"), tc);
+                        setLastActivity(id, OffsetDateTime.now());
                         setWarned(id);
                         //continue;
                     }
@@ -221,6 +222,7 @@ public class Rooms extends DataSource{
                 {
                     //warn
                     Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+get(id)[Rooms.OWNERID]+">"), tc);
+                    setLastActivity(id, OffsetDateTime.now());
                     setWarned(id);
                     //continue;
                 }
