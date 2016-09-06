@@ -35,6 +35,8 @@ public class WelcomeGuide extends Command {
         this.cooldown = 300;
         this.cooldownKey = (event) -> event.getGuild().getId()+"|"+event.getAuthor().getId()+"|welcomeme";
         this.help = "re-sends the server's welcome guide";
+        this.longhelp = "This command sends the server's current welcome DM to the user who uses the command. "
+                + "This is useful if and admin changes the DM, or if the user misses the DM.";
         this.availableInDM = false;
     }
 

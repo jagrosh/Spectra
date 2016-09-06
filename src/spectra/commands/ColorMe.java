@@ -40,7 +40,7 @@ public class ColorMe extends Command {
         this.help = "changes the color of your role";
         this.availableInDM = false;
         this.longhelp = "This command sets the color of your role. It can only be used if your "
-                + "color-determinant role has been added to the colorme list. The colormust be a hex or integer code.";
+                + "color-determinant role (the role that controls your username color) has been added to the colorme list. The colormust be a #hex or integer code.";
         this.children = new Command[]{
             new ColorMeList(),
             new ColorMeAdd(),

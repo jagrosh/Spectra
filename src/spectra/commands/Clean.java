@@ -105,7 +105,8 @@ public class Clean extends Command {
             try{Thread.sleep(1100);}catch(Exception e){}
         }
         Sender.sendResponse("\uD83D\uDEAE Cleaned **"+count+"** messages"+(user==null ? "" : " by **"+user.getUsername()+"**"), event);
-        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+count+"** messages "+(user==null ? "" : "by **"+user.getUsername()+"** ")+"in <#"+event.getTextChannel().getId()+">");
+        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                +" cleaned **"+count+"** messages "+(user==null ? "" : "by **"+user.getUsername()+"** ")+"in <#"+event.getTextChannel().getId()+">");
         return true;
     }
     
@@ -129,8 +130,9 @@ public class Clean extends Command {
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             long posts = args[0]==null ? 100 : (long)args[0];
-            List<Message> toDelete = event.getTextChannel().getHistory().retrieve((int)posts)
-                    .stream().filter((m) -> {return m.getRawContent().matches("(?s).*https?:\\/\\/.+");}).collect(Collectors.toList());
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve((int)posts);
+            toDelete.remove(event.getMessage());
+            toDelete = toDelete.stream().filter((m) -> {return m.getRawContent().matches("(?s).*https?:\\/\\/.+");}).collect(Collectors.toList());
             if(toDelete.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"There were no messages to delete", event);
@@ -141,7 +143,8 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing links", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *containing links* in <#"+event.getTextChannel().getId()+">");
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                    +" cleaned **"+toDelete.size()+"** messages *containing links* in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }
@@ -182,7 +185,8 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing images", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *containing images* in <#"+event.getTextChannel().getId()+">");
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                    +" cleaned **"+toDelete.size()+"** messages *containing images* in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }
@@ -223,7 +227,8 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing bot posts or commands", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *containing bot posts or commands* in <#"+event.getTextChannel().getId()+">");
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                    +" cleaned **"+toDelete.size()+"** messages *containing bot posts or commands* in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }
@@ -251,8 +256,9 @@ public class Clean extends Command {
             String regex = (String)args[0];
             List<Message> toDelete;
             try{
-                 toDelete = event.getTextChannel().getHistory().retrieve(100)
-                    .stream().filter((m) -> {
+                 toDelete = event.getTextChannel().getHistory().retrieve(100);
+                 toDelete.remove(event.getMessage());
+                 toDelete = toDelete.stream().filter((m) -> {
                         return m.getRawContent().matches(regex);
                     }).collect(Collectors.toList());
             } catch (Exception e){
@@ -269,7 +275,8 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages matching `"+regex+"`", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"** cleaned **"+toDelete.size()+"** messages *matching* `"+regex+"` in <#"+event.getTextChannel().getId()+">");
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                    +" cleaned **"+toDelete.size()+"** messages *matching* `"+regex+"` in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }

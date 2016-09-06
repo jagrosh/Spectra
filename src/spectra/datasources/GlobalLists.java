@@ -90,6 +90,11 @@ public class GlobalLists extends DataSource {
         return list;
     }
     
+    public void authorize(String id, String details)
+    {
+        set(new String[]{id, "guild", "authorized", details});
+    }
+    
     final public static int ID   = 0;
     final public static int IDTYPE = 1;
     final public static int LISTTYPE  = 2;

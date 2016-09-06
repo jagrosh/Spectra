@@ -16,8 +16,7 @@
 package spectra;
 
 import spectra.entities.AsyncInterfacedEventManager;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -26,47 +25,23 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import javafx.util.Pair;
 import javax.imageio.ImageIO;
 import javax.security.auth.login.LoginException;
-import net.dv8tion.jda.JDA;
+import net.dv8tion.jda.*;
 import net.dv8tion.jda.JDA.Status;
-import net.dv8tion.jda.JDABuilder;
-import net.dv8tion.jda.Permission;
-import net.dv8tion.jda.entities.Guild;
-import net.dv8tion.jda.entities.Message;
-import net.dv8tion.jda.entities.Role;
-import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.events.DisconnectEvent;
-import net.dv8tion.jda.events.ReadyEvent;
-import net.dv8tion.jda.events.ReconnectedEvent;
-import net.dv8tion.jda.events.ResumedEvent;
-import net.dv8tion.jda.events.ShutdownEvent;
-import net.dv8tion.jda.events.guild.GuildJoinEvent;
-import net.dv8tion.jda.events.guild.GuildLeaveEvent;
-import net.dv8tion.jda.events.guild.member.GuildMemberBanEvent;
-import net.dv8tion.jda.events.guild.member.GuildMemberJoinEvent;
-import net.dv8tion.jda.events.guild.member.GuildMemberLeaveEvent;
-import net.dv8tion.jda.events.guild.member.GuildMemberNickChangeEvent;
-import net.dv8tion.jda.events.guild.member.GuildMemberUnbanEvent;
-import net.dv8tion.jda.events.message.MessageBulkDeleteEvent;
-import net.dv8tion.jda.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.events.message.guild.GuildMessageDeleteEvent;
-import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
-import net.dv8tion.jda.events.message.guild.GuildMessageUpdateEvent;
+import net.dv8tion.jda.entities.*;
+import net.dv8tion.jda.events.*;
+import net.dv8tion.jda.events.guild.*;
+import net.dv8tion.jda.events.guild.member.*;
+import net.dv8tion.jda.events.message.*;
+import net.dv8tion.jda.events.message.guild.*;
 import net.dv8tion.jda.events.message.priv.PrivateMessageReceivedEvent;
-import net.dv8tion.jda.events.user.UserAvatarUpdateEvent;
-import net.dv8tion.jda.events.user.UserNameUpdateEvent;
-import net.dv8tion.jda.events.user.UserTypingEvent;
-import net.dv8tion.jda.events.voice.VoiceLeaveEvent;
+import net.dv8tion.jda.events.user.*;
+import net.dv8tion.jda.events.voice.*;
 import net.dv8tion.jda.hooks.ListenerAdapter;
-import net.dv8tion.jda.utils.AvatarUtil;
-import net.dv8tion.jda.utils.MiscUtil;
-import net.dv8tion.jda.utils.PermissionUtil;
-import net.dv8tion.jda.utils.SimpleLog;
+import net.dv8tion.jda.utils.*;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.misc.*;
@@ -115,6 +90,7 @@ public class Spectra extends ListenerAdapter {
     private final MessageCache messagecache;
     private final PhoneConnections phones;
     private final Statistics statistics;
+    private final LogInfo loginfo;
     
     //searchers
     private final BingImageSearcher imagesearcher;
@@ -122,7 +98,6 @@ public class Spectra extends ListenerAdapter {
     private final YoutubeSearcher youtubesearcher;
     
     //timers
-    private final ScheduledExecutorService feedflusher;
     private final ScheduledExecutorService unmuter;
     private final ScheduledExecutorService roomchecker;
     private final ScheduledExecutorService reminderchecker;
@@ -161,12 +136,12 @@ public class Spectra extends ListenerAdapter {
         handler = new FeedHandler(feeds,statistics,globallists);
         messagecache = new MessageCache();
         phones = new PhoneConnections();
+        loginfo = new LogInfo();
         
         imagesearcher = new BingImageSearcher(OtherUtil.readFileLines("bing.apikey"));
         googlesearcher = new GoogleSearcher();
         youtubesearcher = new YoutubeSearcher(OtherUtil.readFileLines("youtube.apikey").get(0));
         
-        feedflusher = Executors.newSingleThreadScheduledExecutor();
         unmuter  = Executors.newSingleThreadScheduledExecutor();
         roomchecker = Executors.newSingleThreadScheduledExecutor();
         reminderchecker = Executors.newSingleThreadScheduledExecutor();
@@ -226,13 +201,16 @@ public class Spectra extends ListenerAdapter {
             new WelcomeGuide(guides),
             new YoutubeSearch(youtubesearcher),
             
-            new Ban(handler, settings),
+            new Ban(settings, loginfo),
             new BotScan(),
             new Clean(handler),
             new Kick(handler, settings),
             new Mute(handler, settings, mutes),
-            new Softban(handler, settings, mutes),
+            new Softban(settings, mutes, loginfo),
+            new Unban(loginfo),
+            new Unmute(handler,settings, mutes),
             
+            new Authorize(globallists),
             new CommandCmd(settings, this),
             new Feed(feeds),
             new Ignore(settings),
@@ -275,7 +253,6 @@ public class Spectra extends ListenerAdapter {
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
                         + "Started up in "+FormatUtil.secondsToTime(statistics.getUptime()));
-        feedflusher.scheduleWithFixedDelay(()->{handler.flush(jda);}, 0, 20, TimeUnit.SECONDS);
         unmuter.scheduleWithFixedDelay(()-> {mutes.checkUnmutes(jda, handler);},0, 10, TimeUnit.SECONDS);
         roomchecker.scheduleWithFixedDelay(() -> {rooms.checkExpires(jda, handler);}, 0, 120, TimeUnit.SECONDS);
         reminderchecker.scheduleWithFixedDelay(() -> {reminders.checkReminders(jda);}, 0, 30, TimeUnit.SECONDS);
@@ -295,7 +272,7 @@ public class Spectra extends ListenerAdapter {
                 {
                     if(!g.isAvailable())
                         continue;
-                    if(!PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MANAGE_ROLES, g))
+                    if(!PermissionUtil.checkPermission(g, jda.getSelfInfo(), Permission.MANAGE_ROLES))
                         continue;
                     List<Role> guildroles = g.getRolesForUser(jda.getSelfInfo());
                     for(int i=1; i<guildroles.size(); i++)
@@ -349,7 +326,7 @@ public class Spectra extends ListenerAdapter {
         settings.shutdown();
         tags.shutdown();
         
-        feedflusher.shutdown();
+        handler.shutdown();
         unmuter.shutdown();
         roomchecker.shutdown();
         reminderchecker.shutdown();
@@ -483,6 +460,8 @@ public class Spectra extends ListenerAdapter {
                 for(Command com: commands)
                 {
                     if(com.hidden)
+                        continue;
+                    if(!event.isPrivate() && com.command.equals("authorize") && globallists.isAuthorized(event.getGuild().getId()))
                         continue;
                     if( perm.isAtLeast(com.level) )
                     {
@@ -643,13 +622,17 @@ public class Spectra extends ListenerAdapter {
                         if(event.getMessage().getTime().isBefore(event.getGuild().getJoinDateForUser(event.getAuthor()).plusMinutes(30)))
                         {
                             if(!event.getGuild().getRolesForUser(event.getAuthor()).contains(role))
+                            {
                                 event.getGuild().getManager().addRoleToUser(event.getAuthor(), role).update();
+                            }
                         }
                     }
                     else if(event.getMessage().getRawContent().equals(parts[1]))
                     {
                         if(!event.getGuild().getRolesForUser(event.getAuthor()).contains(role))
                         {
+                            if(event.getChannel().checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_MANAGE))
+                                event.getMessage().deleteMessage();
                             event.getGuild().getManager().addRoleToUser(event.getAuthor(), role).update();
                             Sender.sendPrivate(SpConst.SUCCESS+"I have given you the role *"+role.getName()+"* on **"+event.getGuild().getName()+"**", event.getAuthor().getPrivateChannel());
                         }
@@ -664,6 +647,15 @@ public class Spectra extends ListenerAdapter {
         SpecialCase.giveMonsterHunterRole(event);
     }
     
+    private boolean shouldBeLogged(String type, String id, boolean isBot, String details)
+    {
+        if(details==null)
+            return !isBot;
+        if(details.contains("+"+type+id))
+            return true;
+        return !(details.contains("-"+type+id) || details.contains("+"+type) || (isBot && !details.contains("+bots")));
+    }
+    
     @Override
     public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
         if(event.getAuthor()==null || event.getAuthor().getId().equals(event.getJDA().getSelfInfo().getId()))
@@ -676,19 +668,7 @@ public class Spectra extends ListenerAdapter {
             String id = event.getAuthor().getId();
             Message msg = messagecache.updateMessage(event.getGuild().getId(), event.getMessage());
             String details = feed[Feeds.DETAILS];
-            boolean show = false;
-            if(details==null)
-            {
-                show = !event.getAuthor().isBot();
-            }
-            else if (details.contains("+m"+id))
-            {
-                show = true;
-            }
-            else if (!(details.contains("-m"+id) || details.contains("+m") || (event.getAuthor().isBot() && !details.contains("+bots"))))
-            {
-                show = true;
-            }
+            boolean show = shouldBeLogged("m",id,event.getAuthor().isBot(),details) && shouldBeLogged("c",event.getChannel().getId(),event.getAuthor().isBot(),details);
             if(msg!=null && !msg.getRawContent().equals(event.getMessage().getRawContent()) && show)
             {
                 String old = FormatUtil.appendAttachmentUrls(msg);
@@ -710,30 +690,21 @@ public class Spectra extends ListenerAdapter {
         if(feed!=null)
         {
             Message msg = messagecache.deleteMessage(event.getGuild().getId(), event.getMessageId());
-            String id = msg == null ? null : msg.getAuthor().getId();
-            boolean bot = msg == null ? false : msg.getAuthor().isBot();
-            if(event.getJDA().getSelfInfo().getId().equals(id))
-                return;
-            String details = feed[Feeds.DETAILS];
-            boolean show = false;
-            if(details==null)
+            if(msg!=null)
             {
-                show = !bot;
-            }
-            else if (details.contains("+m"+id))
-            {
-                show = true;
-            }
-            else if (!(details.contains("-m"+id) || details.contains("+m") || (bot && !details.contains("+bots"))))
-            {
-                show = true;
-            }
-            if( msg!=null && show )
-            {
-                String del = FormatUtil.appendAttachmentUrls(msg);
-                handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
-                        "\u274C **"+msg.getAuthor().getUsername()
-                        +"**'s message has been deleted from <#"+msg.getChannelId()+">:\n"+del );
+                String id = msg.getAuthor().getId();
+                boolean bot = msg.getAuthor().isBot();
+                if(event.getJDA().getSelfInfo().getId().equals(id))
+                    return;
+                String details = feed[Feeds.DETAILS];
+                boolean show = shouldBeLogged("m",id,bot,details) && shouldBeLogged("c",msg.getChannelId(),bot,details);
+                if( show )
+                {
+                    String del = FormatUtil.appendAttachmentUrls(msg);
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
+                            "\u274C **"+msg.getAuthor().getUsername()
+                            +"**'s message has been deleted from <#"+msg.getChannelId()+">:\n"+del );
+                }
             }
         }
     }
@@ -745,7 +716,7 @@ public class Spectra extends ListenerAdapter {
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), 
                 "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server.");
         if(mutes.getMute(event.getUser().getId(), event.getGuild().getId())!=null)
-            if(PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MANAGE_ROLES, event.getGuild()))
+            if(PermissionUtil.checkPermission(event.getGuild(), event.getJDA().getSelfInfo(), Permission.MANAGE_ROLES))
                 event.getGuild().getRoles().stream().filter((role) -> (role.getName().equalsIgnoreCase("muted") 
                         && PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))).forEach((role) -> {
                     event.getGuild().getManager().addRoleToUser(event.getUser(), role).update();
@@ -794,16 +765,24 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMemberBan(GuildMemberBanEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
-        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                "\uD83D\uDD28 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was banned from the server.");
+        String[] info = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.BAN);
+        String[] sinfo = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.SOFTBAN);
+        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), info==null ? ( sinfo==null ?
+            "\uD83D\uDD28 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was banned from the server." : 
+            "\uD83C\uDF4C "+sinfo[0]+" softbanned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+sinfo[1]) :
+            "\uD83D\uDD28 "+info[0]+" banned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+info[1]);
     }
 
     @Override
     public void onGuildMemberUnban(GuildMemberUnbanEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
-        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                "\uD83D\uDD27 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was unbanned from the server.");
+        String[] info = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.UNBAN);
+        String[] sinfo = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.SOFTUNBAN);
+        if(sinfo==null)
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), info==null ?
+                "\uD83D\uDD27 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was unbanned from the server." :
+                "\uD83D\uDD27 "+info[0]+" unbanned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+info[1]);
     }
 
     @Override
@@ -851,19 +830,7 @@ public class Spectra extends ListenerAdapter {
         {
             String id = event.getUser().getId();
             String details = feed[Feeds.DETAILS];
-            boolean show = false;
-            if(details==null)
-            {
-                show = !event.getUser().isBot();
-            }
-            else if (details.contains("+n"+id))
-            {
-                show = true;
-            }
-            else if (!(details.contains("-n"+id) || details.contains("+n") || (event.getUser().isBot() && !details.contains("+bots"))))
-            {
-                show = true;
-            }
+            boolean show = shouldBeLogged("n",id,event.getUser().isBot(),details);
             if( show )
                 handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\u270D **"+event.getUser().getUsername()+"** (ID:"
                         +event.getUser().getId()+") has changed nicknames from "+(event.getPrevNick()==null ? "[none]" : "**"+event.getPrevNick()+"**")+" to "+
@@ -898,19 +865,8 @@ public class Spectra extends ListenerAdapter {
             if(feed!=null)
             {
                 String details = feed[Feeds.DETAILS];
-                if(details==null)
-                {
-                    if(!event.getUser().isBot())
-                        guilds.add(g);
-                }
-                else if (details.contains("+a"+id))
-                {
+                if(shouldBeLogged("a",id,event.getUser().isBot(),details))
                     guilds.add(g);
-                }
-                else if (!(details.contains("-a"+id) || details.contains("+a") || (event.getUser().isBot() && !details.contains("+bots"))))
-                {
-                    guilds.add(g);
-                }
             }
         });
         if(safetyMode)
@@ -971,6 +927,27 @@ public class Spectra extends ListenerAdapter {
     }
 
     @Override
+    public void onVoiceJoin(VoiceJoinEvent event) {
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
+        if(feed!=null)
+        {
+            String id = event.getUser().getId();
+            String details = feed[Feeds.DETAILS];
+            boolean show = shouldBeLogged("v",id,event.getUser().isBot(),details);
+            if( show )
+            {
+                if(event.getOldChannel() == null)
+                {
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICEJOIN.get(event.getJDA())+" **"+event.getUser().getUsername()+"** (ID:"
+                        +event.getUser().getId()+") has joined voice channel *"+event.getVoiceStatus().getChannel().getName()+"*");
+                }
+            }
+        }
+    }
+    
+    @Override
     public void onVoiceLeave(VoiceLeaveEvent event) {
         if(event.getOldChannel().getUsers().isEmpty())
         {
@@ -981,6 +958,28 @@ public class Spectra extends ListenerAdapter {
                 handler.submitText(Feeds.Type.SERVERLOG, event.getOldChannel().getGuild(), "\uD83C\uDF99 Voice channel **"+event.getOldChannel().getName()+
                             "** (ID:"+event.getOldChannel().getId()+") is empty and has been removed.");
                 rooms.remove(event.getOldChannel().getId());
+            }
+        }
+        if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
+        if(feed!=null)
+        {
+            String id = event.getUser().getId();
+            String details = feed[Feeds.DETAILS];
+            boolean show = shouldBeLogged("v",id,event.getUser().isBot(),details);
+            if( show )
+            {
+                if(event.getVoiceStatus().inVoiceChannel())//change
+                {
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICEMOVE.get(event.getJDA())+" **"+event.getUser().getUsername()+"** (ID:"
+                        +event.getUser().getId()+") has moved voice channels from *"+event.getOldChannel().getName()+"* to *"+event.getVoiceStatus().getChannel().getName()+"*");
+                }
+                else
+                {
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICELEAVE.get(event.getJDA())+" **"+event.getUser().getUsername()+"** (ID:"
+                        +event.getUser().getId()+") has left voice channel *"+event.getOldChannel().getName()+"*");
+                }
             }
         }
     }

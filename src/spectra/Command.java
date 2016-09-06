@@ -343,6 +343,42 @@ public abstract class Command {
                     workingSet = parts[1];
                     break;}
                 
+                case BANNEDUSER:{
+                    if(event.isPrivate())
+                    {
+                        Sender.sendResponse(String.format(SpConst.INVALID_IN_DM, arguments[i].name), event);
+                        return false;
+                    }
+                    String[] parts;
+                    if(separatorRegex==null)
+                        parts = new String[]{workingSet,null};
+                    else
+                        parts = FormatUtil.cleanSplit(workingSet, separatorRegex);
+                    if(parts[0].matches(FinderUtil.USER_MENTION+".+"))
+                    {
+                        parts[0] = parts[0].replaceAll("("+FinderUtil.USER_MENTION+").+", "$1");
+                        parts[1] = workingSet.substring(parts[0].length()).trim();
+                    }
+                    List<User> ulist = FinderUtil.findBannedUsers(parts[0], event.getGuild());
+                    if(ulist==null)
+                    {
+                        Sender.sendResponse(SpConst.ERROR+"I cannot check the list of banned users.", event);
+                        return false;
+                    }
+                    if(ulist.isEmpty())
+                    {
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "users", parts[0]), event);
+                        return false;
+                    }
+                    else if (ulist.size()>1)
+                    {
+                        Sender.sendResponse(FormatUtil.listOfUsers(ulist, parts[0]), event);
+                        return false;
+                    }
+                    parsedArgs[i] = ulist.get(0);
+                    workingSet = parts[1];
+                    break;}
+                
                 case TEXTCHANNEL:{
                     if(event.isPrivate())
                     {
@@ -376,7 +412,7 @@ public abstract class Command {
                         parts = new String[]{workingSet,null};
                     else
                         parts = FormatUtil.cleanSplit(workingSet,separatorRegex);
-                    List<Role> rlist = FinderUtil.findRole(parts[0], event.getGuild().getRoles());
+                    List<Role> rlist = FinderUtil.findRole(parts[0], event.getGuild());
                     if(rlist.isEmpty())
                     {
                         Sender.sendResponse(String.format(SpConst.NONE_FOUND, "roles", parts[0]), event);

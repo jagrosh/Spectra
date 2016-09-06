@@ -23,27 +23,26 @@ import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.Argument;
 import spectra.Command;
-import spectra.FeedHandler;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
-import spectra.datasources.Feeds;
 import spectra.datasources.Mutes;
 import spectra.datasources.Settings;
+import spectra.tempdata.LogInfo;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Softban extends Command {
-    final FeedHandler handler;
     final Settings settings;
     final Mutes mutes;
-    public Softban(FeedHandler handler, Settings settings, Mutes mutes)
+    final LogInfo loginfo;
+    public Softban(Settings settings, Mutes mutes, LogInfo loginfo)
     {
-        this.handler = handler;
         this.settings = settings;
         this.mutes = mutes;
+        this.loginfo = loginfo;
         this.command = "softban";
         this.help = "mutes and temporarily bans a user from the server";
         this.longhelp = "This command first bans a user from the server, clearing any messages "
@@ -83,26 +82,43 @@ public class Softban extends Command {
         }
         
         //attempt to softban
-        try{
-            String id = target.getId();
-            event.getGuild().getManager().ban(id, 1);
-            String[] prevmute = mutes.getMute(id, event.getGuild().getId());
+        try
+        {
+            loginfo.addInfo(target.getId(), LogInfo.Type.SOFTBAN, event.getAuthor().getUsername(), event.getAuthor().getDiscriminator(), reason);
+            event.getGuild().getManager().ban(target.getId(), 1);
+            String[] prevmute = mutes.getMute(target.getId(), event.getGuild().getId());
             if(prevmute==null || OffsetDateTime.now().plusDays(1).isAfter(OffsetDateTime.parse(prevmute[Mutes.UNMUTETIME])))
-                mutes.set(new String[]{id,event.getGuild().getId(),OffsetDateTime.now().plusDays(1).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)});
+                mutes.set(new String[]{target.getId(),event.getGuild().getId(),OffsetDateTime.now().plusDays(1).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)});
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was softbanned from the server \uD83C\uDF4C", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                    "\uD83C\uDF4C **"+event.getAuthor().getUsername()+"** softbanned **"+target.getUsername()+"** for "+reason);
+            //handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                    //"\uD83C\uDF4C **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                            //+" softbanned **"+target.getUsername()+"** for "+reason);
+            String fReason = reason;
             new Thread(){
             @Override
             public void run(){
                 try{Thread.sleep(10000);}catch(InterruptedException e){}
-                event.getGuild().getManager().unBan(id);
+                try 
+                {
+                    loginfo.addInfo(target.getId(), LogInfo.Type.SOFTUNBAN, event.getAuthor().getUsername(), event.getAuthor().getDiscriminator(), fReason);
+                    event.getGuild().getManager().unBan(target.getId());
+                } catch(Exception e){}
+                finally
+                {
+                    try{Thread.sleep(5000);}catch(InterruptedException e){}
+                    loginfo.removeInfo(target.getId(), LogInfo.Type.SOFTUNBAN);
+                }
             }}.start();
             return true;
-        }catch(Exception e)
+        }
+        catch(Exception e)
         {
             Sender.sendResponse(SpConst.ERROR+"Failed to softban **"+target.getUsername()+"**", event);
             return false;
+        }
+        finally
+        {
+            loginfo.removeInfo(target.getId(), LogInfo.Type.SOFTBAN);
         }
     }
 }

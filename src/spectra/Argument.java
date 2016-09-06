@@ -15,14 +15,6 @@
  */
 package spectra;
 
-import java.util.List;
-import net.dv8tion.jda.entities.Role;
-import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.entities.User;
-import net.dv8tion.jda.events.message.MessageReceivedEvent;
-import spectra.utils.FinderUtil;
-import spectra.utils.FormatUtil;
-
 
 /**
  *
@@ -87,7 +79,7 @@ public class Argument {
     }
     
     public enum Type {
-        INTEGER, SHORTSTRING, LONGSTRING, TIME, USER, LOCALUSER, TEXTCHANNEL, ROLE
+        INTEGER, SHORTSTRING, LONGSTRING, TIME, USER, LOCALUSER, BANNEDUSER, TEXTCHANNEL, ROLE
     }
     
 }

@@ -206,7 +206,7 @@ public class Rooms extends DataSource{
                     else
                     {
                         setLastActivity(id, messages.get(0).getTime());
-                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u200B"))
+                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u180E"))
                             setWarned(id);
                     }
                     if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))

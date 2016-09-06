@@ -46,7 +46,7 @@ public enum PermLevel {
             return JAGROSH;
         if(guild==null)
             return EVERYONE;
-        if(PermissionUtil.checkPermission(user, Permission.MANAGE_SERVER, guild))
+        if(PermissionUtil.checkPermission(guild, user, Permission.MANAGE_SERVER))
             return ADMIN;
         else
         {
@@ -54,9 +54,9 @@ public enum PermLevel {
                 return EVERYONE;
             if(currentSettings[Settings.MODIDS].contains(user.getId()))
                 return MODERATOR;
-            else
+            else if(guild.isMember(user))
             {
-                for(Role r:guild.getRolesForUser(user))
+                for(Role r : guild.getRolesForUser(user))
                     if(currentSettings[Settings.MODIDS].contains("r"+r.getId()))
                         return PermLevel.MODERATOR;
             }

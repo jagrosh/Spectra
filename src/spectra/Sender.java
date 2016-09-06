@@ -41,7 +41,7 @@ public class Sender {
         List<String> bits = splitMessage(message);
         if(bits.size() > maxMessages)
         {
-            if(event.isPrivate() || PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, event.getTextChannel()))
+            if(event.isPrivate() || PermissionUtil.checkPermission(event.getTextChannel(), event.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES))
             {
                 event.getChannel().sendTyping();
                 String header = bits.get(0);
@@ -85,7 +85,7 @@ public class Sender {
     {
         if(!event.isPrivate())
         {
-            if(!PermissionUtil.checkPermission(event.getTextChannel().getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, event.getTextChannel()))
+            if(!PermissionUtil.checkPermission(event.getTextChannel(),event.getTextChannel().getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES))
             {
                 sendResponse(alternate==null ? String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_ATTACH_FILES) : alternate , event);
                 return;
@@ -130,7 +130,7 @@ public class Sender {
     //send automatic message
     public static boolean sendMsg(String message, TextChannel tchan)
     {
-        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan) && PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
+        if(PermissionUtil.checkPermission(tchan, tchan.getJDA().getSelfInfo(), Permission.MESSAGE_READ, Permission.MESSAGE_WRITE))
         {
             ArrayList<String> bits = splitMessage(message);
             bits.stream().forEach((bit) -> {
@@ -144,11 +144,11 @@ public class Sender {
     //send automatic message with file
     public static boolean sendMsgFile(String message, File file, String alternate, TextChannel tchan)
     {
-        if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_READ, tchan) && PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, tchan))
+        if(PermissionUtil.checkPermission(tchan, tchan.getJDA().getSelfInfo(), Permission.MESSAGE_READ, Permission.MESSAGE_WRITE))
         {
             ArrayList<String> bits = splitMessage(message);
             
-            if(PermissionUtil.checkPermission(tchan.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES, tchan))
+            if(PermissionUtil.checkPermission(tchan, tchan.getJDA().getSelfInfo(), Permission.MESSAGE_ATTACH_FILES))
             {
                 tchan.sendFileAsync(file, bits.isEmpty() ? null : new MessageBuilder().appendString(bits.get(0)).build(), null);
             }

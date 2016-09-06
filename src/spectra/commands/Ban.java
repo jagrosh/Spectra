@@ -22,29 +22,28 @@ import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.Argument;
 import spectra.Command;
-import spectra.FeedHandler;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
-import spectra.datasources.Feeds;
 import spectra.datasources.Settings;
+import spectra.tempdata.LogInfo;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Ban extends Command {
-    private final FeedHandler handler;
     private final Settings settings;
-    public Ban(FeedHandler handler, Settings settings)
+    private final LogInfo loginfo;
+    public Ban(Settings settings, LogInfo loginfo)
     {
-        this.handler = handler;
         this.settings = settings;
+        this.loginfo = loginfo;
         this.command = "ban";
         this.help = "bans a user";
         this.longhelp = "This command bans a user from the server, and deletes any of their messages from within the past 7 days.";
         this.arguments = new Argument[]{
-            new Argument("username",Argument.Type.LOCALUSER,true,"for"),
+            new Argument("username",Argument.Type.USER,true,"for"),
             new Argument("reason",Argument.Type.LONGSTRING,false)
         };
         this.availableInDM=false;
@@ -54,8 +53,7 @@ public class Ban extends Command {
         };
         this.children = new Command[]{
             new BanHack(),
-            new BanList(),
-            new Unban()
+            new BanList()
         };
     }
     @Override
@@ -73,24 +71,31 @@ public class Ban extends Command {
         }
         
         //check if bot can interact with the other user
-        if(!PermissionUtil.canInteract(event.getJDA().getSelfInfo(), target, event.getGuild()))
+        if(event.getGuild().isMember(target) && !PermissionUtil.canInteract(event.getJDA().getSelfInfo(), target, event.getGuild()))
         {
             Sender.sendResponse(SpConst.WARNING+"I cannot ban **"+target.getUsername()+"** due to permission hierarchy", event);
             return false;
         }
         
         //attempt to ban
-        try{
-            String id = target.getId();
-            event.getGuild().getManager().ban(id, 7);
+        try
+        {
+            loginfo.addInfo(target.getId(), LogInfo.Type.BAN, event.getAuthor().getUsername(), event.getAuthor().getDiscriminator(), reason);
+            event.getGuild().getManager().ban(target.getId(), 7);
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was banned from the server \uD83D\uDD28", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                    "\uD83D\uDD28 **"+event.getAuthor().getUsername()+"** banned **"+target.getUsername()+"** for "+reason);
+            //handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                    //"\uD83D\uDD28 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()+" banned **"+target.getUsername()+"** for "+reason);
             return true;
-        }catch(Exception e)
+        }
+        catch(Exception e)
         {
             Sender.sendResponse(SpConst.ERROR+"Failed to ban **"+target.getUsername()+"**", event);
             return false;
+        }
+        finally
+        {
+            try{Thread.sleep(5000);}catch(InterruptedException e){}
+            loginfo.removeInfo(target.getId(), LogInfo.Type.BAN);
         }
     }
     
@@ -139,60 +144,26 @@ public class Ban extends Command {
                 }
             }
             //attempt to ban
-            try{
+            try
+            {
+                loginfo.addInfo(id, LogInfo.Type.BAN, event.getAuthor().getUsername(), event.getAuthor().getDiscriminator(), reason);
                 event.getGuild().getManager().ban(id, 7);
                 Sender.sendResponse(SpConst.SUCCESS+(target==null ? "User with ID:"+id : "**"+target.getUsername()+"**")+" was banned from the server \uD83D\uDD28", event);
-                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                        "\uD83D\uDD28 **"+event.getAuthor().getUsername()+"** banned "+(target==null ? "User with ID:"+id : "**"+target.getUsername()+"**")+" for "+reason);
+                //handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                        //"\uD83D\uDD28 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()+" banned "+(target==null ? "User with ID:"+id : "**"+target.getUsername()+"**")+" for "+reason);
                 return true;
-            }catch(Exception e)
+            }
+            catch(Exception e)
             {
                 Sender.sendResponse(SpConst.ERROR+"Failed to ban "+(target==null ? "User with ID:"+id : "**"+target.getUsername()+"**"), event);
                 return false;
             }
-        }
-    }
-    
-    private class Unban extends Command {
-        private Unban()
-        {
-            this.command = "unbanid";
-            this.help = "unbans a user by id";
-            this.longhelp = "This command unbans a user, given their ID";
-            this.arguments = new Argument[]{
-                new Argument("id",Argument.Type.SHORTSTRING,true,"for"),
-                new Argument("reason",Argument.Type.LONGSTRING,false)
-            };
-            this.availableInDM=false;
-            this.level = PermLevel.MODERATOR;
-            this.requiredPermissions = new Permission[] {
-                Permission.BAN_MEMBERS
-            };
-        }
-        @Override
-        protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            String id = (String)(args[0]);
-            String reason = args[1]==null?null:(String)(args[1]);
-            if(reason==null)
-                reason = "[no reason specified]";
-            List<User> list = event.getGuild().getManager().getBans();
-            for(User u: list)
-                if(id.equals(u.getId()))
-                {
-                    try{
-                        event.getGuild().getManager().unBan(id);
-                        Sender.sendResponse(SpConst.SUCCESS+(u.getUsername()==null ? "User with ID:"+id : "**"+u.getUsername()+"**")+" was unbanned from the server \uD83D\uDD27", event);
-                        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                            "\uD83D\uDD27 **"+event.getAuthor().getUsername()+"** unbanned "+(u.getUsername()==null ? "User with ID:"+id : "**"+u.getUsername()+"**")+" for "+reason);
-                        return true;
-                    } catch(Exception e) {
-                        Sender.sendResponse(SpConst.ERROR+"Failed to ban "+(u.getUsername()==null ? "User with ID:"+id : "**"+u.getUsername()+"**"), event);
-                        return false;
-                    }
-                }
-            Sender.sendResponse(SpConst.ERROR+"A user with that ID was not found on the ban list.", event);
-            return false;
+            finally
+            {
+                try{Thread.sleep(5000);}catch(InterruptedException e){}
+                loginfo.removeInfo(id, LogInfo.Type.BAN);
             }
+        }
     }
     
     private class BanList extends Command {

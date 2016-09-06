@@ -79,7 +79,8 @@ public class Kick extends Command {
             event.getGuild().getManager().kick(target);
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was kicked from the server \uD83D\uDC62", event);
             handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                    "\uD83D\uDC62 **"+event.getAuthor().getUsername()+"** kicked **"+target.getUsername()+"** (ID:"+target.getId()+") for "+reason);
+                    "\uD83D\uDC62 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                            +" kicked **"+target.getUsername()+"** (ID:"+target.getId()+") for "+reason);
             return true;
         }catch(Exception e)
         {

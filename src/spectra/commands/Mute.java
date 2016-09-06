@@ -60,7 +60,7 @@ public class Mute extends Command {
         this.level = PermLevel.MODERATOR;
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,true,"for"),
-            new Argument("time", Argument.Type.TIME, true, "for", 0, 43200),
+            new Argument("time", Argument.Type.TIME, true, "for", 0, 432000),
             new Argument("reason", Argument.Type.LONGSTRING,false)
         };
         this.children = new Command[]{
@@ -120,7 +120,8 @@ public class Mute extends Command {
             mutes.set(new String[]{target.getId(),event.getGuild().getId(),OffsetDateTime.now().plusSeconds(seconds).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)});
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was muted for "+FormatUtil.secondsToTime(seconds), event);
             handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                    "\uD83D\uDD07 **"+event.getAuthor().getUsername()+"** muted **"+target.getUsername()+"** (ID:"+target.getId()+") for "+FormatUtil.secondsToTime(seconds)+" for "+reason);
+                    "\uD83D\uDD07 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                            +" muted **"+target.getUsername()+"** (ID:"+target.getId()+") for "+FormatUtil.secondsToTime(seconds)+" for "+reason);
             return true;
         }catch(Exception e)
         {
