@@ -38,7 +38,7 @@ import spectra.utils.FormatUtil;
  */
 public class JagTag {
     
-    public static String URL = "http://jagrosh.github.io/Spectra/jagtag.html";
+    public static String URL = "https://github.com/jagrosh/Spectra/wiki/JagTag";
     
     public static String convertText(String input, String arguments, User user, Guild guild, MessageChannel channel)
     {

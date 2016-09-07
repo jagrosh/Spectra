@@ -137,7 +137,7 @@ public class Rooms extends DataSource{
         for(String id : allIds)
         {
             TextChannel tc = jda.getTextChannelById(id);
-            if(tc==null || !PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MESSAGE_HISTORY, tc) || !PermissionUtil.checkPermission(jda.getSelfInfo(), Permission.MESSAGE_READ, tc))
+            if(tc==null || !PermissionUtil.checkPermission(tc, jda.getSelfInfo(), Permission.MESSAGE_HISTORY, Permission.MESSAGE_READ))
             {
                 //Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
                 //if(guild==null)
@@ -173,7 +173,7 @@ public class Rooms extends DataSource{
                     else
                     {
                         setLastActivity(id, messages.get(0).getTime());
-                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u180E"))
+                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
                             setWarned(id);
                     }
                     if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && isWarned(id))
@@ -206,7 +206,7 @@ public class Rooms extends DataSource{
                     else
                     {
                         setLastActivity(id, messages.get(0).getTime());
-                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u180E"))
+                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
                             setWarned(id);
                     }
                     if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))

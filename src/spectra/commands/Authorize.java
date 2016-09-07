@@ -18,9 +18,11 @@ package spectra.commands;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
+import spectra.FeedHandler;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.datasources.Feeds;
 import spectra.datasources.GlobalLists;
 
 /**
@@ -29,14 +31,16 @@ import spectra.datasources.GlobalLists;
  */
 public class Authorize extends Command {
     private final GlobalLists lists;
+    private final FeedHandler handler;
     private final String WIKI = "<https://github.com/jagrosh/Spectra/wiki/Getting-Started>";
     private final String NEED_AUTH = "Hello **%s**#%s. To authorize "+SpConst.BOTNAME+" for your server, "
             + "please follow the instructions here: "+WIKI
             + "\nServer ID: %s\nUser ID: %s";
     
-    public Authorize(GlobalLists lists)
+    public Authorize(GlobalLists lists, FeedHandler handler)
     {
         this.lists = lists;
+        this.handler = handler;
         this.command = "authorize";
         this.help = "authorizes the bot to run on your server";
         this.longhelp = "";
@@ -77,6 +81,9 @@ public class Authorize extends Command {
         {
             lists.authorize(event.getGuild().getId(), event.getAuthor().getId()+"|"+event.getMessage().getTime());
             Sender.sendResponse(SpConst.SUCCESS+"Congratulations! **"+event.getGuild().getName()+"** has been authorized. Please continue to read "+WIKI+" for additional information and setup.", event);
+            handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
+                    "\uD83D\uDD13 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") has authorized __**"
+                            +event.getGuild().getName()+"**__ (ID:"+event.getGuild().getId()+")");
             return true;
         }
     }

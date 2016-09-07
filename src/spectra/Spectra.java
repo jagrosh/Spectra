@@ -210,7 +210,7 @@ public class Spectra extends ListenerAdapter {
             new Unban(loginfo),
             new Unmute(handler,settings, mutes),
             
-            new Authorize(globallists),
+            new Authorize(globallists, handler),
             new CommandCmd(settings, this),
             new Feed(feeds),
             new Ignore(settings),
@@ -486,7 +486,7 @@ public class Spectra extends ListenerAdapter {
                 helpmsg+="\n\nFor more information, call "+SpConst.PREFIX+"<command> help. For example, `"+SpConst.PREFIX+"tag help`";
                 helpmsg+="\nFor commands, `<argument>` refers to a required argument, while `[argument]` is optional";
                 helpmsg+="\nDo not add <> or [] to your arguments, nor quotation marks";
-                helpmsg+="\nFor more help, contact **@jagrosh** "+(event.getAuthor().getId().equals(SpConst.JAGROSH_ID) ? "" : "(<@"+SpConst.JAGROSH_ID+">) ")+"or join "+SpConst.JAGZONE_INVITE;
+                helpmsg+="\nFor more help, contact **@jagrosh**, check the wiki (<https://github.com/jagrosh/Spectra/wiki>), or join "+SpConst.JAGZONE_INVITE;
                 Sender.sendHelp(helpmsg, event.getAuthor().getPrivateChannel(), event);
             }
             else//wasn't base help command
@@ -602,8 +602,10 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
-        if(!event.getMessage().getRawContent().startsWith("\u180E"))
+        if(!(event.getMessage().getRawContent().startsWith("[<@")&&event.getAuthor().equals(event.getJDA().getSelfInfo())))
+        {
             rooms.setLastActivity(event.getChannel().getId(), event.getMessage().getTime());
+        }
         if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
         statistics.sentMessage(event.getGuild().getId());
@@ -714,7 +716,8 @@ public class Spectra extends ListenerAdapter {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), 
-                "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server.");
+                "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server."
+                        +(MiscUtil.getCreationTime(event.getUser().getId()).plusMinutes(15).isAfter(OffsetDateTime.now()) ? " \uD83C\uDD95" : ""));
         if(mutes.getMute(event.getUser().getId(), event.getGuild().getId())!=null)
             if(PermissionUtil.checkPermission(event.getGuild(), event.getJDA().getSelfInfo(), Permission.MANAGE_ROLES))
                 event.getGuild().getRoles().stream().filter((role) -> (role.getName().equalsIgnoreCase("muted") 
