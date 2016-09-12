@@ -309,6 +309,7 @@ public class Room extends Command
                 return false;
             }
             boolean same = channel.getId().equals(event.getTextChannel().getId());
+            String name = channel.getName();
             try{
                 channel.getManager().delete();
             }catch(Exception e){
@@ -319,7 +320,7 @@ public class Room extends Command
             if(!same)
                 Sender.sendResponse(SpConst.SUCCESS+"You have removed \""+channel.getName()+"\"", event);
             rooms.remove(channel.getId());
-            handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\uD83D\uDCFA Text channel **"+channel.getName()+
+            handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\uD83D\uDCFA Text channel **"+name+
                     "** (ID:"+channel.getId()+") has been removed by **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+")");
             return true;
         }

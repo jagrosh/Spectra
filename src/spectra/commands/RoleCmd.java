@@ -216,6 +216,12 @@ public class RoleCmd extends Command {
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             Role role = (Role)args[0];
             User user = (User)args[1];
+            
+            if(role.isManaged())
+            {
+                Sender.sendResponse(SpConst.ERROR+"*"+role.getName()+"* is a Managed Role, so I cannot give it to a user", event);
+                return false;
+            }
             if(event.getGuild().getRolesForUser(user).contains(role))
             {
                 Sender.sendResponse(SpConst.ERROR+"**"+user.getUsername()+"** already has *"+role.getName()+"*!", event);
