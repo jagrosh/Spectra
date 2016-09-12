@@ -18,6 +18,7 @@ package spectra.datasources;
 import java.util.ArrayList;
 import net.dv8tion.jda.entities.Guild;
 import spectra.DataSource;
+import spectra.JagTag;
 
 /**
  *
@@ -39,7 +40,7 @@ public class Overrides extends DataSource{
             String[] tag = data.get("g"+guild.getId()+"|"+name.toLowerCase());
             if(tag==null)
                 return null;
-            if(!nsfw && Tags.isNSFW(tag))
+            if(!nsfw && JagTag.isNSFWTag(tag))
                 return new String[]{tag[OWNERID],tag[TAGNAME],"\uD83D\uDD1E This tag has been marked as **Not Safe For Work** and is not available in this channel."};
             return tag.clone();
         }

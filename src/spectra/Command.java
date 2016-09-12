@@ -18,9 +18,7 @@ package spectra;
 import java.util.List;
 import java.util.function.Function;
 import net.dv8tion.jda.Permission;
-import net.dv8tion.jda.entities.Role;
-import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.entities.*;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.tempdata.Cooldowns;
@@ -424,6 +422,26 @@ public abstract class Command {
                         return false;
                     }
                     parsedArgs[i] = rlist.get(0);
+                    workingSet = parts[1];
+                    break;}
+                case GUILD:{
+                    String[] parts;
+                    if(separatorRegex==null)
+                        parts = new String[]{workingSet,null};
+                    else
+                        parts = FormatUtil.cleanSplit(workingSet,separatorRegex);
+                    List<Guild> glist = FinderUtil.findGuild(parts[0], event.getJDA());
+                    if(glist.isEmpty())
+                    {
+                        Sender.sendResponse(String.format(SpConst.NONE_FOUND, "servers", parts[0]), event);
+                        return false;
+                    }
+                    else if (glist.size()>1)
+                    {
+                        Sender.sendResponse(FormatUtil.listOfGuilds(glist, parts[0]), event);
+                        return false;
+                    }
+                    parsedArgs[i] = glist.get(0);
                     workingSet = parts[1];
                     break;}
             }

@@ -82,6 +82,7 @@ public class Spectra extends ListenerAdapter {
     private final SavedNames savednames;
     private final Settings settings;
     private final Tags tags;
+    private final LocalTags localtags;
     
     //handlers
     private final FeedHandler handler;
@@ -131,6 +132,7 @@ public class Spectra extends ListenerAdapter {
         savednames  = new SavedNames();
         settings    = new Settings();
         tags        = new Tags();
+        localtags   = new LocalTags();
         
         statistics = new Statistics();
         handler = new FeedHandler(feeds,statistics,globallists);
@@ -170,6 +172,7 @@ public class Spectra extends ListenerAdapter {
         savednames.read();
         settings.read();
         tags.read();
+        localtags.read();
         
         commands = new Command[]{
             new About(),
@@ -196,7 +199,7 @@ public class Spectra extends ListenerAdapter {
             new Server(settings),
             new Speakerphone(phones),
             new Stats(statistics),
-            new Tag(tags, overrides, settings, handler),
+            new Tag(tags, localtags, settings, handler, this),
             new Timefor(profiles),
             new WelcomeGuide(guides),
             new YoutubeSearch(youtubesearcher),
@@ -325,6 +328,7 @@ public class Spectra extends ListenerAdapter {
         savednames.shutdown();
         settings.shutdown();
         tags.shutdown();
+        localtags.shutdown();
         
         handler.shutdown();
         unmuter.shutdown();
@@ -539,9 +543,7 @@ public class Spectra extends ListenerAdapter {
                         {
                             isCommand=true;
                             boolean nsfw = JagTag.isNSFWAllowed(event);
-                            String[] tag = overrides.findTag(event.getGuild(), cmd, nsfw);
-                            if(tag==null)
-                                tag = tags.findTag(cmd, null, false, nsfw);
+                            String[] tag = findTag(cmd, event.getGuild(), false, nsfw);
                             if(tag==null)
                             {
                                 Sender.sendResponse(SpConst.ERROR+"Tag \""+cmd+"\" no longer exists!", event);
@@ -549,7 +551,7 @@ public class Spectra extends ListenerAdapter {
                             }
                             else
                             {
-                                Sender.sendResponse("\u200B"+JagTag.convertText(tag[Tags.CONTENTS], args[1], event.getAuthor(), event.getGuild(), event.getChannel()), event);
+                                Sender.sendResponse("\u200B"+JagTag.convertText(JagTag.getContents(tag), args[1], event.getAuthor(), event.getGuild(), event.getChannel()), event);
                                 successful = true;
                                 
                             }
@@ -992,7 +994,6 @@ public class Spectra extends ListenerAdapter {
         //not currently implemented
     }
     
-    
     public boolean isIdling()
     {
         return idling;
@@ -1026,5 +1027,27 @@ public class Spectra extends ListenerAdapter {
     public Command[] getCommandList()
     {
         return commands;
+    }
+
+    public String[] findTag(String tagname, Guild guild, boolean local, boolean nsfw) {
+        if(guild!=null)
+        {
+            String[] tag = localtags.findTag(tagname, guild, nsfw);
+            if(tag!=null)
+                return tag;
+            String[] currentsettings = settings.getSettingsForGuild(guild.getId());
+            String[] mirrors = currentsettings==null || currentsettings[Settings.TAGMIRRORS]==null || currentsettings[Settings.TAGMIRRORS].equals("") ?
+                    new String[0] : currentsettings[Settings.TAGMIRRORS].split("\\s+");
+            for(String id: mirrors)
+            {
+                Guild g = guild.getJDA().getGuildById(id);
+                if(g==null)
+                    continue;
+                tag = localtags.findTag(tagname, g, nsfw);
+                if(tag!=null)
+                    return tag;
+            }
+        }
+        return tags.findTag(tagname, guild, local, nsfw);
     }
 }

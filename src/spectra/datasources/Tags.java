@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.User;
 import spectra.DataSource;
-import spectra.SpConst;
+import spectra.JagTag;
 
 /**
  *
@@ -34,11 +34,6 @@ public class Tags extends DataSource{
         generateKey = (item) -> {return item[TAGNAME].toLowerCase();};
     }
     
-    public String[] findTag(String name)
-    {
-        return findTag(name,null,false,true);
-    }
-    
     public String[] findTag(String name, Guild guild, boolean local, boolean nsfw)
     {
         synchronized(data)
@@ -46,14 +41,15 @@ public class Tags extends DataSource{
             String[] tag = data.get(name.toLowerCase());
             if(tag!=null)
             {
-                if(!nsfw && isNSFW(tag))
+                if(!nsfw && JagTag.isNSFWTag(tag))
                     return new String[]{tag[OWNERID],tag[TAGNAME],"\uD83D\uDD1E This tag has been marked as **Not Safe For Work** and is not available in this channel."};
                 if(local && guild!=null)
                 {
                     User u = guild.getJDA().getUserById(tag[OWNERID]);
                     if(u!=null && guild.isMember(u))
                         return tag;
-                    return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag does not belong to a user on this server."};
+                    return null;
+                    //return new String[]{tag[OWNERID],tag[TAGNAME],SpConst.WARNING+"This tag does not belong to a user on this server."};
                 }
                 return tag.clone();
             }
@@ -71,7 +67,7 @@ public class Tags extends DataSource{
         {
             for(String[] tag: data.values())
             {
-                if(tag[TAGNAME].toLowerCase().contains(search) && (nsfw || !isNSFW(tag)))
+                if(tag[TAGNAME].toLowerCase().contains(search) && (nsfw || !JagTag.isNSFWTag(tag)))
                 {
                     if(local && guild!=null)
                     {
@@ -92,7 +88,7 @@ public class Tags extends DataSource{
         ArrayList<String> results = new ArrayList<>();
         synchronized(data)
         {
-            data.values().stream().filter((tag) -> (tag[OWNERID].equals(owner.getId()) && (nsfw || !isNSFW(tag))))
+            data.values().stream().filter((tag) -> (tag[OWNERID].equals(owner.getId()) && (nsfw || !JagTag.isNSFWTag(tag))))
                 .forEach((tag) -> {
                 results.add(tag[TAGNAME]);
             });
@@ -108,10 +104,4 @@ public class Tags extends DataSource{
     final public static int OWNERID   = 0;
     final public static int TAGNAME   = 1;
     final public static int CONTENTS  = 2;
-    
-    public static boolean isNSFW(String[] tag)
-    {
-        return tag[CONTENTS].toLowerCase().contains("{nsfw}");
-    }
-    
 }

@@ -17,10 +17,7 @@ package spectra.utils;
 
 import java.util.Arrays;
 import java.util.List;
-import net.dv8tion.jda.entities.Message;
-import net.dv8tion.jda.entities.Role;
-import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.entities.*;
 import spectra.SpConst;
 
 /**
@@ -128,6 +125,16 @@ public class FormatUtil {
     public static String listOfRoles(List<Role> list, String query)
     {
         String out = String.format(SpConst.MULTIPLE_FOUND, "roles", query);
+        for(int i=0; i<6 && i<list.size(); i++)
+            out+="\n - "+list.get(i).getName()+" (ID:"+list.get(i).getId()+")";
+        if(list.size()>6)
+            out+="\n**And "+(list.size()-6)+" more...**";
+        return out;
+    }
+    
+    public static String listOfGuilds(List<Guild> list, String query)
+    {
+        String out = String.format(SpConst.MULTIPLE_FOUND, "servers", query);
         for(int i=0; i<6 && i<list.size(); i++)
             out+="\n - "+list.get(i).getName()+" (ID:"+list.get(i).getId()+")";
         if(list.size()>6)

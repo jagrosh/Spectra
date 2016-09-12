@@ -44,6 +44,7 @@ public class SpecialCase {
         Gathering Hall, via the ranks they give to Neko (Means "Cat") Bot.
     */
     private static final String NEKO_ID = "196047400811495424";
+    private static final String FUNKY_ID = "210843560776302592";
     private static final String MHGH_ID = "120889695658967041";
     private static final String MEMBER = "144284726738288641";
     private static final String[] HR_ROLES = new String[]{
@@ -54,7 +55,7 @@ public class SpecialCase {
     };
     public static void giveMonsterHunterRole(PrivateMessageReceivedEvent event)
     {
-        if(!event.getAuthor().getId().equals(NEKO_ID))
+        if(!event.getAuthor().getId().equals(NEKO_ID) && !event.getAuthor().getId().equals(FUNKY_ID))
             return;
         String[] parts = event.getMessage().getRawContent().split(":");
         User user = event.getJDA().getUserById(parts[0]);

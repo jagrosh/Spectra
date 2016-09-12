@@ -29,7 +29,9 @@ import spectra.JagTag;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.Spectra;
 import spectra.datasources.Feeds;
+import spectra.datasources.LocalTags;
 import spectra.datasources.Overrides;
 import spectra.datasources.Settings;
 import spectra.datasources.Tags;
@@ -40,15 +42,17 @@ import spectra.datasources.Tags;
  */
 public class Tag extends Command{
     private final Tags tags;
-    private final Overrides overrides;
+    private final LocalTags localtags;
     private final Settings settings;
     private final FeedHandler handler;
-    public Tag(Tags tags, Overrides overrides, Settings settings, FeedHandler handler)
+    private final Spectra spectra;
+    public Tag(Tags tags, LocalTags localtags, Settings settings, FeedHandler handler, Spectra spectra)
     {
         this.tags = tags;
-        this.overrides = overrides;
+        this.localtags = localtags;
         this.settings = settings;
         this.handler = handler;
+        this.spectra = spectra;
         this.command = "tag";
         this.aliases = new String[]{"t"};
         this.help = "displays a tag; tag commands (try `"+SpConst.PREFIX+"tag help`)";
@@ -62,6 +66,7 @@ public class Tag extends Command{
         };
         this.children = new Command[]{
             new TagCreate(),
+            new TagCreateGlobal(),
             new TagDelete(),
             new TagEdit(),
             new TagList(),
@@ -70,34 +75,32 @@ public class Tag extends Command{
             new TagRaw(),
             new TagRaw2(),
             new TagSearch(),
+            
             new TagOverride(),
-            new TagRestore(),
+            
             new TagImport(),
+            new TagMirror(),
             new TagMode(),
-            new TagUnimport()
+            new TagUnimport(),
+            new TagUnmirror()
         };
     }
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) 
     {
         String tagname = (String)(args[0]);
-        String tagargs = args[1]==null?null:(String)(args[1]);
+        String tagargs = args[1]==null ? null :(String)(args[1]);
         boolean local = false;
         boolean nsfw = JagTag.isNSFWAllowed(event);
         if(!event.isPrivate())
             local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-        
-        String[] tag = null;
-        if(!event.isPrivate())
-            tag = overrides.findTag(event.getGuild(), tagname, nsfw);
-        if(tag==null)
-            tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
+        String[] tag = spectra.findTag(tagname,event.getGuild(),local,nsfw);
         if(tag==null)
         {
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
             return false;
         }
-        Sender.sendResponse("\u200B"+JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event);
+        Sender.sendResponse("\u200B"+JagTag.convertText(JagTag.getContents(tag), tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event);
         return true;
     }
     
@@ -108,18 +111,18 @@ public class Tag extends Command{
         {
             this.command = "create";
             this.aliases= new String[]{"add"};
-            this.help = "saves a tag for later recollection";
-            this.longhelp = "This command creates a new tag (if it doesn't exist). This "
+            this.help = "saves a local tag for later recollection";
+            this.longhelp = "This command creates a new local tag for the current guild (if the tag doesn't exist). This "
                     + "tag is owned by the creator, and can only be edited or deleted by that user. "
-                    + "Note: Anyone found creating offensive or not-safe-for-work tags (without marking "
-                    + "them as NSFW using proper JagTag notation) is at risk of being blacklisted from "
-                    + "using "+SpConst.BOTNAME;
+                    + "Note: Anyone found creating offensive or not-safe-for-work tags is at risk of being "
+                    + "blacklisted from using "+SpConst.BOTNAME;
             //this.longhelp = "";
             this.arguments = new Argument[]{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true,1,80),
                 new Argument("tag contents",Argument.Type.LONGSTRING,true)
             };
-            this.cooldown = 60;
+            this.availableInDM = false;
+            this.cooldown = 90;
             this.cooldownKey = (event) -> {return event.getAuthor().getId()+"tagcreate";};
         }
         @Override
@@ -127,21 +130,71 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             String contents = (String)(args[1]);
-            String[] tag = tags.findTag(tagname);
+            boolean local = false;
+            if(!event.isPrivate())
+                local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+            String[] tag = spectra.findTag(tagname, event.getGuild(), local, false);
             if(tag==null)//good to make it
             {
-                tags.set(new String[]{
-                event.getAuthor().getId(),
-                tagname,
-                contents
-                });
+                tag = new String[localtags.getSize()];
+                tag[LocalTags.OWNERID] = event.getAuthor().getId();
+                tag[LocalTags.GUILDID] = event.getGuild().getId();
+                tag[LocalTags.TAGNAME] = tagname;
+                tag[LocalTags.CONTENTS] = contents;
+                localtags.set(tag);
+                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" created for "+event.getGuild().getName()+".", event);
+                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") created local tag **"+tagname+"** ");
+                return true;
+            }
+            else
+            {
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+tag[Tags.TAGNAME]+"\" already exists.", event);
+                return false;
+            }
+        }
+    }
+    
+    private class TagCreateGlobal extends Command
+    {
+        private TagCreateGlobal()
+        {
+            this.command = "createglobal";
+            this.aliases= new String[]{"addglobal","creategeneric"};
+            this.help = "saves a global tag for later recollection";
+            this.longhelp = "This command creates a new global tag. This "
+                    + "tag is owned by the creator, and can only be edited or deleted by that user. "
+                    + "Note: Anyone found creating offensive or not-safe-for-work tags is at risk of "
+                    + "being blacklisted from using "+SpConst.BOTNAME;
+            //this.longhelp = "";
+            this.arguments = new Argument[]{
+                new Argument("tagname",Argument.Type.SHORTSTRING,true,1,80),
+                new Argument("tag contents",Argument.Type.LONGSTRING,true)
+            };
+            this.availableInDM = false;
+            this.cooldown = 300;
+            this.cooldownKey = (event) -> {return event.getAuthor().getId()+"tagcreate";};
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event)
+        {
+            String tagname = (String)(args[0]);
+            String contents = (String)(args[1]);
+            String[] tag = spectra.findTag(tagname, event.getGuild(), false, false);
+            if(tag==null)//good to make it
+            {
+                tag = new String[tags.getSize()];
+                tag[Tags.OWNERID] = event.getAuthor().getId();
+                tag[Tags.TAGNAME] = tagname;
+                tag[Tags.CONTENTS] = contents;
+                localtags.set(tag);
                 Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" created successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
                 });
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 
-                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") created tag **"+tagname+"** "
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") created global tag **"+tagname+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
@@ -172,7 +225,7 @@ public class Tag extends Command{
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
             String tagname = (String)(args[0]);
-            String[] tag = tags.findTag(tagname);
+            String[] tag = spectra.findTag(tagname,event.getGuild(),false,true);
             if(tag==null)//nothing to edit
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
@@ -180,13 +233,22 @@ public class Tag extends Command{
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
-                tagname = tag[Tags.TAGNAME];
-                tags.removeTag(tag[Tags.TAGNAME]);
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event);
+                boolean global = tag.length==3;
+                if(global)
+                    tags.removeTag(tag[Tags.TAGNAME]);
+                else
+                {
+                    localtags.removeTag(tag[LocalTags.TAGNAME],tag[LocalTags.GUILDID]);
+                }
+                Sender.sendResponse(SpConst.SUCCESS+(global ? "Global tag" : "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)")+" \""+tag[Tags.TAGNAME]+"\" deleted successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
-                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
-                    guildlist.add(g);
-                });
+                if(global)
+                    event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
+                        guildlist.add(g);
+                    });
+                else
+                    guildlist.add(event.getJDA().getGuildById(tag[LocalTags.GUILDID]));
+                
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted tag **"+tagname+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
@@ -194,12 +256,14 @@ public class Tag extends Command{
             }
             else
             {
+                boolean global = tag.length==3;
                 String owner;
-                User u = event.getJDA().getUserById(tag[Tags.OWNERID]);
+                String ownerid = tag[global ? Tags.OWNERID : LocalTags.OWNERID];
+                User u = event.getJDA().getUserById(ownerid);
                 if(u!=null)
                     owner = "**"+u.getUsername()+"**";
-                //else if(tag[Tags.OWNERID].startsWith("g"))
-                    //owner = "the server *"+event.getGuild().getName()+"*";
+                else if(tag[Tags.OWNERID].startsWith("g"))
+                    owner = "the server *"+event.getJDA().getGuildById(ownerid.substring(1)).getName()+"*";
                 else
                     owner = "an unknown user (ID:"+tag[Tags.OWNERID]+")";
                 Sender.sendResponse(SpConst.ERROR+"You cannot delete tag \""+tag[Tags.TAGNAME]+"\" because it belongs to **"+owner+"**", event);
@@ -226,7 +290,7 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             String contents = (String)(args[1]);
-            String[] tag = tags.findTag(tagname);
+            String[] tag = spectra.findTag(tagname, event.getGuild(), false, true);
             if(tag==null)//nothing to edit
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
@@ -234,13 +298,28 @@ public class Tag extends Command{
             }
             else if(tag[Tags.OWNERID].equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
-                tagname = tag[Tags.TAGNAME];
-                tags.set(new String[]{
-                tag[Tags.OWNERID],
-                tag[Tags.TAGNAME],
-                contents
-                });
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" edited successfully.", event);
+                boolean global = tag.length==3;
+                if(global)
+                {
+                    tagname = tag[Tags.TAGNAME];
+                    tags.set(new String[]{
+                    tag[Tags.OWNERID],
+                    tagname,
+                    contents
+                    });
+                }
+                else
+                {
+                    tagname = tag[LocalTags.TAGNAME];
+                    localtags.set(new String[]{
+                        tag[LocalTags.OWNERID],
+                        tag[LocalTags.GUILDID],
+                        tagname,
+                        contents
+                    });
+                }
+                
+                Sender.sendResponse(SpConst.SUCCESS+(global ? "Global tag" : "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)")+" \""+tag[Tags.TAGNAME]+"\" edited successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
                     guildlist.add(g);
@@ -252,12 +331,14 @@ public class Tag extends Command{
             }
             else
             {
+                boolean global = tag.length==3;
                 String owner;
-                User u = event.getJDA().getUserById(tag[Tags.OWNERID]);
+                String ownerid = tag[global ? Tags.OWNERID : LocalTags.OWNERID];
+                User u = event.getJDA().getUserById(ownerid);
                 if(u!=null)
                     owner = "**"+u.getUsername()+"**";
-                //else if(tag[Tags.OWNERID].startsWith("g"))
-                    //owner = "the server *"+event.getGuild().getName()+"*";
+                else if(tag[Tags.OWNERID].startsWith("g"))
+                    owner = "the server *"+event.getJDA().getGuildById(ownerid.substring(1)).getName()+"*";
                 else
                     owner = "an unknown user (ID:"+tag[Tags.OWNERID]+")";
                 Sender.sendResponse(SpConst.ERROR+"You cannot edit tag \""+tag[Tags.TAGNAME]+"\" because it belongs to **"+owner+"**", event);
@@ -291,10 +372,15 @@ public class Tag extends Command{
             ArrayList<String> taglist = tags.findTagsByOwner(user, nsfw);
             Collections.sort(taglist);
             StringBuilder builder;
-            builder = new StringBuilder(SpConst.SUCCESS+taglist.size()+" tags owned by **"+user.getUsername()+"**: \n");
-            taglist.stream().forEach((tag) -> {
-                builder.append(tag).append(" ");
-            });
+            builder = new StringBuilder(SpConst.SUCCESS+taglist.size()+" tags owned by **"+user.getUsername()+"**:\n");
+            taglist.stream().forEach((tag) -> builder.append(tag).append(" "));
+            if(!event.isPrivate())
+            {
+                ArrayList<String> localtaglist = localtags.findTagsByOwner(user, event.getGuild(), nsfw);
+                Collections.sort(localtaglist);
+                builder.append("\n" + SpConst.SUCCESS).append(localtaglist.size()).append(" tags on *").append(event.getGuild().getName()).append("*:\n");
+                localtaglist.stream().forEach((tag) -> builder.append(tag).append(" "));
+            }
             Sender.sendResponse(builder.toString(), event);
             return true;
         }
@@ -317,22 +403,20 @@ public class Tag extends Command{
         protected boolean execute(Object[] args, MessageReceivedEvent event)
         {
             String tagname = (String)(args[0]);
-            String[] tag = null;
-            if(!event.isPrivate())
-                tag = overrides.findTag(event.getGuild(), tagname, true);
-            if(tag==null)
-                tag = tags.findTag(tagname, event.getGuild(), false, true);
+            String[] tag = spectra.findTag(tagname, event.getGuild(), false, true);
             if(tag==null)
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
+            boolean global = tag.length==3;
             String owner;
-            User u = event.getJDA().getUserById(tag[Tags.OWNERID]);
+            String ownerid = tag[global ? Tags.OWNERID : LocalTags.OWNERID];
+            User u = event.getJDA().getUserById(ownerid);
             if(u!=null)
                 owner = "**"+u.getUsername()+"** #"+u.getDiscriminator();
             else if(tag[Tags.OWNERID].startsWith("g"))
-                owner = "the server *"+event.getGuild().getName()+"*";
+                owner = "the server *"+event.getJDA().getGuildById(ownerid.substring(1)).getName()+"*";
             else
                 owner = "an unknown user (ID:"+tag[Tags.OWNERID]+")";
             Sender.sendResponse("Tag \""+tag[Tags.TAGNAME]+"\" belongs to "+owner, event);
@@ -362,12 +446,18 @@ public class Tag extends Command{
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             List<String[]> taglist = tags.findTags(null, event.getGuild(), local, nsfw);
-            if(taglist.isEmpty())
+            List<String[]> taglist2;
+            if(!event.isPrivate())
+                taglist2 = localtags.findTags(null, event.getGuild(), nsfw);
+            else
+                taglist2 = new ArrayList<>();
+            if(taglist.isEmpty() && taglist2.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"No tags found!", event);
                 return false;
             }
-            String[] tag = taglist.get((int)(Math.random()*taglist.size()));
+            int num = (int)( Math.random() * (taglist.size()+taglist2.size()) );
+            String[] tag = num<taglist.size() ? taglist.get(num) : taglist2.get(num - taglist.size());
             Sender.sendResponse("Tag \""+tag[Tags.TAGNAME]+"\":\n"
                     +JagTag.convertText(tag[Tags.CONTENTS], tagargs, event.getAuthor(), event.getGuild(), event.getChannel()),
                     event);
@@ -396,11 +486,7 @@ public class Tag extends Command{
             boolean nsfw = JagTag.isNSFWAllowed(event);
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-            String[] tag = null;
-            if(!event.isPrivate())
-                tag = overrides.findTag(event.getGuild(), tagname, nsfw);
-            if(tag==null)
-                tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
+            String[] tag = spectra.findTag(tagname,event.getGuild(),local,nsfw);
             if(tag==null)
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
@@ -416,6 +502,7 @@ public class Tag extends Command{
         private TagRaw2()
         {
             this.command = "raw2";
+            this.aliases = new String[]{"code"};
             this.help = "shows the raw tag text in a code block";
             this.longhelp = "This command shows the contents of a tag without "
                     + "interpretting any of the scripting. It also puts it in a "
@@ -433,11 +520,7 @@ public class Tag extends Command{
             boolean nsfw = JagTag.isNSFWAllowed(event);
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-            String[] tag = null;
-            if(!event.isPrivate())
-                tag = overrides.findTag(event.getGuild(), tagname, nsfw);
-            if(tag==null)
-                tag = tags.findTag(tagname, event.getGuild(), local, nsfw);
+            String[] tag = spectra.findTag(tagname,event.getGuild(),local,nsfw);
             if(tag==null)
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
@@ -473,20 +556,29 @@ public class Tag extends Command{
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             List<String[]> taglist = tags.findTags(query, event.getGuild(), local, nsfw);
-            if(taglist.isEmpty())
+            List<String[]> taglist2;
+            if(event.isPrivate())
+                taglist2 = new ArrayList<>();
+            else
+                taglist2 = localtags.findTags(query, event.getGuild(), nsfw);
+            if(taglist.isEmpty() && taglist2.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"No tags found matching \""+query+"\"!", event);
                 return false;
             }
-            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(taglist.size()).append(" tags found");
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(taglist.size()+taglist2.size()).append(" tags found");
             if(query!=null)
                 builder.append(" containing \"").append(query).append("\"");
             builder.append(":\n");
-            if(taglist.size()<100)
-                Collections.sort(taglist, (a,b)->{return a[Tags.TAGNAME].compareTo(b[Tags.TAGNAME]);});
-            taglist.stream().forEach((tag) -> {
-                builder.append(tag[Tags.TAGNAME]).append(" ");
-            });
+            if(taglist.size()+taglist2.size()<100)
+            {
+                List<String> allresults = new ArrayList<>();
+                taglist.stream().forEach(t -> allresults.add(t[Tags.TAGNAME]));
+                taglist2.stream().forEach(t -> allresults.add(t[LocalTags.TAGNAME]));
+                Collections.sort(allresults);
+            }
+            taglist.stream().forEach((tag) -> builder.append(tag[Tags.TAGNAME]).append(" "));
+            taglist2.stream().forEach((tag) -> builder.append(tag[LocalTags.TAGNAME]).append(" "));
             Sender.sendResponse(builder.toString(),event);
             return true;
         }
@@ -498,7 +590,7 @@ public class Tag extends Command{
         {
             this.command = "override";
             this.help = "creates an override for the current server";
-            this.longhelp = "This command overrides a tag on the server. This can be used "
+            this.longhelp = "This command overrides or deletes local tags on the server. This can be used "
                     + "to \"disable\" unwanted tags, or to use an existing tag for something else.";
             //this.longhelp = "";
             this.arguments = new Argument[]{
@@ -518,9 +610,8 @@ public class Tag extends Command{
             String contents = args[1]==null?null:(String)(args[1]);
             if(contents==null)
                 contents = "This tag was removed by **"+event.getAuthor().getUsername()+"**";
-            String[] tag = overrides.findTag(event.getGuild(), tagname, true);
-            if(tag==null)
-                tag = tags.findTag(tagname);
+            boolean local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+            String[] tag = spectra.findTag(tagname, event.getGuild(), local, false);
             if(tag==null)//nothing to edit
             {
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
@@ -528,13 +619,43 @@ public class Tag extends Command{
             }
             else
             {
-                tagname = tag[Tags.TAGNAME];
-                overrides.setTag(new String[]{"g"+event.getGuild().getId(),tag[Overrides.TAGNAME],contents});
-                Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event);
-                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
-                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode tag **"+tagname
-                                +"** on **"+event.getGuild().getName()+"**");
-                return true;
+                if(tag.length==3)//global
+                {
+                    String[] newtag = new String[localtags.getSize()];
+                    newtag[LocalTags.GUILDID] = event.getGuild().getId();
+                    newtag[LocalTags.OWNERID] = "g"+event.getGuild().getId();
+                    newtag[LocalTags.TAGNAME] = tagname;
+                    newtag[LocalTags.CONTENTS] = contents;
+                    localtags.set(newtag);
+                    Sender.sendResponse(SpConst.SUCCESS+"Global tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event);
+                    handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode global tag **"+tag[Tags.TAGNAME]+"**");
+                    return true;
+                }
+                else
+                {
+                    if(tag[LocalTags.OWNERID].equals("g"+event.getGuild().getId()) && args[1]==null)//delete
+                    {
+                        localtags.removeTag(tagname, event.getGuild().getId());
+                        Sender.sendResponse(SpConst.SUCCESS+"Local tag \""+tag[Tags.TAGNAME]+"\" deleted.", event);
+                        handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                            "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted local tag **"+tag[Tags.TAGNAME]+"**");
+                        return true;
+                    }
+                    else
+                    {
+                        String[] newtag = new String[localtags.getSize()];
+                        newtag[LocalTags.GUILDID] = event.getGuild().getId();
+                        newtag[LocalTags.OWNERID] = "g"+event.getGuild().getId();
+                        newtag[LocalTags.TAGNAME] = tag[LocalTags.TAGNAME];
+                        newtag[LocalTags.CONTENTS] = contents;
+                        localtags.set(newtag);
+                        Sender.sendResponse(SpConst.SUCCESS+"Local tag \""+tag[Tags.TAGNAME]+"\" overriden successfully.", event);
+                        handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                            "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode local tag **"+tag[Tags.TAGNAME]+"**");
+                        return true;
+                    }
+                }
             }
         }
         
@@ -551,7 +672,7 @@ public class Tag extends Command{
             @Override
             protected boolean execute(Object[] args, MessageReceivedEvent event)
             {
-                List<String> list = overrides.findGuildTags(event.getGuild());
+                List<String> list = localtags.findTagsByGuild(event.getGuild(), true);
                 if(list.isEmpty())
                     Sender.sendResponse(SpConst.WARNING+"No tags have been overriden on **"+event.getGuild().getName()+"**", event);
                 else
@@ -568,7 +689,7 @@ public class Tag extends Command{
         }
     }
     
-    private class TagRestore extends Command
+    /*private class TagRestore extends Command
     {
         private TagRestore()
             {
@@ -601,7 +722,7 @@ public class Tag extends Command{
                 return true;
             }
         }
-    }
+    }*/
     
     private class TagMode extends Command 
     {
@@ -663,9 +784,8 @@ public class Tag extends Command{
                     found = true;
             if(!found)
             {
-                String[] tag = overrides.findTag(event.getGuild(), tagname, true);
-                if(tag==null)
-                    tag = tags.findTag(tagname);
+                boolean local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
+                String[] tag = spectra.findTag(tagname, event.getGuild(), local, true);
                 if(tag==null)//nothing to import
                 {
                     Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
@@ -673,9 +793,13 @@ public class Tag extends Command{
                 }
                 else
                 {
-                    tagname = tag[Tags.TAGNAME];
+                    tagname = tag.length==3 ? tag[Tags.TAGNAME] : tag[LocalTags.TAGNAME];
                     String cmds = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
-                    settings.setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds==null?tag[Tags.TAGNAME]:cmds+" "+tag[Tags.TAGNAME]);
+                    if(cmds==null || cmds.equals(""))
+                        cmds = tagname;
+                    else
+                        cmds+=" "+tagname;
+                    settings.setSetting(event.getGuild().getId(), Settings.TAGIMPORTS, cmds);
                     Sender.sendResponse(SpConst.SUCCESS+"Tag \""+tagname+"\" has been added a tag command", event);
                     handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
                         "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") imported tag **"+tagname
@@ -759,6 +883,180 @@ public class Tag extends Command{
             }
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" is not currently a tag command!", event);
             return false;
+        }
+    }
+    
+    private class TagMirror extends Command
+    {
+        private TagMirror()
+            {
+                this.command = "mirror";
+                this.help = "allows the curent server to use all local tags from the provided server";
+                this.longhelp = "This command allows the current server to \"mirror\" all tags from the provided server. "
+                        + "This means that calling a tag here can use the version from any mirrored servers if the local version "
+                        + "does not exist for this server.";
+                this.arguments = new Argument[]{
+                    new Argument("servername",Argument.Type.GUILD,true),
+                };
+                this.children = new Command[]{
+                    new TagMirrorList()
+                };
+                this.level = PermLevel.ADMIN;
+                this.availableInDM = false;
+            }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            Guild mirror = (Guild)(args[0]);
+            String[] mirrors = Settings.tagMirrorsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMIRRORS]);
+            boolean found = false;
+            for(String mid : mirrors)
+                if(mid.equalsIgnoreCase(mirror.getId()))
+                    found = true;
+            if(!found)
+            {
+                String mrrs = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMIRRORS];
+                if(mrrs==null || mrrs.equals(""))
+                    mrrs = mirror.getId();
+                else
+                    mrrs+=" "+mirror.getId();
+                settings.setSetting(event.getGuild().getId(), Settings.TAGMIRRORS, mrrs);
+                Sender.sendResponse(SpConst.SUCCESS+"Now mirroring tags from **"+mirror.getName()+"**", event);
+                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") added the server **"+mirror.getName()
+                        +"** as a tag mirror.");
+                return true;
+            }
+            Sender.sendResponse(SpConst.ERROR+"Server **"+mirror.getName()+"** is already mirrored!", event);
+            return false;
+        }
+        private class TagMirrorList extends Command
+        {
+            private TagMirrorList()
+            {
+                this.command = "list";
+                this.help = "lists tag mirrors on the current server";
+                this.longhelp = "This command shows the list of servers that have their tags mirrored onto the server.";
+                this.level = PermLevel.MODERATOR;
+                this.availableInDM = false;
+            }
+            @Override
+            protected boolean execute(Object[] args, MessageReceivedEvent event)
+            {
+                String[] mirrorlist= Settings.tagMirrorsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMIRRORS]);
+                if(mirrorlist.length==0)
+                {
+                    Sender.sendResponse(SpConst.WARNING+"No tag mirrors have been set up on **"+event.getGuild().getName()+"**", event);
+                    return true;
+                }
+                StringBuilder builder = new StringBuilder(SpConst.SUCCESS+mirrorlist.length+" tag mirrors on **"+event.getGuild().getName()+"**:");
+                for(String id: mirrorlist)
+                {
+                    Guild g = event.getJDA().getGuildById(id);
+                    if(g==null)
+                        continue;
+                    builder.append("\n").append(g.getName());
+                }
+                Sender.sendResponse(builder.toString(), event);
+                return true;
+            }
+        }
+    }
+    
+    private class TagUnmirror extends Command
+    {
+        private TagUnmirror()
+            {
+                this.command = "unmirror";
+                this.help = "un-mirrors a server";
+                this.longhelp = "This command un-mirrors a server, so its tags are no longer available on the current server.";
+                this.arguments = new Argument[]{
+                    new Argument("servername",Argument.Type.GUILD,true),
+                };
+                this.level = PermLevel.ADMIN;
+                this.availableInDM = false;
+            }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            Guild mirror = (Guild)(args[0]);
+            String[] mirrorlist= Settings.tagMirrorsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMIRRORS]);
+            boolean found = false;
+            StringBuilder builder = new StringBuilder();
+            for(String gid : mirrorlist)
+            {
+                if(gid.equalsIgnoreCase(mirror.getId()))
+                    found = true;
+                else if(event.getJDA().getGuildById(gid)!=null)
+                    builder.append(gid).append(" ");
+            }
+            if(found)
+            {
+                settings.setSetting(event.getGuild().getId(), Settings.TAGMIRRORS, builder.toString().trim());
+                Sender.sendResponse(SpConst.SUCCESS+"Server **"+mirror.getName()+"** is no longer mirrored", event);
+                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") removed the server **"+mirror.getName()
+                                +"** from tag mirrors.");
+                return true;
+            }
+            Sender.sendResponse(SpConst.ERROR+"The server **"+mirror.getName()+"** is not currently mirrored!", event);
+            return false;
+        }
+    }
+    
+    private class TagPull extends Command
+    {
+        private TagPull()
+        {
+            this.command = "pull";
+            this.help = "converts global tags to local tags";
+            this.longhelp = "Converts all tags in the given list (that belong to the user) from global tags to local tags for the current server.";
+            this.availableInDM = false;
+            this.arguments = new Argument[]{
+                new Argument("tag(s)",Argument.Type.LONGSTRING,true)
+            };
+        }
+
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String[] taglist = ((String)(args[0])).split("\\s+");
+            StringBuilder success = new StringBuilder();
+            StringBuilder notFound = new StringBuilder();
+            StringBuilder notOwn = new StringBuilder();
+            StringBuilder failure = new StringBuilder();
+            for(String tagname: taglist)
+            {
+                String[] tag = tags.findTag(tagname, null, false, true);
+                if(tag==null)
+                    notFound.append(tagname).append(" ");
+                else if(!tag[Tags.OWNERID].equals(event.getAuthor().getId()))
+                    notOwn.append(tag[Tags.TAGNAME]).append(" ");
+                else if(localtags.findTag(tagname, event.getGuild(), true)!=null)
+                    failure.append(tag[Tags.TAGNAME]).append(" ");
+                else
+                {
+                    String[] newTag = new String[localtags.getSize()];
+                    newTag[LocalTags.TAGNAME] = tag[Tags.TAGNAME];
+                    newTag[LocalTags.OWNERID] = tag[Tags.OWNERID];
+                    newTag[LocalTags.GUILDID] = event.getGuild().getId();
+                    newTag[LocalTags.CONTENTS] = tag[Tags.CONTENTS];
+                    localtags.set(newTag);
+                    tags.removeTag(tagname);
+                    success.append(tag[Tags.TAGNAME]).append(" ");
+                }
+            }
+            String out = "";
+            if(success.length()>0)
+                out+=SpConst.SUCCESS+"The following tags were successfully pulled to **"+event.getGuild().getName()+"**:\n"+success.toString();
+            if(notFound.length()>0)
+                out+="\n\n"+SpConst.WARNING+"The following tags were not found:\n"+notFound.toString();
+            if(notOwn.length()>0)
+                out+="\n\n"+SpConst.ERROR+"You do not own, and cannot pull, the following tags:\n"+notOwn.toString();
+            if(failure.length()>0)
+                out+="\n\n"+SpConst.ERROR+"The following tags already exist on the server:\n"+failure.toString();
+            Sender.sendResponse(out.trim(), event);
+            if(success.length()>0)
+                handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") pulled tags:\n"+success.toString());
+            return true;
         }
     }
 }

@@ -28,7 +28,7 @@ public class Settings extends DataSource {
     public Settings()
     {
         filename = "discordbot.serversettings";
-        size = 12;
+        size = 13;
         generateKey = (item) -> {return item[SERVERID];};
     }
 
@@ -54,7 +54,8 @@ public class Settings extends DataSource {
             "", // ignore list
             "hug hi5 pat punch btth 8ball choose meme rate ship", // tag commands
             "global", // tag mode
-            "" //autorole
+            "", //autorole
+            "" //tag mirrors
         };
         synchronized(data)
         {
@@ -99,6 +100,13 @@ public class Settings extends DataSource {
         return tagCommandList.trim().split("\\s+");
     }
     
+    public static String[] tagMirrorsFromList(String tagMirrorList)
+    {
+        if(tagMirrorList==null || tagMirrorList.trim().equals(""))
+            return new String[0];
+        return tagMirrorList.trim().split("\\s+");
+    }
+    
     //returns an id or null in the first index, and the message in the second
     public static String[] parseWelcomeMessage(String message)
     {
@@ -126,4 +134,5 @@ public class Settings extends DataSource {
     final public static int TAGIMPORTS = 9;
     final public static int TAGMODE    = 10;
     final public static int AUTOROLE   = 11;
+    final public static int TAGMIRRORS = 12;
 }

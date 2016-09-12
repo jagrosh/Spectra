@@ -29,6 +29,8 @@ import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import spectra.datasources.LocalTags;
+import spectra.datasources.Tags;
 import spectra.utils.FinderUtil;
 import spectra.utils.FormatUtil;
 
@@ -401,5 +403,18 @@ public class JagTag {
         if(event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().toLowerCase().contains("{nsfw}"))
             return true;
         return false;
+    }
+    
+    public static String getContents(String[] tag)
+    {
+        if(tag.length==3)
+            return tag[Tags.CONTENTS];
+        else
+            return tag[LocalTags.CONTENTS];
+    }
+    
+    public static boolean isNSFWTag(String[] tag)
+    {
+        return getContents(tag).toLowerCase().contains("{nsfw}");
     }
 }

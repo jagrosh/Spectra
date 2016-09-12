@@ -266,9 +266,9 @@ public class FinderUtil {
         if(query.matches("[Ii][Dd]\\s*:\\s*\\d+"))
         {
             id = query.replaceAll("[Ii][Dd]\\s*:\\s*(\\d+)", "$1");
-            for(Role role: guild.getRoles())
-                if(role.getId().equals(id))
-                    return Collections.singletonList(role);
+            Role r = guild.getRoleById(id);
+            if(r!=null)
+                return Collections.singletonList(r);
         }
         ArrayList<Role> exact = new ArrayList<>();
         ArrayList<Role> wrongcase = new ArrayList<>();
@@ -284,6 +284,40 @@ public class FinderUtil {
                 startswith.add(role);
             else if (role.getName().toLowerCase().contains(lowerQuery) && startswith.isEmpty())
                 contains.add(role);
+        });
+        if(!exact.isEmpty())
+            return exact;
+        if(!wrongcase.isEmpty())
+            return wrongcase;
+        if(!startswith.isEmpty())
+            return startswith;
+        return contains;
+    }
+    
+    public static List<Guild> findGuild(String query, JDA jda)
+    {
+        String id;
+        if(query.matches("[Ii][Dd]\\s*:\\s*\\d+"))
+        {
+            id = query.replaceAll("[Ii][Dd]\\s*:\\s*(\\d+)", "$1");
+            Guild g = jda.getGuildById(id);
+            if(g!=null)
+                return Collections.singletonList(g);
+        }
+        ArrayList<Guild> exact = new ArrayList<>();
+        ArrayList<Guild> wrongcase = new ArrayList<>();
+        ArrayList<Guild> startswith = new ArrayList<>();
+        ArrayList<Guild> contains = new ArrayList<>();
+        String lowerQuery = query.toLowerCase();
+        jda.getGuilds().stream().forEach((guild) -> {
+            if(guild.getName().equals(query))
+                exact.add(guild);
+            else if (guild.getName().equalsIgnoreCase(query) && exact.isEmpty())
+                wrongcase.add(guild);
+            else if (guild.getName().toLowerCase().startsWith(lowerQuery) && wrongcase.isEmpty())
+                startswith.add(guild);
+            else if (guild.getName().toLowerCase().contains(lowerQuery) && startswith.isEmpty())
+                contains.add(guild);
         });
         if(!exact.isEmpty())
             return exact;
