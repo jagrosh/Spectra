@@ -86,6 +86,8 @@ public abstract class Command {
                     if(child.level!=current)
                     {
                         current = child.level;
+                        if(!perm.isAtLeast(current))
+                            break;
                         switch(current)
                         {
                             case MODERATOR:
@@ -93,6 +95,9 @@ public abstract class Command {
                                 break;
                             case ADMIN:
                                 builder.append("\n**Admin Commands**:");
+                                break;
+                            case JAGROSH:
+                                builder.append("\n**Jagrosh Commands**:");
                                 break;
                         }
                     }

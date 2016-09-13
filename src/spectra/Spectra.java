@@ -199,7 +199,7 @@ public class Spectra extends ListenerAdapter {
             new Server(settings),
             new Speakerphone(phones),
             new Stats(statistics),
-            new Tag(tags, localtags, settings, handler, this),
+            new Tag(tags, localtags, overrides, settings, handler, this),
             new Timefor(profiles),
             new WelcomeGuide(guides),
             new YoutubeSearch(youtubesearcher),
