@@ -413,6 +413,22 @@ public class JagTag {
             return tag[LocalTags.CONTENTS];
     }
     
+    public static String getTagname(String[] tag)
+    {
+        if(tag.length==3)
+            return tag[Tags.TAGNAME];
+        else
+            return tag[LocalTags.TAGNAME];
+    }
+    
+    public static String getOwnerId(String[] tag)
+    {
+        if(tag.length==3)
+            return tag[Tags.OWNERID];
+        else
+            return tag[LocalTags.OWNERID];
+    }
+    
     public static boolean isNSFWTag(String[] tag)
     {
         return getContents(tag).toLowerCase().contains("{nsfw}");

@@ -16,6 +16,8 @@
 package spectra.datasources;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import net.dv8tion.jda.entities.Guild;
 import spectra.DataSource;
 import spectra.JagTag;
@@ -57,6 +59,16 @@ public class Overrides extends DataSource{
             });
         }
         return results;
+    }
+    
+    public Collection<String[]> allTags()
+    {
+        synchronized(data)
+        {
+            Collection<String[]> copy = new HashSet<>();
+            copy.addAll(data.values());
+            return copy;
+        }
     }
     
     public void setTag(String[] newTag)
