@@ -1,13 +1,12 @@
 # Spectra
-Spectra is a multi-purpose, for-fun and for-utility Discord bot!<br><br>
+Spectra is a multi-purpose, for-fun and for-utility Discord bot!<br>
 
 ![poweredbyJDA](http://i.imgur.com/4Fhq6yQ.png)
 
 
 **Join Spectra Lounge:**
 
-<iframe src="https://discordapp.com/widget?id=147698382092238848&theme=dark" width="400" height="300" allowtransparency="true" frameborder="0"></iframe>
-
+[![Join Spectra Lounge](https://discordapp.com/api/guilds/147698382092238848/widget.png?style=banner2)](https://discord.gg/0p9LSGoRLu6Pet0k)
 
 **Add Spectra to your server**
 
