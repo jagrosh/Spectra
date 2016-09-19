@@ -1,7 +1,7 @@
 # Spectra
 Spectra is a multi-purpose, for-fun and for-utility Discord bot!<br>
 
-![poweredbyJDA](http://i.imgur.com/4Fhq6yQ.png)
+[![poweredbyJDA](http://i.imgur.com/4Fhq6yQ.png)](https://github.com/DV8FromTheWorld/JDA)
 
 
 **Join Spectra Lounge:**
