@@ -137,7 +137,7 @@ public class Rooms extends DataSource{
         for(String id : allIds)
         {
             TextChannel tc = jda.getTextChannelById(id);
-            if(tc==null || !PermissionUtil.checkPermission(tc, jda.getSelfInfo(), Permission.MESSAGE_HISTORY, Permission.MESSAGE_READ))
+            if(tc==null || !PermissionUtil.checkPermission(tc, jda.getSelfInfo(), Permission.MESSAGE_HISTORY, Permission.MESSAGE_READ, Permission.MESSAGE_WRITE))
             {
                 //Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
                 //if(guild==null)
@@ -157,7 +157,7 @@ public class Rooms extends DataSource{
                 else
                 {
                     setLastActivity(id, messages.get(0).getTime());
-                    if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("\u180E"))
+                    if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
                         setWarned(id);
                 }
             }

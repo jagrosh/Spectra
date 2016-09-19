@@ -59,7 +59,7 @@ public class Prefix extends Command {
             this.longhelp = "This command adds a prefix. Prefixes already on the list "
                     + "cannot be added. Prefixes may contain spaces and other special characters.";
             this.arguments = new Argument[]{
-                new Argument("prefix",Argument.Type.LONGSTRING,true,1,30)
+                new Argument("prefix",Argument.Type.LONGSTRING,true,1,50)
             };
             this.level = PermLevel.ADMIN;
         }

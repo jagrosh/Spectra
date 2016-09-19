@@ -17,6 +17,7 @@ package spectra.utils;
 
 import java.util.Arrays;
 import java.util.List;
+import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.entities.*;
 import spectra.SpConst;
 
@@ -140,6 +141,34 @@ public class FormatUtil {
         if(list.size()>6)
             out+="\n**And "+(list.size()-6)+" more...**";
         return out;
+    }
+    
+    public static String fullUser(User u)
+    {
+        return "**"+u.getUsername()+"** (ID:"+u.getId()+")";
+    }
+    
+    public static String shortUser(User u)
+    {
+        return "**"+u.getUsername()+"**#"+u.getDiscriminator();
+    }
+    
+    public static String byidUser(JDA jda, String id)
+    {
+        return (jda.getUserById(id)==null ? "[???]" : "**"+jda.getUserById(id).getUsername()+"**")+" (ID:"+id+")";
+    }
+    
+    public static String fullGuild(Guild g)
+    {
+        return "**"+g.getName()+"** (ID:"+g.getId()+")";
+    }
+    
+    public static String fullChannel(Channel c)
+    {
+        if(c instanceof TextChannel)
+            return "*"+c.getName()+"* (ID:"+c.getId()+")";
+        else
+            return "_"+c.getName()+"_ (ID:"+c.getId()+")";
     }
     
 }

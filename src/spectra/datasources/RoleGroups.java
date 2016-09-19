@@ -26,7 +26,7 @@ public class RoleGroups extends DataSource {
     public RoleGroups()
     {
         this.filename = "discordbot.rolegroups";
-        this.size = 3;
+        this.size = 4;
         this.generateKey = item -> item[SERVERID]+"|"+item[GROUPNAME].toLowerCase();
     }
     
@@ -43,14 +43,14 @@ public class RoleGroups extends DataSource {
         String[] item = get(guildid+"|"+groupname.toLowerCase());
         if(item==null)
         {
-            set(new String[]{guildid,groupname,id});
+            set(new String[]{guildid,groupname,id,""});
             return true;
         }
         String ids = item[IDS]==null ? "" : " "+item[IDS]+" ";
         if(ids.contains(" "+id+" "))
             return false;
         ids = (ids+id).trim();
-        set(new String[]{item[SERVERID],item[GROUPNAME],ids});
+        set(new String[]{item[SERVERID],item[GROUPNAME],ids,item[SETTINGS]});
         return true;
     }
     
@@ -65,11 +65,27 @@ public class RoleGroups extends DataSource {
             return false;
         }
         ids = ids.replace(" "+id+" ", " ").trim();
-        set(new String[]{item[SERVERID],item[GROUPNAME],ids});
+        set(new String[]{item[SERVERID],item[GROUPNAME],ids,item[SETTINGS]});
         return true;
+    }
+    
+    public void setSettings(String guildid, String groupname, String settings)
+    {
+        String[] item = get(guildid+"|"+groupname.toLowerCase());
+        if(item==null)
+            return;
+        item[SETTINGS] = settings;
+        set(item);
+    }
+    
+    public String getSettings(String guildid, String groupname)
+    {
+        String[] item = get(guildid+"|"+groupname.toLowerCase());
+        return item==null ? null : (item.length<SETTINGS+1 || item[SETTINGS]==null ? "" : item[SETTINGS]);
     }
     
     final public static int SERVERID   = 0;
     final public static int GROUPNAME = 1;
     final public static int IDS  = 2;
+    final public static int SETTINGS = 3;
 }

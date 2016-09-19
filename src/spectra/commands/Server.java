@@ -16,15 +16,24 @@
 package spectra.commands;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import net.dv8tion.jda.OnlineStatus;
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.Guild.VerificationLevel;
+import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.MiscUtil;
+import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.datasources.Settings;
+import spectra.misc.SafeEmote;
+import spectra.utils.FormatUtil;
 
 /**
  *
@@ -41,6 +50,7 @@ public class Server extends Command {
         this.longhelp = "This command provides basic information about the current server";
         this.availableInDM = false;
         this.children = new Command[]{
+            new ServerMods(),
             new ServerSettings()
         };
     }
@@ -81,7 +91,7 @@ public class Server extends Command {
         {
             this.command = "settings";
             this.help = "shows the settings on the server";
-            this.longhelp = "";
+            this.longhelp = "This command shows the settings for the current server, including welcome/leave messages, prefixes, and tag commands.";
             this.availableInDM = false;
         }
         @Override
@@ -94,6 +104,64 @@ public class Server extends Command {
             for(String prfx: Settings.prefixesFromList(current[Settings.PREFIXES]))
                 builder.append(" `").append(prfx).append("`");
             builder.append("\n").append(SpConst.LINESTART).append("**Tag Commands**: ").append(current[Settings.TAGIMPORTS]);
+            Sender.sendResponse(builder.toString(), event);
+            return true;
+        }
+    }
+    
+    private class ServerMods extends Command
+    {
+        private ServerMods()
+        {
+            this.command = "mods";
+            this.longhelp = "admins";
+            this.help = "shows mods/admins and status";
+            this.longhelp = "This command shows which mods and admins are available, sorted by status.";
+            this.availableInDM = false;
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            HashMap<String,List<User>> map = new HashMap<>();
+            String[] currentSettings = settings.getSettingsForGuild(event.getGuild().getId());
+            event.getGuild().getUsers().stream().filter(u -> !u.isBot()).forEach(u->{
+                if(PermissionUtil.checkPermission(event.getGuild(), u, Permission.MANAGE_SERVER))
+                {
+                    List<User> list = map.getOrDefault("ADMIN|"+u.getOnlineStatus().name(), new ArrayList<>());
+                    list.add(u);
+                    map.put("ADMIN|"+u.getOnlineStatus().name(), list);
+                }
+                else
+                {
+                    boolean isMod = false;
+                    if(currentSettings[Settings.MODIDS].contains(u.getId()))
+                        isMod = true;
+                    else if(event.getGuild().isMember(u))
+                    {
+                        for(Role r : event.getGuild().getRolesForUser(u))
+                            if(currentSettings[Settings.MODIDS].contains("r"+r.getId()))
+                                isMod = true;
+                    }
+                    if(isMod)
+                    {
+                        List<User> list = map.getOrDefault("MOD|"+u.getOnlineStatus().name(), new ArrayList<>());
+                        list.add(u);
+                        map.put("MOD|"+u.getOnlineStatus().name(), list);
+                    }
+                }
+            });
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Mods/Admins on **"+event.getGuild().getName()+"**:\n");
+            map.getOrDefault("ADMIN|"+OnlineStatus.ONLINE.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.ONLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
+            map.getOrDefault("MOD|"+OnlineStatus.ONLINE.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.ONLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
+            map.getOrDefault("ADMIN|"+OnlineStatus.AWAY.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.AWAY.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
+            map.getOrDefault("MOD|"+OnlineStatus.AWAY.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.AWAY.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
+            map.getOrDefault("ADMIN|"+OnlineStatus.OFFLINE.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
+            map.getOrDefault("MOD|"+OnlineStatus.OFFLINE.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
             Sender.sendResponse(builder.toString(), event);
             return true;
         }

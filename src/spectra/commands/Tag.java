@@ -254,7 +254,7 @@ public class Tag extends Command{
                     guildlist.add(event.getJDA().getGuildById(tag[LocalTags.GUILDID]));
                 
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 
-                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted tag **"+JagTag.getTagname(tag)+"** "
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted "+(tag.length==3 ? "global" : "local")+" tag **"+JagTag.getTagname(tag)+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
@@ -324,11 +324,14 @@ public class Tag extends Command{
                 
                 Sender.sendResponse(SpConst.SUCCESS+(global ? "Global tag" : "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)")+" \""+JagTag.getTagname(tag)+"\" edited successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
-                event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
-                    guildlist.add(g);
-                });
+                if(global)
+                    event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
+                        guildlist.add(g);
+                    });
+                else
+                    guildlist.add(event.getJDA().getGuildById(tag[LocalTags.GUILDID]));
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 
-                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") edited tag **"+JagTag.getTagname(tag)+"** "
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") edited "+(tag.length==3 ? "global" : "local")+" tag **"+JagTag.getTagname(tag)+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
@@ -375,7 +378,7 @@ public class Tag extends Command{
             Collections.sort(taglist);
             StringBuilder builder1;
             builder1 = new StringBuilder();
-            builder1.append(SpConst.SUCCESS).append(taglist.size()).append(" tags owned by **").append(user.getUsername()).append("**:\n");
+            builder1.append(SpConst.SUCCESS).append(taglist.size()).append(" global tags owned by **").append(user.getUsername()).append("**:\n");
             taglist.stream().forEach((tag) -> builder1.append(tag).append(" "));
             int localsize = 0;
             StringBuilder builder2 = new StringBuilder();
@@ -1098,8 +1101,7 @@ public class Tag extends Command{
             int remaining = overrides.allTags().size();
             Sender.sendResponse(SpConst.SUCCESS+"**"+(total-remaining)+"** overrides migrated (**"+remaining+"** remaining)", event);
             ArrayList<String[]> allTags = tags.findTags(null, null, false, true);
-            for(User u : event.getJDA().getUsers())
-            {
+            event.getJDA().getUsers().stream().forEach((u) -> {
                 Guild single = null;
                 int count = 0;
                 for(Guild g: event.getJDA().getGuilds())
@@ -1108,7 +1110,7 @@ public class Tag extends Command{
                         single = g;
                         count++;
                     }
-                if(count==1 && single!=null)
+                if (count==1 && single!=null) {
                     for(String[] tag : allTags)
                         if(tag[Tags.OWNERID].equals(u.getId()))
                         {
@@ -1120,7 +1122,8 @@ public class Tag extends Command{
                             tags.removeTag(tag[Tags.TAGNAME]);
                             localtags.set(newTag);
                         }
-            }
+                }
+            });
             int count = allTags.size() - tags.findTags(null, null, false, true).size();
             Sender.sendResponse(SpConst.SUCCESS+"Migrated **"+count+"** tags from global to local", event);
             return true;

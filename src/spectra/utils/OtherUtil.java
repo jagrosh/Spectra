@@ -66,6 +66,28 @@ public class OtherUtil {
         }
     }
     
+    public static ArrayList<String> readTrueFileLines(String filename)
+    {
+        BufferedReader reader;
+        try{
+            reader = new BufferedReader(new FileReader(filename));
+        }catch(FileNotFoundException e){return null;}
+        ArrayList<String> items = new ArrayList<>();
+        try{
+            while(true)
+            {
+                String next = reader.readLine();
+                if(next==null)
+                    break;
+                items.add(next);
+            }
+            reader.close();
+            return items;
+        }catch(IOException e){
+            return null;
+        }
+    }
+    
     public static File writeArchive(String text, String txtname)
     {
         File f = new File("WrittenFiles"+File.separatorChar+txtname+".txt");

@@ -60,7 +60,6 @@ public class Spectra extends ListenerAdapter {
     private boolean idling = false;
     private boolean safetyMode = false;
     private boolean debugMode = false;
-    //private static final OffsetDateTime start = OffsetDateTime.now();
     private OffsetDateTime lastDisconnect;
     private Color currentColor;
     private int colorCounter;
@@ -188,12 +187,14 @@ public class Spectra extends ListenerAdapter {
             new GoogleSearch(googlesearcher),
             new ImageSearch(imagesearcher),
             new Info(),
-            //new Invite(),
+            new Invite(),
+            new Makebot(tags, localtags),
             new Names(savednames),
             new Nick(),
             new Ping(),
             new Profile(profiles),
             new Reminder(reminders),
+            new RoleMe(groups),
             new Roll(),
             new Room(rooms, settings, handler),
             new Server(settings),
@@ -362,11 +363,6 @@ public class Spectra extends ListenerAdapter {
         lastDisconnect = null;
     }
 
-    /*@Override
-    public void onStatusChange(StatusChangeEvent event) {
-        SimpleLog.getLog("Status").info("Status changed from ["+event.getOldStatus()+"] to ["+event.getStatus()+"]");
-    }*/
-
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
@@ -510,6 +506,9 @@ public class Spectra extends ListenerAdapter {
                         toRun = com;
                         break;
                     }
+                if(event.isPrivate() || globallists.isAuthorized(event.getGuild().getId()) || 
+                        (toRun!=null && "authorize".equals(toRun.command)) || 
+                        event.getGuild().getJoinDateForUser(event.getJDA().getSelfInfo()).isBefore(SpConst.PUBLIC_DATE))
                 if(toRun!=null)
                 {
                     isCommand = true;
@@ -912,12 +911,17 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
         Guild guild = event.getGuild();
+        double botPercent = (double)event.getGuild().getUsers().stream().filter(u -> u.isBot()).count() / event.getGuild().getUsers().size();
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
                 "```diff\n+ JOINED : "+guild.getName()+" (ID:"+guild.getId()+")"
                 + "```Users : **"+guild.getUsers().size()
-                +  "**\nOwner : **"+guild.getOwner().getUsername()+"** (ID:"+guild.getOwnerId()
-                +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
-        sendStats();
+                +  "**\nOwner : "+FormatUtil.fullUser(guild.getOwner())
+                +   "\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**"
+                +(botPercent>=SpConst.BOT_COLLECTION_PERCENT ? "\n"+SpConst.WARNING+"**Bot Collection Server Detected!**" : ""));
+        if(botPercent>=SpConst.BOT_COLLECTION_PERCENT)
+            event.getGuild().getManager().leave();
+        else
+            sendStats();
     }
 
     @Override
@@ -926,8 +930,8 @@ public class Spectra extends ListenerAdapter {
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
                 "```diff\n- LEFT : "+guild.getName()+" (ID:"+guild.getId()+")"
                 + "```Users : **"+guild.getUsers().size()
-                +  "**\nOwner : **"+(guild.getOwner()==null ? "???" : guild.getOwner().getUsername())+"** (ID:"+guild.getOwnerId()
-                +   ")\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
+                +  "**\nOwner : "+FormatUtil.fullUser(guild.getOwner())
+                +   "\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**");
         sendStats();
     }
 
@@ -945,8 +949,8 @@ public class Spectra extends ListenerAdapter {
             {
                 if(event.getOldChannel() == null)
                 {
-                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICEJOIN.get(event.getJDA())+" **"+event.getUser().getUsername()+"** (ID:"
-                        +event.getUser().getId()+") has joined voice channel *"+event.getVoiceStatus().getChannel().getName()+"*");
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICEJOIN.get(event.getJDA())+" "
+                            +FormatUtil.fullUser(event.getUser())+" has joined voice channel _"+event.getVoiceStatus().getChannel().getName()+"_");
                 }
             }
         }
@@ -977,13 +981,13 @@ public class Spectra extends ListenerAdapter {
             {
                 if(event.getVoiceStatus().inVoiceChannel())//change
                 {
-                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICEMOVE.get(event.getJDA())+" **"+event.getUser().getUsername()+"** (ID:"
-                        +event.getUser().getId()+") has moved voice channels from *"+event.getOldChannel().getName()+"* to *"+event.getVoiceStatus().getChannel().getName()+"*");
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICEMOVE.get(event.getJDA())
+                            +" "+FormatUtil.fullUser(event.getUser())+" has moved voice channels from _"+event.getOldChannel().getName()+"_ to _"+event.getVoiceStatus().getChannel().getName()+"_");
                 }
                 else
                 {
-                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICELEAVE.get(event.getJDA())+" **"+event.getUser().getUsername()+"** (ID:"
-                        +event.getUser().getId()+") has left voice channel *"+event.getOldChannel().getName()+"*");
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICELEAVE.get(event.getJDA())
+                            +" "+FormatUtil.fullUser(event.getUser())+" has left voice channel _"+event.getOldChannel().getName()+"_");
                 }
             }
         }
