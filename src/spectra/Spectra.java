@@ -378,7 +378,8 @@ public class Spectra extends ListenerAdapter {
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        
+        if(event.getAuthor()==null)
+            return;
         PermLevel perm;
         boolean ignore;
         boolean isCommand = false;
