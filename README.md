@@ -1,11 +1,19 @@
 # Spectra
-Spectra is a multi-purpose, for-fun and for-utility Discord bot!
+Spectra is a multi-purpose, for-fun and for-utility Discord bot!<br>
+
+[![poweredbyJDA](http://i.imgur.com/4Fhq6yQ.png)](https://github.com/DV8FromTheWorld/JDA)
 
 
 **Join Spectra Lounge:**
 
-https://discord.gg/0p9LSGoRLu6Pet0k
+[![Join Spectra Lounge](https://discordapp.com/api/guilds/147698382092238848/widget.png?style=banner2)](https://discord.gg/0p9LSGoRLu6Pet0k)
 
-**Notice**
 
-Spectra cannot currently be invited to servers. It will be available again in the future. Until then, please find a replacement bot (there are many that are quite good, and possibly suit your needs as well or better)
+**Add Spectra to your server:**
+
+Please see [Getting Started](https://github.com/jagrosh/Spectra/wiki/Getting-Started) for the link and instructions.
+
+
+**Read the Wiki:**
+
+https://github.com/jagrosh/Spectra/wiki
