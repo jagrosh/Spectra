@@ -44,7 +44,7 @@ public enum PermLevel {
     {
         if(user.getId().equals(SpConst.JAGROSH_ID))
             return JAGROSH;
-        if(guild==null)
+        if(guild==null || !guild.isMember(user))
             return EVERYONE;
         if(PermissionUtil.checkPermission(guild, user, Permission.MANAGE_SERVER))
             return ADMIN;

@@ -17,6 +17,7 @@ package spectra.commands;
 
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.TextChannel;
+import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.entities.VoiceChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.InviteUtil;
@@ -50,12 +51,41 @@ public class SystemCmd extends Command {
         this.level = PermLevel.JAGROSH;
         this.children = new Command[]{
             new SystemDebug(),
+            new SystemFind(),
             new SystemIdle(),
             new SystemReady(),
             new SystemInvite(),
             new SystemSafe(),
             new SystemShutdown()
         };
+    }
+    
+    private class SystemFind extends Command
+    {
+        private SystemFind()
+        {
+            this.command = "find";
+            this.level = PermLevel.JAGROSH;
+            this.help = "finds info on an ID";
+            this.longhelp = "This command finds an entity by id (current only users) and displays information on them (shortcut from eval).";
+            this.arguments = new Argument[]{
+                new Argument("id",Argument.Type.SHORTSTRING,true)
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            User u = event.getJDA().getUserById((String)args[0]);
+            if(u==null)
+            {
+                Sender.sendResponse(SpConst.ERROR+"User with ID `"+args[0]+"` not found!", event);
+                return false;
+            }
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Found **"+u.getUsername()+"** #"+u.getDiscriminator()+":");
+            event.getJDA().getGuilds().stream().filter(g -> g.isMember(u))
+                    .forEach(g -> builder.append("\n").append(g.getId()).append(" **").append(g.getName()).append("**").append(g.getOwner().equals(u) ? " [Own]" : ""));
+            Sender.sendResponse(builder.toString(), event);
+            return true;
+        }
     }
     
     private class SystemInvite extends Command

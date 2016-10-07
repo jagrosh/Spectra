@@ -28,6 +28,7 @@ import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.MiscUtil;
 import net.dv8tion.jda.utils.PermissionUtil;
+import spectra.Argument;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
@@ -51,6 +52,7 @@ public class Server extends Command {
         this.availableInDM = false;
         this.children = new Command[]{
             new ServerMods(),
+            new ServerPlaying(),
             new ServerSettings()
         };
     }
@@ -109,12 +111,70 @@ public class Server extends Command {
         }
     }
     
+    private class ServerPlaying extends Command
+    {
+        private ServerPlaying()
+        {
+            this.command = "playing";
+            this.aliases = new String[]{"games"};
+            this.help = "shows the games users are playing most";
+            this.longhelp = "This command shows the most-played games on the server (currently), and can show who is playing a specific game.";
+            this.availableInDM = false;
+            this.arguments = new Argument[]{
+                new Argument("game name",Argument.Type.LONGSTRING, false)
+            };
+        }
+
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String game = args[0]==null ? null : (String)args[0];
+            if(game==null)
+            {
+                HashMap<String,Integer> games = new HashMap<>();
+                event.getGuild().getUsers().stream().filter(u -> u.getCurrentGame()!=null)
+                        .forEach(u -> games.put(u.getCurrentGame().getName(), games.getOrDefault(u.getCurrentGame().getName(), 0)+1));
+                ArrayList<String> list = new ArrayList<>(games.keySet());
+                list.sort((game1, game2) -> games.get(game2) - games.get(game1));
+                StringBuilder builder = new StringBuilder();
+                for(int i=0; i<list.size() && i<10; i++)
+                    builder.append("\n`[").append(games.get(list.get(i))).append("]` **").append(list.get(i)).append("**");
+                if(builder.length()==0)
+                {
+                    Sender.sendResponse(SpConst.WARNING+"No one is playing anything!", event);
+                    return false;
+                }
+                else
+                {
+                    Sender.sendResponse(SpConst.SUCCESS+"Most popular games on **"+event.getGuild().getName()+"**:"+builder.toString(),event);
+                    return true;
+                }
+            }
+            else
+            {
+                StringBuilder builder = new StringBuilder();
+                event.getGuild().getUsers().stream().filter(u -> u.getCurrentGame()!=null && game.equals(u.getCurrentGame().getName()))
+                        .forEach( u -> builder.append("\n").append(FormatUtil.fullUser(u)));
+                if(builder.length()==0)
+                {
+                    Sender.sendResponse(SpConst.WARNING+"No users found playing **"+game+"**", event);
+                    return false;
+                }
+                else
+                {
+                    Sender.sendResponse(SpConst.SUCCESS+"Users playing **"+game+"**:"+builder.toString(), event);
+                    return true;
+                }
+            }
+        }
+        
+    }
+    
     private class ServerMods extends Command
     {
         private ServerMods()
         {
             this.command = "mods";
-            this.longhelp = "admins";
+            this.aliases = new String[]{"admins"};
             this.help = "shows mods/admins and status";
             this.longhelp = "This command shows which mods and admins are available, sorted by status.";
             this.availableInDM = false;

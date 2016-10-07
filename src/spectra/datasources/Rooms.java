@@ -19,7 +19,9 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.MessageHistory;
 import net.dv8tion.jda.Permission;
@@ -28,6 +30,7 @@ import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.utils.MiscUtil;
 import net.dv8tion.jda.utils.PermissionUtil;
+import net.dv8tion.jda.utils.SimpleLog;
 import spectra.DataSource;
 import spectra.FeedHandler;
 import spectra.Sender;
@@ -39,14 +42,14 @@ import spectra.SpConst;
  */
 public class Rooms extends DataSource{
     private final HashMap<String,OffsetDateTime> lastActivity;
-    private final ArrayList<String> warnings;
+    private final Set<String> warnings;
     public Rooms()
     {
         this.filename = "discordbot.rooms";
         this.size = 4;
         this.generateKey = (item) -> {return item[CHANNELID];};
         lastActivity = new HashMap<>();
-        warnings = new ArrayList<>();
+        warnings = new HashSet<>();
     }
     
     public void setLastActivity(String channelid, OffsetDateTime last)
@@ -136,34 +139,19 @@ public class Rooms extends DataSource{
         List<String> allIds = getAllTextRoomIds();
         for(String id : allIds)
         {
-            TextChannel tc = jda.getTextChannelById(id);
-            if(tc==null || !PermissionUtil.checkPermission(tc, jda.getSelfInfo(), Permission.MESSAGE_HISTORY, Permission.MESSAGE_READ, Permission.MESSAGE_WRITE))
-            {
-                //Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
-                //if(guild==null)
-                //    remove(id); I could do this safely if Discord actually did their job
-                continue;
-            }
-            if(get(id)[OWNERID].equals(jda.getSelfInfo().getId()))
-                continue;
-            boolean checked = false;
-            if(getLastActivity(id)==null)
-            {
-                MessageHistory mh = new MessageHistory(tc);
-                List<Message> messages = mh.retrieve(1);
-                checked = true;
-                if(messages==null || messages.isEmpty())
-                    setLastActivity(id, MiscUtil.getCreationTime(id));
-                else
+            try{
+                TextChannel tc = jda.getTextChannelById(id);
+                if(tc==null || !PermissionUtil.checkPermission(tc, jda.getSelfInfo(), Permission.MESSAGE_HISTORY, Permission.MESSAGE_READ, Permission.MESSAGE_WRITE))
                 {
-                    setLastActivity(id, messages.get(0).getTime());
-                    if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
-                        setWarned(id);
+                    //Guild guild = jda.getGuildById(get(id)[Rooms.SERVERID]);
+                    //if(guild==null)
+                    //    remove(id); I could do this safely if Discord had 100% consistency
+                    continue;
                 }
-            }
-            if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && isWarned(id))
-            {
-                if(!checked)
+                if(get(id)[OWNERID].equals(jda.getSelfInfo().getId()))
+                    continue;
+                boolean checked = false;
+                if(getLastActivity(id)==null)
                 {
                     MessageHistory mh = new MessageHistory(tc);
                     List<Message> messages = mh.retrieve(1);
@@ -176,7 +164,32 @@ public class Rooms extends DataSource{
                         if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
                             setWarned(id);
                     }
-                    if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && isWarned(id))
+                }
+                if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && isWarned(id))
+                {
+                    if(!checked)
+                    {
+                        MessageHistory mh = new MessageHistory(tc);
+                        List<Message> messages = mh.retrieve(1);
+                        checked = true;
+                        if(messages==null || messages.isEmpty())
+                            setLastActivity(id, MiscUtil.getCreationTime(id));
+                        else
+                        {
+                            setLastActivity(id, messages.get(0).getTime());
+                            if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
+                                setWarned(id);
+                        }
+                        if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(delete, ChronoUnit.HOURS)) && isWarned(id))
+                        {
+                            remove(id);
+                            handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
+                                "** (ID:"+tc.getId()+") has been removed due to inactivity.");
+                            tc.getManager().delete();
+                            continue;
+                        }
+                    }
+                    else
                     {
                         remove(id);
                         handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
@@ -185,31 +198,31 @@ public class Rooms extends DataSource{
                         continue;
                     }
                 }
-                else
+                if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
                 {
-                    remove(id);
-                    handler.submitText(Feeds.Type.SERVERLOG, tc.getGuild(), "\uD83D\uDCFA Text channel **"+tc.getName()+
-                        "** (ID:"+tc.getId()+") has been removed due to inactivity.");
-                    tc.getManager().delete();
-                    continue;
-                }
-            }
-            if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
-            {
-                if(!checked)
-                {
-                    MessageHistory mh = new MessageHistory(tc);
-                    List<Message> messages = mh.retrieve(1);
-                    //checked = true;
-                    if(messages==null || messages.isEmpty())
-                        setLastActivity(id, MiscUtil.getCreationTime(id));
-                    else
+                    if(!checked)
                     {
-                        setLastActivity(id, messages.get(0).getTime());
-                        if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
+                        MessageHistory mh = new MessageHistory(tc);
+                        List<Message> messages = mh.retrieve(1);
+                        //checked = true;
+                        if(messages==null || messages.isEmpty())
+                            setLastActivity(id, MiscUtil.getCreationTime(id));
+                        else
+                        {
+                            setLastActivity(id, messages.get(0).getTime());
+                            if(messages.get(0).getAuthor().equals(jda.getSelfInfo()) && messages.get(0).getRawContent().startsWith("[<@"))
+                                setWarned(id);
+                        }
+                        if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
+                        {
+                            //warn
+                            Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+get(id)[Rooms.OWNERID]+">"), tc);
+                            setLastActivity(id, OffsetDateTime.now());
                             setWarned(id);
+                            //continue;
+                        }
                     }
-                    if(getLastActivity(id).isBefore(OffsetDateTime.now().minus(warn, ChronoUnit.HOURS)))
+                    else
                     {
                         //warn
                         Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+get(id)[Rooms.OWNERID]+">"), tc);
@@ -218,16 +231,11 @@ public class Rooms extends DataSource{
                         //continue;
                     }
                 }
-                else
-                {
-                    //warn
-                    Sender.sendMsg(String.format(SpConst.ROOM_WARNING, "<@"+get(id)[Rooms.OWNERID]+">"), tc);
-                    setLastActivity(id, OffsetDateTime.now());
-                    setWarned(id);
-                    //continue;
-                }
+            }catch(Exception e){
+                SimpleLog.getLog("Rooms").warn("Error checking room with id "+id+": "+e);
             }
         }
+        
     }
     
     final public static int SERVERID   = 0;

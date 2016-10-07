@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
@@ -176,8 +178,8 @@ public class Tag extends Command{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true,1,80),
                 new Argument("tag contents",Argument.Type.LONGSTRING,true)
             };
-            this.cooldown = 300;
-            this.cooldownKey = (event) -> {return event.getAuthor().getId()+"tagcreate";};
+            this.cooldown = 360;
+            this.cooldownKey = (event) -> {return event.getAuthor().getId()+"tagcreateglobal";};
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event)
@@ -380,18 +382,33 @@ public class Tag extends Command{
             builder1 = new StringBuilder();
             builder1.append(SpConst.SUCCESS).append(taglist.size()).append(" global tags owned by **").append(user.getUsername()).append("**:\n");
             taglist.stream().forEach((tag) -> builder1.append(tag).append(" "));
-            int localsize = 0;
             StringBuilder builder2 = new StringBuilder();
             if(!event.isPrivate())
             {
                 ArrayList<String> localtaglist = localtags.findTagsByOwner(user, event.getGuild(), nsfw);
-                localsize = localtaglist.size();
-                Collections.sort(localtaglist);
-                builder2.append("\n" + SpConst.SUCCESS).append(localtaglist.size()).append(" tags on *").append(event.getGuild().getName()).append("*:\n");
-                localtaglist.stream().forEach((tag) -> builder2.append(tag).append(" "));
+                if(localtaglist.size()>0)
+                {
+                    Collections.sort(localtaglist);
+                    builder2.append("\n" + SpConst.SUCCESS).append(localtaglist.size()).append(" tags on *").append(event.getGuild().getName()).append("*:\n");
+                    localtaglist.stream().forEach((tag) -> builder2.append(tag).append(" "));
+                }
+                String[] mirrors = Settings.tagMirrorsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMIRRORS]);
+                for(String guildid: mirrors)
+                {
+                    Guild g = event.getJDA().getGuildById(guildid);
+                    if(g==null)
+                        continue;
+                    ArrayList<String> mirrortaglist = localtags.findTagsByOwner(user, g, nsfw);
+                    if(mirrortaglist.size()>0)
+                    {
+                        Collections.sort(mirrortaglist);
+                        builder2.append("\n" + SpConst.SUCCESS).append(mirrortaglist.size()).append(" tags on *").append(g.getName()).append("*:\n");
+                        mirrortaglist.stream().forEach((tag) -> builder2.append(tag).append(" "));
+                    }
+                }
             }
             
-            Sender.sendResponse(((taglist.size()>0||localsize==0 ? builder1.toString() : "")+(localsize>0 ? builder2.toString() : "")).trim(), event);
+            Sender.sendResponse(((taglist.size()>0||builder2.length()==0 ? builder1.toString() : "")+builder2.toString()).trim(), event);
             return true;
         }
     }
@@ -567,30 +584,34 @@ public class Tag extends Command{
             boolean nsfw = JagTag.isNSFWAllowed(event);
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
-            List<String[]> taglist = tags.findTags(query, event.getGuild(), local, nsfw);
-            List<String[]> taglist2;
-            if(event.isPrivate())
-                taglist2 = new ArrayList<>();
-            else
-                taglist2 = localtags.findTags(query, event.getGuild(), nsfw);
-            if(taglist.isEmpty() && taglist2.isEmpty())
+            List<String> tagnames = tags.findTags(query, event.getGuild(), local, nsfw).stream().map(tag -> tag[Tags.TAGNAME]).collect(Collectors.toList());
+            if(!event.isPrivate())
+            {
+                tagnames.addAll(localtags.findTags(query, event.getGuild(), nsfw).stream().map(tag -> tag[LocalTags.TAGNAME]).collect(Collectors.toList()));
+                String[] mirrors = Settings.tagMirrorsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMIRRORS]);
+                for(String guildid: mirrors)
+                {
+                    Guild g = event.getJDA().getGuildById(guildid);
+                    if(g==null)
+                        continue;
+                    tagnames.addAll(localtags.findTags(query, g, nsfw).stream().map(tag -> tag[LocalTags.TAGNAME]).collect(Collectors.toList()));
+                }
+            }
+            
+            if(tagnames.isEmpty())
             {
                 Sender.sendResponse(SpConst.WARNING+"No tags found matching \""+query+"\"!", event);
                 return false;
             }
-            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(taglist.size()+taglist2.size()).append(" tags found");
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS).append(tagnames.size()).append(" tags found");
             if(query!=null)
                 builder.append(" containing \"").append(query).append("\"");
             builder.append(":\n");
-            if(taglist.size()+taglist2.size()<100)
+            if(tagnames.size()<200)
             {
-                List<String> allresults = new ArrayList<>();
-                taglist.stream().forEach(t -> allresults.add(t[Tags.TAGNAME]));
-                taglist2.stream().forEach(t -> allresults.add(t[LocalTags.TAGNAME]));
-                Collections.sort(allresults);
+                Collections.sort(tagnames);
             }
-            taglist.stream().forEach((tag) -> builder.append(tag[Tags.TAGNAME]).append(" "));
-            taglist2.stream().forEach((tag) -> builder.append(tag[LocalTags.TAGNAME]).append(" "));
+            tagnames.stream().distinct().forEach((tag) -> builder.append(tag).append(" "));
             Sender.sendResponse(builder.toString(),event);
             return true;
         }
@@ -646,7 +667,7 @@ public class Tag extends Command{
                 }
                 else
                 {
-                    if(tag[LocalTags.OWNERID].equals("g"+event.getGuild().getId()) && args[1]==null)//delete
+                    if(tag[LocalTags.GUILDID].equals(event.getGuild().getId()) && args[1]==null)//delete
                     {
                         localtags.removeTag(tagname, event.getGuild().getId());
                         Sender.sendResponse(SpConst.SUCCESS+"Local tag \""+JagTag.getTagname(tag)+"\" deleted.", event);
@@ -919,6 +940,11 @@ public class Tag extends Command{
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             Guild mirror = (Guild)(args[0]);
+            if(mirror.equals(event.getGuild()))
+            {
+                Sender.sendResponse(SpConst.ERROR+"You can't mirror the current server!", event);
+                return false;
+            }
             String[] mirrors = Settings.tagMirrorsFromList(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMIRRORS]);
             boolean found = false;
             for(String mid : mirrors)
@@ -1129,4 +1155,5 @@ public class Tag extends Command{
             return true;
         }
     }
+    
 }

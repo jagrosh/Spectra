@@ -35,11 +35,15 @@ public class Invite extends Command {
 
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
-        Sender.sendResponse("Hi! If you want me on your server, simply click this link, select a server where you have the \"Manage Server\" permission, and authorize!\n"
+        /*Sender.sendResponse(
+                "Hi! If you want me on your server, simply click this link, select a server where you have the \"Manage Server\" permission, and authorize!\n"
                 +"https://discordapp.com/oauth2/authorize?client_id="+ApplicationUtil.getApplicationId(event.getJDA())+"&scope=bot&permissions=297921599\n\n"
                 +"Note: You _must_ authorize Spectra for your server before it will respond to commands. See how to get set up here: **<http://spectra.bot.nu>**\n\n"
                 //+ "If you give me a role called \""+botName+"\" that is my color-controlling role, and the \"Manage Roles\" permission, I'll adjust my username color to match my image whenever it changes!\n"
-                + "Also, check out **"+event.getJDA().getGuildById(SpConst.JAGZONE_ID).getName()+"**: "+SpConst.JAGZONE_INVITE, event);
+                + "Also, check out **"+event.getJDA().getGuildById(SpConst.JAGZONE_ID).getName()+"**: "+SpConst.JAGZONE_INVITE, event);*/
+        Sender.sendResponse("Hi! If you want me on your server, please check out **<http://spectra.bot.nu>**\n"
+                + "You can find the invite link there, as well as instructions for getting started!\n\n"
+                + "Also, check out **"+event.getJDA().getGuildById(SpConst.JAGZONE_ID).getName()+"** for more info and help: "+SpConst.JAGZONE_INVITE,event);
         return true;
     }
 }

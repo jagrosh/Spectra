@@ -108,6 +108,7 @@ public class FeedHandler {
                         bufferTimers.schedule(() -> {
                             synchronized(buffers)
                             {
+                                buffers.remove(guild.getId());
                                 Buffer thisbuffer = buffers.get(guild.getId());
                                 String txt = thisbuffer.getBuffer();
                                 if(txt!=null)
@@ -117,9 +118,8 @@ public class FeedHandler {
                                     Sender.sendMsgFile(thisbuffer.getFileText(), thisbuffer.getFile(), thisbuffer.getFileAltText(), target);
                                 }
                                 statistics.sentFeed(guild.getId());
-                                buffers.remove(guild.getId());
                             }
-                        }, ratelimit-System.currentTimeMillis()+10, TimeUnit.MILLISECONDS);
+                        }, Math.min(ratelimit-System.currentTimeMillis()+10, 10000), TimeUnit.MILLISECONDS);
                     }
                     else
                     {

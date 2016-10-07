@@ -53,6 +53,14 @@ public class Leave extends Command {
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         String message = (String)args[0];
+        String current = settings.getSettingsForGuild(event.getGuild().getId())[Settings.LEAVEMSG];
+        String[] parts = new String[]{null,""};
+        if(current!=null && !current.equals(""))
+        {
+            parts = Settings.parseWelcomeMessage(current);
+        }
+        if(parts[0]!=null)
+            message = parts[0]+": "+message;
         settings.setSetting(event.getGuild().getId(), Settings.LEAVEMSG, message);
         Sender.sendResponse(SpConst.SUCCESS+"The leave message on **"+event.getGuild().getName()+"** has been set", event);
         return true;

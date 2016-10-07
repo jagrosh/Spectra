@@ -33,9 +33,10 @@ public class Authorize extends Command {
     private final GlobalLists lists;
     private final FeedHandler handler;
     private final String WIKI = "<https://github.com/jagrosh/Spectra/wiki/Getting-Started>";
-    private final String NEED_AUTH = "Hello **%s**#%s. To authorize "+SpConst.BOTNAME+" for your server, "
+    /*private final String NEED_AUTH = "Hello **%s**#%s. To authorize "+SpConst.BOTNAME+" for your server, "
             + "please follow the instructions here: "+WIKI
-            + "\nServer ID: %s\nUser ID: %s";
+            + "\nServer ID: %s\nUser ID: %s";*/
+    private final String NEED_AUTH = "To authorize "+SpConst.BOTNAME+"for **%s**, please follow the instructions here: "+WIKI;
     
     public Authorize(GlobalLists lists, FeedHandler handler)
     {
@@ -60,21 +61,34 @@ public class Authorize extends Command {
             return false;
         }
         String code = args[0]==null ? null : (String)args[0];
-        String truecode = event.getGuild().getId().substring(event.getGuild().getId().length()-1)
+        
+        String letter = event.getGuild().getName().substring(0,1);
+        String truecode;
+        if(letter.matches("[A-Z]"))
+            truecode = "pizzapocalypse";
+        else if (letter.matches("[a-z]"))
+            truecode = "eyesL";
+        else if (letter.matches("[0-9]"))
+            truecode = "benhemmer";
+        else
+            truecode = "alphanumericnamesplease";
+        /*String truecode = event.getGuild().getId().substring(event.getGuild().getId().length()-1)
                 + event.getAuthor().getId().substring(event.getAuthor().getId().length()-1)
                 + event.getGuild().getVoiceChannels().size()
                 + event.getAuthor().getDiscriminator().substring(3)
                 + "5"
-                ;
+                ;*/
         
         if(code==null)
         {
-            Sender.sendResponse(String.format(NEED_AUTH, event.getAuthor().getUsername(),event.getAuthor().getDiscriminator(),event.getGuild().getId(),event.getAuthor().getId()), event);
+            //Sender.sendResponse(String.format(NEED_AUTH, event.getAuthor().getUsername(),event.getAuthor().getDiscriminator(),event.getGuild().getId(),event.getAuthor().getId()), event);
+            Sender.sendResponse(String.format(NEED_AUTH, event.getGuild().getName()), event);
             return false;
         }
         else if (!truecode.equals(code))
         {
-            Sender.sendResponse(SpConst.ERROR+"Invalid authorization code.\n\n"+String.format(NEED_AUTH, event.getAuthor().getUsername(),event.getAuthor().getDiscriminator(),event.getGuild().getId(),event.getAuthor().getId()), event);
+            //Sender.sendResponse(SpConst.ERROR+"Invalid authorization code.\n\n"+String.format(NEED_AUTH, event.getAuthor().getUsername(),event.getAuthor().getDiscriminator(),event.getGuild().getId(),event.getAuthor().getId()), event);
+            Sender.sendResponse(SpConst.ERROR+"Invalid authorization code.\n\n"+String.format(NEED_AUTH,event.getGuild().getName()),event);
             return false;
         }
         else //authorize

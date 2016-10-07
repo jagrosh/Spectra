@@ -53,6 +53,7 @@ public class RoleCmd extends Command {
             new RoleColor(),
             new RoleCreate(),
             new RoleGive(),
+            new RoleKeep(),
             new RoleTake()
         };
     }
@@ -290,8 +291,8 @@ public class RoleCmd extends Command {
     private class RoleKeep extends Command 
     {
         private RoleKeep(){
-            this.command = "keeproles";
-            this.aliases = new String[]{"permaroles"};
+            this.command = "keep";
+            this.aliases = new String[]{"perma"};
             this.level = PermLevel.ADMIN;
             this.availableInDM = false;
             this.help = "sets if users keep roles when leaving and returning";

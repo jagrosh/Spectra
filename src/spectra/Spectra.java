@@ -41,6 +41,7 @@ import net.dv8tion.jda.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.events.user.*;
 import net.dv8tion.jda.events.voice.*;
 import net.dv8tion.jda.hooks.ListenerAdapter;
+import net.dv8tion.jda.managers.GuildManager;
 import net.dv8tion.jda.utils.*;
 import spectra.commands.*;
 import spectra.datasources.*;
@@ -73,6 +74,7 @@ public class Spectra extends ListenerAdapter {
     private final GlobalLists globallists;
     private final Guides guides;
     private final Mutes mutes;
+    private final KeptRoles keptroles;
     private final Overrides overrides;
     private final Profiles profiles;
     private final Reminders reminders;
@@ -101,7 +103,7 @@ public class Spectra extends ListenerAdapter {
     private final ScheduledExecutorService unmuter;
     private final ScheduledExecutorService roomchecker;
     private final ScheduledExecutorService reminderchecker;
-    private final ScheduledExecutorService cachecleaner;
+    private final ScheduledExecutorService datacleaner;
     private final ScheduledExecutorService avatarchanger;
     private final ScheduledExecutorService contestchecker;
     
@@ -122,6 +124,7 @@ public class Spectra extends ListenerAdapter {
         feeds       = new Feeds();
         guides      = new Guides();
         mutes       = new Mutes();
+        keptroles   = new KeptRoles();
         overrides   = new Overrides();
         profiles    = new Profiles();
         reminders   = new Reminders();
@@ -146,7 +149,7 @@ public class Spectra extends ListenerAdapter {
         unmuter  = Executors.newSingleThreadScheduledExecutor();
         roomchecker = Executors.newSingleThreadScheduledExecutor();
         reminderchecker = Executors.newSingleThreadScheduledExecutor();
-        cachecleaner  = Executors.newSingleThreadScheduledExecutor();
+        datacleaner  = Executors.newSingleThreadScheduledExecutor();
         avatarchanger = Executors.newSingleThreadScheduledExecutor();
         contestchecker = Executors.newSingleThreadScheduledExecutor();
         
@@ -164,6 +167,7 @@ public class Spectra extends ListenerAdapter {
         groups.read();
         guides.read();
         mutes.read();
+        keptroles.read();
         overrides.read();
         profiles.read();
         reminders.read();
@@ -172,6 +176,8 @@ public class Spectra extends ListenerAdapter {
         settings.read();
         tags.read();
         localtags.read();
+        
+        List<String> logindetails = OtherUtil.readFileLines("discordbot.login");
         
         commands = new Command[]{
             new About(),
@@ -216,6 +222,7 @@ public class Spectra extends ListenerAdapter {
             
             new Authorize(globallists, handler),
             new CommandCmd(settings, this),
+            new EmotesCmd(logindetails.get(1),logindetails.get(2)),
             new Feed(feeds),
             new Ignore(settings),
             new Leave(settings),
@@ -239,7 +246,7 @@ public class Spectra extends ListenerAdapter {
         try {
             jda = new JDABuilder()
                     .addListener(this)
-                    .setBotToken(OtherUtil.readFileLines("discordbot.login").get(0))
+                    .setBotToken(logindetails.get(0))
                     .setBulkDeleteSplittingEnabled(false)
                     .setEventManager(eventmanager)
                     .buildAsync();
@@ -257,13 +264,16 @@ public class Spectra extends ListenerAdapter {
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
                         + "Started up in "+FormatUtil.secondsToTime(statistics.getUptime()));
+        
         unmuter.scheduleWithFixedDelay(()-> {mutes.checkUnmutes(jda, handler);},0, 10, TimeUnit.SECONDS);
         roomchecker.scheduleWithFixedDelay(() -> {rooms.checkExpires(jda, handler);}, 0, 120, TimeUnit.SECONDS);
         reminderchecker.scheduleWithFixedDelay(() -> {reminders.checkReminders(jda);}, 0, 30, TimeUnit.SECONDS);
         contestchecker.scheduleWithFixedDelay(() -> {contests.notifications(jda);}, 0, 1, TimeUnit.MINUTES);
-        cachecleaner.scheduleWithFixedDelay(() -> {
+        datacleaner.scheduleWithFixedDelay(() -> {
             imagesearcher.clearCache();
-            googlesearcher.clearCache();}, 6, 3, TimeUnit.HOURS);
+            googlesearcher.clearCache();
+            pruneGuilds();
+            }, 6, 3, TimeUnit.HOURS);
         avatarchanger.scheduleWithFixedDelay(()->{
             if(jda.getStatus()!=Status.CONNECTED)
                 return;
@@ -301,6 +311,7 @@ public class Spectra extends ListenerAdapter {
             }
             colorCounter--;
         }, 5, 10, TimeUnit.MINUTES);
+        
         sendStats();
     }
     
@@ -322,6 +333,7 @@ public class Spectra extends ListenerAdapter {
         groups.shutdown();
         guides.shutdown();
         mutes.shutdown();
+        keptroles.shutdown();
         overrides.shutdown();
         profiles.shutdown();
         reminders.shutdown();
@@ -335,7 +347,7 @@ public class Spectra extends ListenerAdapter {
         unmuter.shutdown();
         roomchecker.shutdown();
         reminderchecker.shutdown();
-        cachecleaner.shutdown();
+        datacleaner.shutdown();
         avatarchanger.shutdown();
         contestchecker.shutdown();
     }
@@ -630,7 +642,7 @@ public class Spectra extends ListenerAdapter {
                             }
                         }
                     }
-                    else if(event.getMessage().getRawContent().equals(parts[1]))
+                    else if(event.getMessage().getRawContent().equalsIgnoreCase(parts[1]))
                     {
                         if(!event.getGuild().getRolesForUser(event.getAuthor()).contains(role))
                         {
@@ -695,6 +707,8 @@ public class Spectra extends ListenerAdapter {
             Message msg = messagecache.deleteMessage(event.getGuild().getId(), event.getMessageId());
             if(msg!=null)
             {
+                if(msg.getAuthor()==null)
+                    return;
                 String id = msg.getAuthor().getId();
                 boolean bot = msg.getAuthor().isBot();
                 if(event.getJDA().getSelfInfo().getId().equals(id))
@@ -719,13 +733,42 @@ public class Spectra extends ListenerAdapter {
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), 
                 "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server."
                         +(MiscUtil.getCreationTime(event.getUser().getId()).plusMinutes(15).isAfter(OffsetDateTime.now()) ? " \uD83C\uDD95" : ""));
+        
         if(mutes.getMute(event.getUser().getId(), event.getGuild().getId())!=null)
             if(PermissionUtil.checkPermission(event.getGuild(), event.getJDA().getSelfInfo(), Permission.MANAGE_ROLES))
                 event.getGuild().getRoles().stream().filter((role) -> (role.getName().equalsIgnoreCase("muted") 
                         && PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))).forEach((role) -> {
                     event.getGuild().getManager().addRoleToUser(event.getUser(), role).update();
         });
+        
         String[] currentsettings = settings.getSettingsForGuild(event.getGuild().getId());
+        
+        try{
+        if(currentsettings!=null && "true".equalsIgnoreCase(currentsettings[Settings.KEEPROLES]) && PermissionUtil.checkPermission(event.getGuild(), event.getJDA().getSelfInfo(), Permission.MANAGE_ROLES))
+        {
+            String[] ids = keptroles.getRoleIds(event.getUser().getId(), event.getGuild().getId());
+            if(ids!=null)
+            {
+                ArrayList<Role> roles = new ArrayList<>();
+                for(String id: ids)
+                {
+                    Role role = event.getGuild().getRoleById(id);
+                    if(role==null)
+                        continue;
+                    if(!PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))
+                        continue;
+                    roles.add(role);
+                }
+                if(!roles.isEmpty())
+                {
+                    GuildManager gm = event.getGuild().getManager();
+                    roles.stream().forEach(r -> gm.addRoleToUser(event.getUser(), r));
+                    gm.update();
+                }
+            }
+        }
+        }catch(Exception e){System.out.println("Error restoring roles: "+e);}
+        
         String current = currentsettings==null ? null : currentsettings[Settings.WELCOMEMSG];
         if(current!=null && !current.equals(""))
         {
@@ -762,6 +805,13 @@ public class Spectra extends ListenerAdapter {
             String toSend = JagTag.convertText(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()), "", event.getUser(),event.getGuild(), channel).trim();
             if(!toSend.equals(""))
                 Sender.sendMsg(toSend, channel);
+        }
+        
+        if(currentsettings!=null && "true".equalsIgnoreCase(currentsettings[Settings.KEEPROLES]))
+        {
+            StringBuilder builder = new StringBuilder();
+            event.getOldRoles().forEach(r -> builder.append(" ").append(r.getId()));
+            keptroles.userLeave(event.getUser().getId(), event.getGuild().getId(), builder.toString().trim());
         }
     }
 
@@ -991,6 +1041,22 @@ public class Spectra extends ListenerAdapter {
                 }
             }
         }
+    }
+    
+    private void pruneGuilds()
+    {
+        jda.getGuilds().stream().filter(g -> {
+                if(globallists.isAuthorized(g.getId()))
+                    return false;
+                if(globallists.isBlacklisted(g.getId()))
+                    return true;
+                double botPercent = (double)g.getUsers().stream().filter(u -> u.isBot()).count() / g.getUsers().size();
+                if(botPercent > SpConst.BOT_COLLECTION_PERCENT)
+                    return true;
+                OffsetDateTime join = g.getJoinDateForUser(jda.getSelfInfo());
+                if(join.isAfter(SpConst.PUBLIC_DATE) && join.plusDays(3).isBefore(OffsetDateTime.now()))
+                    return true;
+            return false;}).forEach(g -> g.getManager().leave());
     }
     
     private void sendStats()
