@@ -631,7 +631,7 @@ public class Spectra extends ListenerAdapter {
             {
                 String[] parts = autorole.split("\\|");
                 Role role = event.getGuild().getRoleById(parts[0]);
-                if(role!=null)
+                if(role!=null && PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))
                 {
                     if(parts.length<2 || parts[1].equals(""))
                     {
