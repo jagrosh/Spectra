@@ -93,7 +93,9 @@ public class Automod extends Command {
                 new AMSetting("warn","sets the number of strikes to warn at",
                         "This command sets the number of strikes at which "+SpConst.BOTNAME+" will automatically send a warning to the user",
                         AutomodSettings.KICKAT,"warn users at **%s** strikes"),
-            };
+                new AMSetting("banlist","sets the status of using the ban list",
+                        "This command sets the status which "+SpConst.BOTNAME+" will automatically ban users that are listed on the Ban List",
+                        AutomodSettings.KICKAT,"ban users on Ban List"),            };
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
@@ -105,6 +107,7 @@ public class Automod extends Command {
                     + "\nMute Minutes: **"+amsettings.getSetting(event.getGuild(), AutomodSettings.MUTEMINUTES)+"**"
                     + "\nStrikes to Kick: **"+amsettings.getSetting(event.getGuild(), AutomodSettings.KICKAT)+"**"
                     + "\nStrikes to Ban: **"+amsettings.getSetting(event.getGuild(), AutomodSettings.BANAT)+"**"
+                    + "\nBan List: **"+amsettings.getSetting(event.getGuild(), AutomodSettings.BANAT)+"**"
                     ;
             Sender.sendResponse(out, event);
             return true;
