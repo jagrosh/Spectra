@@ -74,12 +74,6 @@ public class Server extends Command {
                 +SpConst.LINESTART+"Users: **"+guild.getUsers().size()+"** ("+onlineCount+" online)\n"
                 +SpConst.LINESTART+"Channels: **"+guild.getTextChannels().size()+"** Text, **"+guild.getVoiceChannels().size()+"** Voice\n"
                 +SpConst.LINESTART+"Verification: **"+(guild.getVerificationLevel().equals(VerificationLevel.HIGH)?"(╯°□°）╯︵ ┻━┻":guild.getVerificationLevel())+"**";
-        if(!event.getGuild().getEmotes().isEmpty())
-        {
-            StringBuilder builder = new StringBuilder();
-            event.getGuild().getEmotes().forEach( e -> builder.append(" ").append(e.getAsEmote()));
-            str+="\n"+SpConst.LINESTART+"Emotes:"+builder.toString();
-        }
         if(guild.getIconUrl()!=null)
             str+="\n"+SpConst.LINESTART+"Server Icon: "+guild.getIconUrl();
         
@@ -221,6 +215,10 @@ public class Server extends Command {
             map.getOrDefault("ADMIN|"+OnlineStatus.OFFLINE.name(), new ArrayList<>()).stream().forEach(u -> 
                     builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
             map.getOrDefault("MOD|"+OnlineStatus.OFFLINE.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
+            map.getOrDefault("ADMIN|"+OnlineStatus.UNKNOWN.name(), new ArrayList<>()).stream().forEach(u -> 
+                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
+            map.getOrDefault("MOD|"+OnlineStatus.UNKNOWN.name(), new ArrayList<>()).stream().forEach(u -> 
                     builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
             Sender.sendResponse(builder.toString(), event);
             return true;

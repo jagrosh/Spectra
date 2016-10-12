@@ -48,76 +48,88 @@ public class EmotesCmd extends Command {
     {
         this.usertoken = usertoken;
         this.userid = userid;
-        this.command = "emotes";
-        this.aliases = new String[]{"emote"};
-        this.availableInDM= false;
-        this.level = PermLevel.ADMIN;
-        this.help = "manages emotes on your server";
-        this.longhelp = "This command can add and remove emotes for use on your server only. Note that they will not work on other servers. "
-                + "Emote names cannot contain spaces or other special characters. Please kick the Emote Provider account from your server when "
-                + "you have finished adding and removing emotes. Thank you.";
+        this.command = "emote";
+        this.aliases = new String[]{"emotes","emoji","charinfo"};
+        this.help = "views info on an emote";
+        this.longhelp = "This command shows detailed information about an emote, emoji, or character.";
         this.arguments = new Argument[]{
-            new Argument("emotename",Argument.Type.SHORTSTRING,true,2,32),
-            new Argument("image_link",Argument.Type.SHORTSTRING,true)
+            new Argument("emote",Argument.Type.SHORTSTRING,true)
         };
         this.children = new Command[]{
+            new EmoteList(),
+            
+            new AddEmote(),
             new DeleteEmote()
         };
-        this.requiredPermissions = new Permission[]{Permission.CREATE_INSTANT_INVITE};
-        this.hidden = true;
     }
-
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
-        String name = (String)args[0];
-        String url = (String)args[1];
-        event.getChannel().sendTyping();
-        if(!confirmation(event))
-            return false;
-        if(!name.matches("[A-Za-z0-9_]+"))
+        String str = (String)args[0];
+        if(str.matches("<:.*:\\d+>"))
         {
-            Sender.sendResponse(SpConst.ERROR+"Invalid name. Names can only include letters, numbers, and underscores", event);
-            return false;
-        }
-        BufferedImage img = OtherUtil.imageFromUrl(url);
-        if(img==null)
-        {
-            Sender.sendResponse(SpConst.ERROR+"Invalid image", event);
-            return false;
-        }
-        BufferedImage emote = new BufferedImage(128,128,BufferedImage.TYPE_INT_ARGB_PRE);
-        Graphics2D g2d = emote.createGraphics();
-        g2d.drawImage(img, 0, 0, 128, 128, null);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            ImageIO.write(emote, "png", baos);
-        } catch (IOException ex) {
-            Sender.sendResponse(SpConst.WARNING+"Something went wrong encoding the image...", event);
-            return false;
-        }
-        byte[] bytes = baos.toByteArray();
-        String data = Base64.encode(bytes);
-        int result;
-        String request = new JSONObject().put("name", name).put("image", "data:image/png;base64,"+data).toString();
-        //System.out.println(request);
-        try {
-            result = Unirest.post("https://discordapp.com/api/guilds/"+event.getGuild().getId()+"/emojis")
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", usertoken)
-                    .body(request).asJson().getStatus();
-        } catch (UnirestException ex) {
-            Sender.sendResponse(SpConst.WARNING+"Something went wrong sending the request...", event);
-            return false;
-        }
-        if(result>=200 && result<=300)
-        {
-            Sender.sendResponse(SpConst.SUCCESS+"Added emote `"+name+"`!", event);
+            String id = str.replaceAll("<:.*:(\\d+)>", "$1");
+            Emote emote = event.getJDA().getEmoteById(id);
+            if(emote==null)
+            {
+                Sender.sendResponse(SpConst.WARNING+"Unknown emote:\n"
+                    +SpConst.LINESTART+"ID: **"+id+"**\n"
+                    +SpConst.LINESTART+"Guild: Unknown\n"
+                    +SpConst.LINESTART+"URL: https://discordcdn.com/emojis/"+id+".png",event);
+                return true;
+            }
+            Sender.sendResponse(SpConst.SUCCESS+"Emote **"+emote.getName()+"**:\n"
+                    +SpConst.LINESTART+"ID: **"+emote.getId()+"**\n"
+                    +SpConst.LINESTART+"Guild: "+(emote.getGuild()==null ? "Unknown" : "**"+emote.getGuild().getName()+"**")+"\n"
+                    +SpConst.LINESTART+"URL: "+emote.getImageUrl(),event);
             return true;
         }
-        else
+        if(str.codePoints().count()>10)
         {
-            Sender.sendResponse(SpConst.ERROR+"Something went wrong, check for a valid/unique name and valid image", event);
+            Sender.sendResponse(SpConst.ERROR+"Invalid emote, or input is too long", event);
             return false;
+        }
+        StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Emoji/Character info:");
+        str.codePoints().forEachOrdered(code -> {
+            char[] chars = Character.toChars(code);
+            String hex = Integer.toHexString(code).toUpperCase();
+            while(hex.length()<4)
+                hex = "0"+hex;
+            builder.append("\n`\\u").append(hex).append("`   ");
+            if(chars.length>1)
+            {
+                String hex0 = Integer.toHexString(chars[0]).toUpperCase();
+                String hex1 = Integer.toHexString(chars[1]).toUpperCase();
+                while(hex0.length()<4)
+                    hex0 = "0"+hex0;
+                while(hex1.length()<4)
+                    hex1 = "0"+hex1;
+                builder.append("[`\\u").append(hex0).append("\\u").append(hex1).append("`]   ");
+            }
+            builder.append(String.valueOf(chars)).append("   _").append(Character.getName(code)).append("_");
+        });
+        Sender.sendResponse(builder.toString(), event);
+        return true;
+    }
+    
+    private class EmoteList extends Command {
+        private EmoteList()
+        {
+            this.command = "list";
+            this.availableInDM = false;
+            this.help = "shows the server's emotes";
+            this.longhelp = "This command shows the emotes that are currently available on the server";
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            if(event.getGuild().getEmotes().isEmpty())
+            {
+                Sender.sendResponse(SpConst.WARNING+"There are no emotes on this server!", event);
+                return false;
+            }
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Emotes on **"+event.getGuild().getName()+"**:\n");
+            event.getGuild().getEmotes().forEach( e -> builder.append(" ").append(e.getAsEmote()));
+            Sender.sendResponse(builder.toString(),event);
+            return true;
         }
     }
     
@@ -134,6 +146,7 @@ public class EmotesCmd extends Command {
                 new Argument("emote",Argument.Type.SHORTSTRING,true)
             };
             this.requiredPermissions = new Permission[]{Permission.CREATE_INSTANT_INVITE};
+            this.hidden = true;
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
@@ -182,6 +195,80 @@ public class EmotesCmd extends Command {
             else
             {
                 Sender.sendResponse(SpConst.ERROR+"Something went wrong, check the name", event);
+                return false;
+            }
+        }
+    }
+    
+    private class AddEmote extends Command {
+        
+        public AddEmote()
+        {
+            this.command = "add";
+            this.aliases = new String[]{"create"};
+            this.availableInDM= false;
+            this.level = PermLevel.ADMIN;
+            this.help = "adds an emote to the server";
+            this.longhelp = "This command can add emotes for use on your server only. Note that they will not work on other servers. "
+                    + "Emote names cannot contain spaces or other special characters. Please kick the Emote Provider account from your server when "
+                    + "you have finished adding and removing emotes. Thank you.";
+            this.arguments = new Argument[]{
+                new Argument("emotename",Argument.Type.SHORTSTRING,true,2,32),
+                new Argument("image_link",Argument.Type.SHORTSTRING,true)
+            };
+            this.requiredPermissions = new Permission[]{Permission.CREATE_INSTANT_INVITE};
+            this.hidden = true;
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String name = (String)args[0];
+            String url = (String)args[1];
+            event.getChannel().sendTyping();
+            if(!confirmation(event))
+                return false;
+            if(!name.matches("[A-Za-z0-9_]+"))
+            {
+                Sender.sendResponse(SpConst.ERROR+"Invalid name. Names can only include letters, numbers, and underscores", event);
+                return false;
+            }
+            BufferedImage img = OtherUtil.imageFromUrl(url);
+            if(img==null)
+            {
+                Sender.sendResponse(SpConst.ERROR+"Invalid image", event);
+                return false;
+            }
+            BufferedImage emote = new BufferedImage(128,128,BufferedImage.TYPE_INT_ARGB_PRE);
+            Graphics2D g2d = emote.createGraphics();
+            g2d.drawImage(img, 0, 0, 128, 128, null);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try {
+                ImageIO.write(emote, "png", baos);
+            } catch (IOException ex) {
+                Sender.sendResponse(SpConst.WARNING+"Something went wrong encoding the image...", event);
+                return false;
+            }
+            byte[] bytes = baos.toByteArray();
+            String data = Base64.encode(bytes);
+            int result;
+            String request = new JSONObject().put("name", name).put("image", "data:image/png;base64,"+data).toString();
+            //System.out.println(request);
+            try {
+                result = Unirest.post("https://discordapp.com/api/guilds/"+event.getGuild().getId()+"/emojis")
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", usertoken)
+                        .body(request).asJson().getStatus();
+            } catch (UnirestException ex) {
+                Sender.sendResponse(SpConst.WARNING+"Something went wrong sending the request...", event);
+                return false;
+            }
+            if(result>=200 && result<=300)
+            {
+                Sender.sendResponse(SpConst.SUCCESS+"Added emote `"+name+"`!", event);
+                return true;
+            }
+            else
+            {
+                Sender.sendResponse(SpConst.ERROR+"Something went wrong, check for a valid/unique name and valid image", event);
                 return false;
             }
         }

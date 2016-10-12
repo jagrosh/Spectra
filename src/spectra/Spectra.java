@@ -190,6 +190,7 @@ public class Spectra extends ListenerAdapter {
             new Contest(contests, entries),
             new Donate(donators),
             new Draw(),
+            new EmotesCmd(logindetails.get(1),logindetails.get(2)),
             new GoogleSearch(googlesearcher),
             new ImageSearch(imagesearcher),
             new Info(),
@@ -222,7 +223,6 @@ public class Spectra extends ListenerAdapter {
             
             new Authorize(globallists, handler),
             new CommandCmd(settings, this),
-            new EmotesCmd(logindetails.get(1),logindetails.get(2)),
             new Feed(feeds),
             new Ignore(settings),
             new Leave(settings),

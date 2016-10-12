@@ -24,12 +24,12 @@ import java.time.OffsetDateTime;
 public class SpConst {
     //bot items
     final public static String BOTNAME = "Spectra";
-    final public static String VERSION = "3.2.0";
+    final public static String VERSION = "3.2.1";
     final public static String PREFIX = "%";
     final public static String ALTPREFIX = "/";
     
     final public static OffsetDateTime PUBLIC_DATE = OffsetDateTime.parse("2016-09-18T04:00:00.000-04:00");
-    final public static double BOT_COLLECTION_PERCENT = .9;
+    final public static double BOT_COLLECTION_PERCENT = .85;
     
     //discord items
     final public static String JAGROSH_ID = "113156185389092864";
