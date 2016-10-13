@@ -136,7 +136,7 @@ public abstract class Command {
         }
         if(whitelistOnly && !whitelisted)
         {
-            Sender.sendResponse(SpConst.ERROR+SpConst.ONLY_WHITELIST, event);
+            Sender.sendResponse(SpConst.ONLY_WHITELIST, event);
             return false;
         }
         if(banned)

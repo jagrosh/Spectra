@@ -193,6 +193,7 @@ public class Spectra extends ListenerAdapter {
             new EmotesCmd(logindetails.get(1),logindetails.get(2)),
             new GoogleSearch(googlesearcher),
             new ImageSearch(imagesearcher),
+            new Imgur(logindetails.get(3)),
             new Info(),
             new Invite(),
             new Makebot(tags, localtags),
@@ -464,6 +465,7 @@ public class Spectra extends ListenerAdapter {
         
         if(strippedMessage!=null && !event.getAuthor().isBot())//potential command right here
         {
+            boolean whitelisted = event.isPrivate() ? false : globallists.isWhitelisted(event.getGuild().getId());
             strippedMessage = strippedMessage.trim();
             if(strippedMessage.equalsIgnoreCase("help"))//send full help message (based on access level)
             {//we don't worry about ignores for help
@@ -473,6 +475,8 @@ public class Spectra extends ListenerAdapter {
                 for(Command com: commands)
                 {
                     if(com.hidden)
+                        continue;
+                    if(com.whitelistOnly && !whitelisted)
                         continue;
                     if(!event.isPrivate() && com.command.equals("authorize") && globallists.isAuthorized(event.getGuild().getId()))
                         continue;
@@ -527,10 +531,8 @@ public class Spectra extends ListenerAdapter {
                     isCommand = true;
                     //check if banned
                     boolean banned = false;
-                    boolean whitelisted = false;
                     if(!event.isPrivate())
                     {
-                        whitelisted = globallists.isWhitelisted(event.getGuild().getId());
                         if(event.getTextChannel().getTopic()!=null && (event.getTextChannel().getTopic().contains("{-"+toRun.command+"}") || event.getTextChannel().getTopic().contains("{-all}")))
                             banned = true;
                         else
@@ -615,6 +617,8 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
+            return;
+        if(event.getAuthor()==null)
             return;
         if(!(event.getMessage().getRawContent().startsWith("[<@")&&event.getAuthor().equals(event.getJDA().getSelfInfo())))
         {
