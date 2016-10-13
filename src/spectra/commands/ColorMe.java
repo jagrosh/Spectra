@@ -52,6 +52,8 @@ public class ColorMe extends Command {
         this.requiredPermissions = new Permission[]{
             Permission.MANAGE_ROLES
         };
+        this.cooldown = 15;
+        this.cooldownKey = event -> event.getAuthor().getId()+"|colorme";
     }
 
     @Override

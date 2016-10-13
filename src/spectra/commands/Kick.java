@@ -35,10 +35,12 @@ import spectra.datasources.Settings;
 public class Kick extends Command {
     private final FeedHandler handler;
     private final Settings settings;
-    public Kick(FeedHandler handler, Settings settings)
+    private final Feeds feeds;
+    public Kick(FeedHandler handler, Settings settings, Feeds feeds)
     {
         this.handler = handler;
         this.settings = settings;
+        this.feeds = feeds;
         this.command = "kick";
         this.help = "kicks a user from the server";
         this.longhelp = "This command kicks the specified user from the server.";
@@ -78,8 +80,10 @@ public class Kick extends Command {
         try{
             event.getGuild().getManager().kick(target);
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was kicked from the server \uD83D\uDC62", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
-                    "\uD83D\uDC62 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-kick"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                        "\uD83D\uDC62 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
                             +" kicked **"+target.getUsername()+"** (ID:"+target.getId()+") for "+reason);
             return true;
         }catch(Exception e)

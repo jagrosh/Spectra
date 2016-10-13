@@ -64,13 +64,15 @@ public class Feed extends Command {
                     + "for the actions (if included in the command).";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
-                new Argument("channel",Argument.Type.TEXTCHANNEL,false)
+                new Argument("channel",Argument.Type.TEXTCHANNEL,false),
+                new Argument("options",Argument.Type.LONGSTRING,false)
             };
             this.availableInDM = false;
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             TextChannel tchan = (TextChannel)(args[0]);
+            String options = args[1]==null ? "" : (String)args[1];
             if(tchan==null)
                 tchan = event.getTextChannel();
             //check bot permissions for channel
@@ -84,7 +86,7 @@ public class Feed extends Command {
             String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.MODLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
-            feeds.set(new String[]{tchan.getId(),Feeds.Type.MODLOG.toString(),event.getGuild().getId(),""});
+            feeds.set(new String[]{tchan.getId(),Feeds.Type.MODLOG.toString(),event.getGuild().getId(),options});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.MODLOG+" has been added to <#"+tchan.getId()+">"
                     + "\n*The `modlog` feed is for tracking bans, and other moderator commands like kicks, mutes, and cleans*"
                     + "\n*If you want a feed to track message edits, message deletes, avatar changes, and more, use the `serverlog` feed.*";
@@ -101,9 +103,8 @@ public class Feed extends Command {
             this.longhelp = "This command sets the `serverlog` feed, which displays various activity on the server, "
                     + "including message deletes, message edits, username changes, avatar changes, nickname changes, "
                     + "server joins, server leaves, and room changes. Additionally, options can be provided to exclude "
-                    + "some or all users from this feed. To ignore a user's avatar changes, inclide `-aID`, where ID is "
-                    + "replaced by their User ID. To ignore nickname changes, use `-nID`, and to ignore message deletes/edits, "
-                    + "use `-mID`. To ignore all users except certain ones, use `+aID` (or the equivalent letter).";
+                    + "some or all users and/or actions from this feed. For more details on these options, please read "
+                    + "<https://github.com/jagrosh/Spectra/wiki/Serverlog-Feed-Parameters>.";
             this.level = PermLevel.ADMIN;
             this.arguments = new Argument[]{
                 new Argument("channel",Argument.Type.TEXTCHANNEL,false),

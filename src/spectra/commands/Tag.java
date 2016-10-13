@@ -289,6 +289,8 @@ public class Tag extends Command{
                 new Argument("tagname",Argument.Type.SHORTSTRING,true),
                 new Argument("new contents",Argument.Type.LONGSTRING,true)
             };
+            this.cooldown = 20;
+            this.cooldownKey = (event) -> {return event.getAuthor().getId()+"tagedit";};
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event)

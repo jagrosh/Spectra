@@ -215,12 +215,12 @@ public class Spectra extends ListenerAdapter {
             
             new Ban(settings, loginfo),
             new BotScan(),
-            new Clean(handler),
-            new Kick(handler, settings),
-            new Mute(handler, settings, mutes),
+            new Clean(handler, feeds),
+            new Kick(handler, settings, feeds),
+            new Mute(handler, settings, mutes, feeds),
             new Softban(settings, mutes, loginfo),
             new Unban(loginfo),
-            new Unmute(handler,settings, mutes),
+            new Unmute(handler,settings, mutes, feeds),
             
             new Authorize(globallists, handler),
             new CommandCmd(settings, this),
@@ -266,7 +266,7 @@ public class Spectra extends ListenerAdapter {
                         + "Connected to **"+event.getJDA().getGuilds().size()+"** servers.\n"
                         + "Started up in "+FormatUtil.secondsToTime(statistics.getUptime()));
         
-        unmuter.scheduleWithFixedDelay(()-> {mutes.checkUnmutes(jda, handler);},0, 10, TimeUnit.SECONDS);
+        unmuter.scheduleWithFixedDelay(()-> {mutes.checkUnmutes(jda, handler, feeds);},0, 10, TimeUnit.SECONDS);
         roomchecker.scheduleWithFixedDelay(() -> {rooms.checkExpires(jda, handler);}, 0, 120, TimeUnit.SECONDS);
         reminderchecker.scheduleWithFixedDelay(() -> {reminders.checkReminders(jda);}, 0, 30, TimeUnit.SECONDS);
         contestchecker.scheduleWithFixedDelay(() -> {contests.notifications(jda);}, 0, 1, TimeUnit.MINUTES);
@@ -624,7 +624,7 @@ public class Spectra extends ListenerAdapter {
         {
             rooms.setLastActivity(event.getChannel().getId(), event.getMessage().getTime());
         }
-        if(feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
+        if(!event.getAuthor().equals(event.getJDA().getSelfInfo()) && feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
         statistics.sentMessage(event.getGuild().getId());
         String[] currsettings = settings.getSettingsForGuild(event.getGuild().getId());
@@ -671,9 +671,10 @@ public class Spectra extends ListenerAdapter {
     {
         if(details==null)
             return !isBot;
-        if(details.contains("+"+type+id))
+        String initial = type.substring(0,1);
+        if(details.contains("+"+initial+id))
             return true;
-        return !(details.contains("-"+type+id) || details.contains("+"+type) || (isBot && !details.contains("+bots")));
+        return !(details.contains("-"+initial+id) || details.contains("-"+type) || details.contains("+"+initial) || (isBot && !details.contains("+bots")));
     }
     
     @Override
@@ -688,7 +689,7 @@ public class Spectra extends ListenerAdapter {
             String id = event.getAuthor().getId();
             Message msg = messagecache.updateMessage(event.getGuild().getId(), event.getMessage());
             String details = feed[Feeds.DETAILS];
-            boolean show = shouldBeLogged("m",id,event.getAuthor().isBot(),details) && shouldBeLogged("c",event.getChannel().getId(),event.getAuthor().isBot(),details);
+            boolean show = shouldBeLogged("message",id,event.getAuthor().isBot(),details) && shouldBeLogged("channel",event.getChannel().getId(),event.getAuthor().isBot(),details);
             if(msg!=null && !msg.getRawContent().equals(event.getMessage().getRawContent()) && show)
             {
                 String old = FormatUtil.appendAttachmentUrls(msg);
@@ -719,7 +720,7 @@ public class Spectra extends ListenerAdapter {
                 if(event.getJDA().getSelfInfo().getId().equals(id))
                     return;
                 String details = feed[Feeds.DETAILS];
-                boolean show = shouldBeLogged("m",id,bot,details) && shouldBeLogged("c",msg.getChannelId(),bot,details);
+                boolean show = shouldBeLogged("message",id,bot,details) && shouldBeLogged("channel",msg.getChannelId(),bot,details);
                 if( show )
                 {
                     String del = FormatUtil.appendAttachmentUrls(msg);
@@ -824,24 +825,57 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMemberBan(GuildMemberBanEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
+        
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
         String[] info = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.BAN);
         String[] sinfo = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.SOFTBAN);
-        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), info==null ? ( sinfo==null ?
-            "\uD83D\uDD28 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was banned from the server." : 
-            "\uD83C\uDF4C "+sinfo[0]+" softbanned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+sinfo[1]) :
-            "\uD83D\uDD28 "+info[0]+" banned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+info[1]);
+        if(feed!=null)
+        {
+            String details = feed[Feeds.DETAILS];
+            if(info!=null)
+            {
+                if(!details.contains("-commandban"))
+                    handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                            "\uD83D\uDD28 "+info[0]+" banned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+info[1]);
+            }
+            else if(sinfo!=null)
+            {
+                if(!details.contains("-commandsoftban"))
+                    handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                            "\uD83C\uDF4C "+sinfo[0]+" softbanned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+sinfo[1]);
+            }
+            else
+            {
+                if(!details.contains("-manualban"))
+                    handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+                            "\uD83D\uDD28 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was banned from the server.");
+            }
+        }
     }
 
     @Override
     public void onGuildMemberUnban(GuildMemberUnbanEvent event) {
         if(globallists.isBlacklisted(event.getGuild().getId()))
             return;
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
         String[] info = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.UNBAN);
         String[] sinfo = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.SOFTUNBAN);
-        if(sinfo==null)
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), info==null ?
-                "\uD83D\uDD27 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was unbanned from the server." :
-                "\uD83D\uDD27 "+info[0]+" unbanned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+info[1]);
+        if(sinfo==null && feed!=null)
+        {
+            String details = feed[Feeds.DETAILS];
+            if(info!=null)
+            {
+                if(!details.contains("-commandban"))
+                    handler.submitText(Feeds.Type.MODLOG, event.getGuild(),
+                            "\uD83D\uDD27 "+info[0]+" unbanned **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") for "+info[1]);
+            }
+            else
+            {
+                if(!details.contains("-manualban"))
+                    handler.submitText(Feeds.Type.MODLOG, event.getGuild(),
+                            "\uD83D\uDD27 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") was unbanned from the server.");
+            }
+        }
     }
 
     @Override
@@ -889,7 +923,7 @@ public class Spectra extends ListenerAdapter {
         {
             String id = event.getUser().getId();
             String details = feed[Feeds.DETAILS];
-            boolean show = shouldBeLogged("n",id,event.getUser().isBot(),details);
+            boolean show = shouldBeLogged("nick",id,event.getUser().isBot(),details);
             if( show )
                 handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\u270D **"+event.getUser().getUsername()+"** (ID:"
                         +event.getUser().getId()+") has changed nicknames from "+(event.getPrevNick()==null ? "[none]" : "**"+event.getPrevNick()+"**")+" to "+
@@ -924,7 +958,7 @@ public class Spectra extends ListenerAdapter {
             if(feed!=null)
             {
                 String details = feed[Feeds.DETAILS];
-                if(shouldBeLogged("a",id,event.getUser().isBot(),details))
+                if(shouldBeLogged("avatar",id,event.getUser().isBot(),details))
                     guilds.add(g);
             }
         });
@@ -999,7 +1033,7 @@ public class Spectra extends ListenerAdapter {
         {
             String id = event.getUser().getId();
             String details = feed[Feeds.DETAILS];
-            boolean show = shouldBeLogged("v",id,event.getUser().isBot(),details);
+            boolean show = shouldBeLogged("voice",id,event.getUser().isBot(),details);
             if( show )
             {
                 if(event.getOldChannel() == null)
@@ -1031,7 +1065,7 @@ public class Spectra extends ListenerAdapter {
         {
             String id = event.getUser().getId();
             String details = feed[Feeds.DETAILS];
-            boolean show = shouldBeLogged("v",id,event.getUser().isBot(),details);
+            boolean show = shouldBeLogged("voice",id,event.getUser().isBot(),details);
             if( show )
             {
                 if(event.getVoiceStatus().inVoiceChannel())//change

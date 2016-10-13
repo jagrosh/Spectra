@@ -223,6 +223,8 @@ public class Contest extends Command {
                 new Argument("contestname",Argument.Type.SHORTSTRING,true),
                 new Argument("submission", Argument.Type.LONGSTRING, true)
             };
+            this.cooldown = 30;
+            this.cooldownKey = event -> event.getAuthor().getId()+"|contestsubmit";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {

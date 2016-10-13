@@ -75,7 +75,7 @@ public class Mutes extends DataSource {
         });
     }
     
-    public void checkUnmutes(JDA jda, FeedHandler handler)
+    public void checkUnmutes(JDA jda, FeedHandler handler, Feeds feeds)
     {
         if(jda.getStatus()!=JDA.Status.CONNECTED)
                 return;
@@ -97,7 +97,9 @@ public class Mutes extends DataSource {
                         {
                             try{
                             guild.getManager().removeRoleFromUser(u, r).update();
-                            handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 **"+u.getUsername()+"** (ID:"+u.getId()+") was unmuted.");
+                            String[] feed = feeds.feedForGuild(guild, Feeds.Type.MODLOG);
+                            if(feed!=null && !feed[Feeds.DETAILS].contains("-mute"))
+                                handler.submitText(Feeds.Type.MODLOG, guild, "\uD83D\uDD09 **"+u.getUsername()+"** (ID:"+u.getId()+") was unmuted.");
                             }catch(Exception e){System.out.println("Unable to remove a muted role on "+guild.getName()+" ("+guild.getId()+")");}
                             break;
                         }

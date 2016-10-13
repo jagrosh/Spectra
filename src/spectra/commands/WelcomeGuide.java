@@ -38,6 +38,8 @@ public class WelcomeGuide extends Command {
         this.longhelp = "This command sends the server's current welcome DM to the user who uses the command. "
                 + "This is useful if and admin changes the DM, or if the user misses the DM.";
         this.availableInDM = false;
+        this.cooldown = 60;
+        this.cooldownKey = event -> event.getAuthor().getId()+"|"+event.getGuild().getId()+"|welcomeguide";
     }
 
     @Override

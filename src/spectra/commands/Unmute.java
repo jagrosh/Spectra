@@ -35,14 +35,16 @@ import spectra.datasources.Settings;
  * @author John Grosh (jagrosh)
  */
 public class Unmute extends Command {
-    final FeedHandler handler;
-    final Settings settings;
-    final Mutes mutes;
-    public Unmute(FeedHandler handler, Settings settings, Mutes mutes)
+    private final FeedHandler handler;
+    private final Settings settings;
+    private final Mutes mutes;
+    private final Feeds feeds;
+    public Unmute(FeedHandler handler, Settings settings, Mutes mutes, Feeds feeds)
     {
         this.handler = handler;
         this.settings = settings;
         this.mutes = mutes;
+        this.feeds = feeds;
         this.command = "unmute";
         this.help = "unmutes the specified user";
         this.longhelp = "This command removes the \"Muted\" role from the specified user. "
@@ -105,9 +107,11 @@ public class Unmute extends Command {
             event.getGuild().getManager().removeRoleFromUser(target, mutedrole).update();
             mutes.remove(target.getId()+"|"+event.getGuild().getId());
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was unmuted",event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-mute"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                     "\uD83D\uDD09 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
-                            +" unmuted **"+target.getUsername()+"** (ID:"+target.getId()+") for "+reason);
+                        +" unmuted **"+target.getUsername()+"** (ID:"+target.getId()+") for "+reason);
             return true;
         }catch(Exception e)
         {

@@ -70,7 +70,7 @@ public class Imgur extends Command {
         }
         try{
             String link = result.getBody().getObject().getJSONObject("data").getString("link");
-            Sender.sendResponse(SpConst.SUCCESS+"Image uploaded successfully: **<"+link+">**", event);
+            Sender.sendResponse("<@"+event.getAuthor().getId()+"> \uD83D\uDCE8 Image uploaded successfully: **<"+link+">**", event);
             return true;
         }catch(Exception e)
         {

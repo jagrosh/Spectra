@@ -42,14 +42,16 @@ import spectra.utils.FormatUtil;
  * @author John Grosh (jagrosh)
  */
 public class Mute extends Command {
-    final FeedHandler handler;
-    final Settings settings;
-    final Mutes mutes;
-    public Mute(FeedHandler handler, Settings settings, Mutes mutes)
+    private final FeedHandler handler;
+    private final Settings settings;
+    private final Mutes mutes;
+    private final Feeds feeds;
+    public Mute(FeedHandler handler, Settings settings, Mutes mutes, Feeds feeds)
     {
         this.handler = handler;
         this.settings = settings;
         this.mutes = mutes;
+        this.feeds = feeds;
         this.command = "mute";
         this.help = "mutes the specified user for the given time";
         this.longhelp = "This command applies the \"Muted\" role to the specified user for the specified "
@@ -119,9 +121,11 @@ public class Mute extends Command {
             event.getGuild().getManager().addRoleToUser(target, mutedrole).update();
             mutes.set(new String[]{target.getId(),event.getGuild().getId(),OffsetDateTime.now().plusSeconds(seconds).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)});
             Sender.sendResponse(SpConst.SUCCESS+"**"+target.getUsername()+"** was muted for "+FormatUtil.secondsToTime(seconds), event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-mute"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), 
                     "\uD83D\uDD07 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
-                            +" muted **"+target.getUsername()+"** (ID:"+target.getId()+") for "+FormatUtil.secondsToTime(seconds)+" for "+reason);
+                        +" muted **"+target.getUsername()+"** (ID:"+target.getId()+") for "+FormatUtil.secondsToTime(seconds)+" for "+reason);
             return true;
         }catch(Exception e)
         {

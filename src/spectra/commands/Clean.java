@@ -38,9 +38,11 @@ import spectra.datasources.Feeds;
  */
 public class Clean extends Command {
     private final FeedHandler handler;
-    public Clean(FeedHandler handler)
+    private final Feeds feeds;
+    public Clean(FeedHandler handler, Feeds feeds)
     {
         this.handler = handler;
+        this.feeds = feeds;
         this.command = "clean";
         this.aliases = new String[]{"clear","purge"};
         this.help = "deletes posts within the specified number";
@@ -59,6 +61,7 @@ public class Clean extends Command {
         };
         this.children = new Command[]{
             new CleanBots(),
+            new CleanContaining(),
             new CleanImages(),
             new CleanLinks(),
             new CleanRegex()
@@ -105,8 +108,10 @@ public class Clean extends Command {
             try{Thread.sleep(1100);}catch(Exception e){}
         }
         Sender.sendResponse("\uD83D\uDEAE Cleaned **"+count+"** messages"+(user==null ? "" : " by **"+user.getUsername()+"**"), event);
-        handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
-                +" cleaned **"+count+"** messages "+(user==null ? "" : "by **"+user.getUsername()+"** ")+"in <#"+event.getTextChannel().getId()+">");
+        String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+        if(feed!=null && !feed[Feeds.DETAILS].contains("-clean"))
+            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                    +" cleaned **"+count+"** messages "+(user==null ? "" : "by **"+user.getUsername()+"** ")+"in <#"+event.getTextChannel().getId()+">");
         return true;
     }
     
@@ -143,8 +148,10 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing links", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
-                    +" cleaned **"+toDelete.size()+"** messages *containing links* in <#"+event.getTextChannel().getId()+">");
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-clean"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                        +" cleaned **"+toDelete.size()+"** messages *containing links* in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }
@@ -185,8 +192,10 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing images", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
-                    +" cleaned **"+toDelete.size()+"** messages *containing images* in <#"+event.getTextChannel().getId()+">");
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-clean"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                        +" cleaned **"+toDelete.size()+"** messages *containing images* in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }
@@ -227,8 +236,54 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing bot posts or commands", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
-                    +" cleaned **"+toDelete.size()+"** messages *containing bot posts or commands* in <#"+event.getTextChannel().getId()+">");
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-clean"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                        +" cleaned **"+toDelete.size()+"** messages *containing bot posts or commands* in <#"+event.getTextChannel().getId()+">");
+            return true;
+        }
+    }
+    
+    private class CleanContaining extends Command {
+        private CleanContaining()
+        {
+            this.command = "containing";
+            this.aliases = new String[]{"contains","contain"};
+            this.help = "deletes posts containing the given text";
+            this.longhelp = "This command deletes posts (within the last 100) that contain the given text";
+            this.availableInDM = false;
+            this.level = PermLevel.MODERATOR;
+            this.cooldown=2;
+            this.cooldownKey = event -> event.getGuild().getId()+"|clean";
+            this.requiredPermissions = new Permission[]{
+                Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE
+            };
+            this.arguments = new Argument[]{
+                new Argument("phrase",Argument.Type.LONGSTRING,true)
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            String words = (String)args[0];
+            List<Message> toDelete = event.getTextChannel().getHistory().retrieve(100);
+            toDelete.remove(event.getMessage());
+            toDelete = toDelete.stream().filter((m) -> {
+                   return m.getRawContent().toLowerCase().contains(words.toLowerCase());
+               }).collect(Collectors.toList());
+            if(toDelete.isEmpty())
+            {
+                Sender.sendResponse(SpConst.WARNING+"There were no messages to delete", event);
+                return false;
+            }
+            if(toDelete.size()==1)
+                toDelete.get(0).deleteMessage();
+            else
+                event.getTextChannel().deleteMessages(toDelete);
+            Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages containing \""+words+"\"", event);
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-clean"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                        +" cleaned **"+toDelete.size()+"** messages *containing* \""+words+"\" in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }
@@ -275,8 +330,10 @@ public class Clean extends Command {
             else
                 event.getTextChannel().deleteMessages(toDelete);
             Sender.sendResponse("\uD83D\uDEAE Cleaned **"+toDelete.size()+"** messages matching `"+regex+"`", event);
-            handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
-                    +" cleaned **"+toDelete.size()+"** messages *matching* `"+regex+"` in <#"+event.getTextChannel().getId()+">");
+            String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
+            if(feed!=null && !feed[Feeds.DETAILS].contains("-clean"))
+                handler.submitText(Feeds.Type.MODLOG, event.getGuild(), "\uD83D\uDDD1 **"+event.getAuthor().getUsername()+"**#"+event.getAuthor().getDiscriminator()
+                        +" cleaned **"+toDelete.size()+"** messages *matching* `"+regex+"` in <#"+event.getTextChannel().getId()+">");
             return true;
         }
     }
