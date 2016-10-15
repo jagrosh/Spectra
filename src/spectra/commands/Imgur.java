@@ -52,6 +52,8 @@ public class Imgur extends Command {
         event.getChannel().sendTyping();
         if(url.startsWith("<")&&url.endsWith(">"))
             url = url.substring(1, url.length()-1);
+        if(event.getMessage().getAttachments()!=null && !event.getMessage().getAttachments().isEmpty())
+            try{Thread.sleep(500);}catch(Exception e){}
         HttpResponse<JsonNode> result;
         try {
             result = Unirest.post("https://api.imgur.com/3/image")

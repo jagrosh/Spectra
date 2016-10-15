@@ -205,6 +205,7 @@ public class Spectra extends ListenerAdapter {
             new RoleMe(groups),
             new Roll(),
             new Room(rooms, settings, handler),
+            new Search(),
             new Server(settings),
             new Speakerphone(phones),
             new Stats(statistics),
@@ -218,6 +219,7 @@ public class Spectra extends ListenerAdapter {
             new Clean(handler, feeds),
             new Kick(handler, settings, feeds),
             new Mute(handler, settings, mutes, feeds),
+            new Note(handler, feeds),
             new Softban(settings, mutes, loginfo),
             new Unban(loginfo),
             new Unmute(handler,settings, mutes, feeds),
@@ -515,8 +517,7 @@ public class Spectra extends ListenerAdapter {
                     String endhelp = args[1]+" "+args[0];
                     args = FormatUtil.cleanSplit(endhelp);
                 }
-                if(event.getMessage().getAttachments()!=null && !event.getMessage().getAttachments().isEmpty())
-                    args[1]+=" "+event.getMessage().getAttachments().get(0).getUrl();
+                args[1] = FormatUtil.appendAttachmentUrls(event.getMessage(), args[1]);
                 for(Command com: commands)
                     if(com.isCommandFor(args[0]))
                     {

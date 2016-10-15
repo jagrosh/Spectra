@@ -39,15 +39,20 @@ public class FormatUtil {
     //Cleanly splits on given to specified size, padding with null
     public static String[] cleanSplit(String input, String regex, int size)
     {
-        return Arrays.copyOf(input.split(regex, size), size);
+        return Arrays.copyOf(input.trim().split(regex, size), size);
     }
     
     public static String appendAttachmentUrls(Message message)
     {
-        String content = message.getRawContent();
+        return appendAttachmentUrls(message, message.getRawContent());
+    }
+    
+    public static String appendAttachmentUrls(Message message, String content)
+    {
+        StringBuilder builder = content==null ? new StringBuilder() : new StringBuilder(content);
         if(message.getAttachments()!=null)
-            content = message.getAttachments().stream().map((att) -> " "+att.getUrl()).reduce(content, String::concat);
-        return content;
+            message.getAttachments().stream().map((att) -> " "+att.getUrl()).forEach(url -> builder.append(" ").append(url));
+        return builder.toString();
     }
     
     public static String demention(String input)
