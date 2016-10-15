@@ -49,10 +49,13 @@ public class FormatUtil {
     
     public static String appendAttachmentUrls(Message message, String content)
     {
-        StringBuilder builder = content==null ? new StringBuilder() : new StringBuilder(content);
-        if(message.getAttachments()!=null)
+        if(message.getAttachments()!=null && !message.getAttachments().isEmpty())
+        {
+            StringBuilder builder = content==null ? new StringBuilder() : new StringBuilder(content);
             message.getAttachments().stream().map((att) -> " "+att.getUrl()).forEach(url -> builder.append(" ").append(url));
-        return builder.toString();
+            return builder.toString();
+        }
+        return content;
     }
     
     public static String demention(String input)

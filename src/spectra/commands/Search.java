@@ -18,6 +18,7 @@ package spectra.commands;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.exceptions.PermissionException;
@@ -34,16 +35,17 @@ import spectra.utils.FormatUtil;
 public class Search extends Command {
     public Search()
     {
-        this.command = "search";
-        this.aliases = new String[]{"find","ctrlf"};
-        this.help = "search for text in a channel";
+        this.command = "find";
+        this.aliases = new String[]{"ctrlf"};
+        this.help = "find text in a channel";
         this.longhelp = "This command searches through past messages for messages containing the provided text. The search is not case-sensitive";
         this.arguments = new Argument[]{
             new Argument("query",Argument.Type.LONGSTRING,true,3,2000)
         };
         this.cooldown = 30;
-        this.cooldownKey = event -> event.getAuthor().getId()+"|search";
+        this.cooldownKey = event -> event.getAuthor().getId()+"|find";
         this.whitelistOnly = true;
+        this.requiredPermissions = new Permission[]{Permission.MESSAGE_HISTORY};
     }
 
     @Override
