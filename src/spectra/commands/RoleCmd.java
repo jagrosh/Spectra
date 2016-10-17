@@ -46,7 +46,7 @@ public class RoleCmd extends Command {
             Permission.MANAGE_ROLES
         };
         this.arguments = new Argument[]{
-            new Argument("auto|color|create|give|take",Argument.Type.SHORTSTRING,true)
+            new Argument("subcommand",Argument.Type.SHORTSTRING,true)
         };
         this.children = new Command[]{
             new RoleAuto(),

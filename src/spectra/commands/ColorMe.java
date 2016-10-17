@@ -54,6 +54,7 @@ public class ColorMe extends Command {
         };
         this.cooldown = 15;
         this.cooldownKey = event -> event.getAuthor().getId()+"|colorme";
+        this.hidden = true;
     }
 
     @Override

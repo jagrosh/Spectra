@@ -56,7 +56,7 @@ public class RoleMe extends Command {
         this.requiredPermissions = new Permission[]{
             Permission.MANAGE_ROLES
         };
-        this.cooldown = 30;
+        this.cooldown = 10;
         this.cooldownKey = event -> event.getAuthor().getId()+"|roleme";
     }
 
