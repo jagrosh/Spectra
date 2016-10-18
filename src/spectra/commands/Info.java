@@ -29,6 +29,7 @@ import spectra.Command;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.misc.SafeEmote;
 
 /**
  *
@@ -57,8 +58,8 @@ public class Info extends Command{
             user = event.getAuthor();
         
         boolean here = (!event.isPrivate() && event.getGuild().getUsers().contains(user));
-        
-        String str = (user.isBot()?"\uD83E\uDD16":"\uD83D\uDC64")+" Information about **"+user.getUsername()+"** #"+user.getDiscriminator()
+        String bot = SafeEmote.BOT.get(event.getJDA());
+        String str = (user.isBot()?bot:"\uD83D\uDC64")+" Information about **"+user.getUsername()+"** #"+user.getDiscriminator()
                 +":\n"+SpConst.LINESTART+"Discord ID: **"+user.getId()+"**";
         if(here)
         {

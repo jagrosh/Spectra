@@ -534,7 +534,8 @@ public class Spectra extends ListenerAdapter {
                     boolean banned = false;
                     if(!event.isPrivate())
                     {
-                        if(event.getTextChannel().getTopic()!=null && (event.getTextChannel().getTopic().contains("{-"+toRun.command+"}") || event.getTextChannel().getTopic().contains("{-all}")))
+                        if(event.getTextChannel().getTopic()!=null && (event.getTextChannel().getTopic().contains("{-"+toRun.command+"}") || 
+                                (!toRun.level.isAtLeast(PermLevel.MODERATOR) && event.getTextChannel().getTopic().contains("{-all}"))))
                             banned = true;
                         else
                         {
@@ -1071,8 +1072,8 @@ public class Spectra extends ListenerAdapter {
             {
                 if(event.getVoiceStatus().inVoiceChannel())//change
                 {
-                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), SafeEmote.VOICEMOVE.get(event.getJDA())
-                            +" "+FormatUtil.fullUser(event.getUser())+" has moved voice channels from _"+event.getOldChannel().getName()+"_ to _"+event.getVoiceStatus().getChannel().getName()+"_");
+                    handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), "\uD83D\uDD18 "
+                            +FormatUtil.fullUser(event.getUser())+" has moved voice channels from _"+event.getOldChannel().getName()+"_ to _"+event.getVoiceStatus().getChannel().getName()+"_");
                 }
                 else
                 {

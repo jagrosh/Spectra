@@ -18,7 +18,7 @@ package spectra.commands;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import javafx.util.Pair;
 import net.dv8tion.jda.OnlineStatus;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
@@ -175,14 +175,12 @@ public class Server extends Command {
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            HashMap<String,List<User>> map = new HashMap<>();
             String[] currentSettings = settings.getSettingsForGuild(event.getGuild().getId());
+            ArrayList<Pair<User,String>> list = new ArrayList<>();
             event.getGuild().getUsers().stream().filter(u -> !u.isBot()).forEach(u->{
                 if(PermissionUtil.checkPermission(event.getGuild(), u, Permission.MANAGE_SERVER))
                 {
-                    List<User> list = map.getOrDefault("ADMIN|"+u.getOnlineStatus().name(), new ArrayList<>());
-                    list.add(u);
-                    map.put("ADMIN|"+u.getOnlineStatus().name(), list);
+                    list.add(new Pair<>(u,"ADMIN"));
                 }
                 else
                 {
@@ -197,31 +195,24 @@ public class Server extends Command {
                     }
                     if(isMod)
                     {
-                        List<User> list = map.getOrDefault("MOD|"+u.getOnlineStatus().name(), new ArrayList<>());
-                        list.add(u);
-                        map.put("MOD|"+u.getOnlineStatus().name(), list);
+                        list.add(new Pair<>(u,"MOD"));
                     }
                 }
             });
+            
+            list.sort((pair1, pair2) -> {
+                if(pair1.getKey().getOnlineStatus() == pair2.getKey().getOnlineStatus())
+                    return pair1.getValue().compareTo(pair2.getValue());
+                return pair1.getKey().getOnlineStatus().compareTo(pair2.getKey().getOnlineStatus());
+                });
+            
             StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Mods/Admins on **"+event.getGuild().getName()+"**:\n");
-            map.getOrDefault("ADMIN|"+OnlineStatus.ONLINE.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.ONLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
-            map.getOrDefault("MOD|"+OnlineStatus.ONLINE.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.ONLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
-            map.getOrDefault("ADMIN|"+OnlineStatus.AWAY.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.AWAY.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
-            map.getOrDefault("MOD|"+OnlineStatus.AWAY.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.AWAY.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
-            map.getOrDefault("ADMIN|"+OnlineStatus.OFFLINE.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
-            map.getOrDefault("MOD|"+OnlineStatus.OFFLINE.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
-            map.getOrDefault("ADMIN|"+OnlineStatus.UNKNOWN.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Admin]`"));
-            map.getOrDefault("MOD|"+OnlineStatus.UNKNOWN.name(), new ArrayList<>()).stream().forEach(u -> 
-                    builder.append("\n").append(SafeEmote.OFFLINE.get(event.getJDA())).append(" ").append(FormatUtil.shortUser(u)).append(" `[Moderator]`"));
+            list.stream().forEach(pair -> builder.append("\n").append(SafeEmote.map(pair.getKey().getOnlineStatus()).get(event.getJDA()))
+                    .append(" ").append(FormatUtil.shortUser(pair.getKey())).append(" `[").append(pair.getValue()).append("]`"));
             Sender.sendResponse(builder.toString(), event);
             return true;
         }
+        
     }
+    
 }

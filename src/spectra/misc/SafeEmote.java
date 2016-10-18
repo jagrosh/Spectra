@@ -16,6 +16,7 @@
 package spectra.misc;
 
 import net.dv8tion.jda.JDA;
+import net.dv8tion.jda.OnlineStatus;
 
 /**
  *
@@ -24,12 +25,14 @@ import net.dv8tion.jda.JDA;
 public enum SafeEmote {
     
     VOICEJOIN("216568548984750090","\uD83C\uDF9B"),
-    VOICEMOVE("","\uD83D\uDD18"),
+    //VOICEMOVE("","\uD83D\uDD18"),
     VOICELEAVE("216568542764597249","\uD83D\uDED1"),
     ONLINE("212789758110334977","\uD83D\uDCD7"),
     AWAY("212789859071426561","\uD83D\uDCD9"),
     OFFLINE("212790005943369728","\uD83D\uDCD3"),
-    STREAMING("212789640799846400","\uD83D\uDCD5")
+    STREAMING("212789640799846400","\uD83D\uDCD8"),
+    DND("236744731088912384","\uD83D\uDCD5"),
+    BOT("229463554749628416","\uD83E\uDD16")
     ;
     
     private final String emoteId;
@@ -45,4 +48,19 @@ public enum SafeEmote {
             return altEmoji;
         return "<:"+this.toString().toLowerCase()+":"+emoteId+">";
     }
+    
+    public final static SafeEmote map(OnlineStatus status)
+    {
+        switch(status)
+        {
+            case ONLINE:
+                return ONLINE;
+            case AWAY:
+                return AWAY;
+            case DO_NOT_DISTURB:
+                return DND;
+            default:
+                return OFFLINE;
+        }
+    };
 }

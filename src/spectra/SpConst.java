@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
 public class SpConst {
     //bot items
     final public static String BOTNAME = "Spectra";
-    final public static String VERSION = "3.2.1";
+    final public static String VERSION = "3.2.2";
     final public static String PREFIX = "%";
     final public static String ALTPREFIX = "/";
     

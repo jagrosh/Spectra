@@ -23,6 +23,7 @@ import spectra.Command;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
+import spectra.misc.SafeEmote;
 
 /**
  *
@@ -52,10 +53,11 @@ public class BotScan extends Command{
             for(Role r: discordbots.getRoles())
                 if(r.getId().equals("110374777914417152"))
                     botsrole = r;
+        String bot = SafeEmote.BOT.get(event.getJDA())+" ";
         for(User u: event.getGuild().getUsers())
             if(u.isBot() || (botsrole!=null && discordbots!=null && discordbots.isMember(u) && discordbots.getRolesForUser(u).contains(botsrole)))
             {
-                list+="\n"+(u.isBot()?"\uD83E\uDD16 ":"\uD83D\uDC68 ")+u.getUsername()+" #"+u.getDiscriminator();
+                list+="\n"+(u.isBot()?bot:"\uD83D\uDC68 ")+u.getUsername()+" #"+u.getDiscriminator();
                 count ++;
             }
         String str = SpConst.SUCCESS+"**"+count+"** bots found on **"+event.getGuild().getName()+"**:"+list;
