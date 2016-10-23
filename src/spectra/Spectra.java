@@ -1027,15 +1027,25 @@ public class Spectra extends ListenerAdapter {
                             +guild.getJoinDateForUser(event.getJDA().getSelfInfo()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"!");
             return;
         }
-        boolean requirements = meetsRequirements(guild);
+        int requirements = meetsRequirements(guild);
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
                 "```diff\n+ JOINED : "+guild.getName()+" (ID:"+guild.getId()+")"
                 + "```Users : **"+guild.getUsers().size()
                 +  "**\nOwner : "+FormatUtil.fullUser(guild.getOwner())
                 +   "\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**"
-                +(requirements ? "" : "\n"+SpConst.WARNING+"**Server does not meet requirements!**"));
-        if(!requirements)
+                +(requirements<=0 ? "" : (requirements==1 ? "\n"+SpConst.WARNING+"**Server too small!**" : (requirements == 2 ? "\n"+SpConst.WARNING+"**Bot collection server!**" : "\n"+SpConst.WARNING+"**Server does not meet requirements!**"))));
+        if(requirements>0)
+        {
+            Sender.sendPrivate(SpConst.WARNING+"Hi! It looks like Spectra was added to your server, **"+guild.getName()+"**. "
+                    + "Unfortunely, Spectra can only be added to servers if they meet all the below requirements:"
+                    + "\n\n1. The server is not a bot collection server (a server with a lot of bots)"
+                    + "\n2. The server is not a testing server (real servers only, please!)"
+                    + "\n3. The server is a large server, _or_ the users of the server already know how to use Spectra."
+                    + "\n\nIf your server meets all those requirements and you have gotten this message, simply join this invite link "
+                    + "and contact **jagrosh**#4824: "+SpConst.JAGZONE_INVITE, guild.getOwner().getPrivateChannel());
+            try{Thread.sleep(3000);}catch(Exception e){}
             event.getGuild().getManager().leave();
+        }
         else
             sendStats();
     }
@@ -1109,31 +1119,37 @@ public class Spectra extends ListenerAdapter {
         }
     }
     
-    public boolean meetsRequirements(Guild guild)
+    //-2 = whitelist or goldlist
+    //-1 = vip server
+    // 0 = meets requirements
+    // 1 = too small
+    // 2 = bot collection
+    public int meetsRequirements(Guild guild)
     {
         if(globallists.getState(guild.getId())==GlobalLists.ListState.WHITELIST || globallists.getState(guild.getId())==GlobalLists.ListState.GOLDLIST)
-            return true;
+            return -2;
         if(guild.getRegion().name().toLowerCase().startsWith("vip"))
-            return true;
+            return -1;
         long botcount = guild.getUsers().stream().filter(User::isBot).count();
         long usercount = guild.getUsers().stream().filter(u -> {
-            return u.getAvatarId()!=null && MiscUtil.getCreationTime(u.getId()).plusDays(7).isBefore(OffsetDateTime.now());
-        }).count();
-        return usercount >= 20 && ((double)botcount / guild.getUsers().size() < SpConst.BOT_COLLECTION_PERCENT);
+                return !u.isBot() && u.getAvatarId()!=null && MiscUtil.getCreationTime(u.getId()).plusDays(7).isBefore(OffsetDateTime.now());
+            }).count();
+        if(usercount < 20)
+            return 1;
+        if((double)botcount / guild.getUsers().size() < SpConst.BOT_COLLECTION_PERCENT)
+            return 2;
+        return 0;
     }
     
     private void pruneGuilds()
     {
         jda.getGuilds().stream().filter(g -> {
-                if(meetsRequirements(g))
+                if(meetsRequirements(g)<=0)
                     return false;
                 if(globallists.getState(g.getId())==GlobalLists.ListState.BLACKLIST)
                     return true;
                 double botPercent = (double)g.getUsers().stream().filter(u -> u.isBot()).count() / g.getUsers().size();
                 if(botPercent > SpConst.BOT_COLLECTION_PERCENT)
-                    return true;
-                OffsetDateTime join = g.getJoinDateForUser(jda.getSelfInfo());
-                if(join.isAfter(SpConst.PUBLIC_DATE) && join.plusDays(3).isBefore(OffsetDateTime.now()))
                     return true;
             return false;}).forEach(g -> g.getManager().leave());
     }

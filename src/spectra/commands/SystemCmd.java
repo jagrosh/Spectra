@@ -15,6 +15,8 @@
  */
 package spectra.commands;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import net.dv8tion.jda.OnlineStatus;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.TextChannel;
@@ -22,6 +24,7 @@ import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.entities.VoiceChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.InviteUtil;
+import net.dv8tion.jda.utils.MiscUtil;
 import spectra.Argument;
 import spectra.Command;
 import spectra.FeedHandler;
@@ -53,6 +56,7 @@ public class SystemCmd extends Command {
         this.children = new Command[]{
             new SystemDebug(),
             new SystemFind(),
+            new SystemGuildinfo(),
             new SystemIdle(),
             new SystemReady(),
             new SystemInvite(),
@@ -67,8 +71,8 @@ public class SystemCmd extends Command {
         {
             this.command = "find";
             this.level = PermLevel.JAGROSH;
-            this.help = "finds info on an ID";
-            this.longhelp = "This command finds an entity by id (current only users) and displays information on them (shortcut from eval).";
+            this.help = "finds user info on an ID";
+            this.longhelp = "This command finds a user by id and displays information on them (shortcut from eval).";
             this.arguments = new Argument[]{
                 new Argument("id",Argument.Type.SHORTSTRING,true)
             };
@@ -84,6 +88,44 @@ public class SystemCmd extends Command {
             StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Found **"+u.getUsername()+"** #"+u.getDiscriminator()+":");
             event.getJDA().getGuilds().stream().filter(g -> g.isMember(u))
                     .forEach(g -> builder.append("\n").append(g.getId()).append(" **").append(g.getName()).append("**").append(g.getOwner().equals(u) ? " [Own]" : ""));
+            Sender.sendResponse(builder.toString(), event);
+            return true;
+        }
+    }
+    
+    private class SystemGuildinfo extends Command
+    {
+        private SystemGuildinfo()
+        {
+            this.command = "guildinfo";
+            this.aliases = new String[]{"ginfo"};
+            this.level = PermLevel.JAGROSH;
+            this.help = "finds info on an ID";
+            this.longhelp = "This command finds a guild by id and displays information on them (shortcut from eval).";
+            this.arguments = new Argument[]{
+                new Argument("id",Argument.Type.SHORTSTRING,true)
+            };
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            Guild g = event.getJDA().getGuildById((String)args[0]);
+            if(g==null)
+            {
+                Sender.sendResponse(SpConst.ERROR+"Guild with ID `"+args[0]+"` not found!", event);
+                return false;
+            }
+            long botcount = g.getUsers().stream().filter(User::isBot).count();
+            long usercount = g.getUsers().stream().filter(u -> {
+                    return !u.isBot() && u.getAvatarId()!=null && MiscUtil.getCreationTime(u.getId()).plusDays(7).isBefore(OffsetDateTime.now());
+                }).count();
+            int requirements = spectra.meetsRequirements(g);
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"Found **"+g.getName()+"**:");
+            builder.append("\nOwner: ").append(FormatUtil.fullUser(g.getOwner()))
+                   .append("\nCreated: ").append(MiscUtil.getCreationTime(g.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME))
+                   .append("\nTotal users: ").append(g.getUsers().size())
+                   .append("\nReal users: ").append(usercount)
+                   .append("\nBots: ").append(botcount)
+                   .append("\nRequirements? ").append(requirements > 0 ? "No" : "Yes").append(" (").append(requirements).append(")");
             Sender.sendResponse(builder.toString(), event);
             return true;
         }

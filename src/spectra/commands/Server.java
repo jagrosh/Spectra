@@ -175,7 +175,7 @@ public class Server extends Command {
                     + "This is not accurate for a full history (since it only looks at current members), but is useful for showing trends.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{Permission.MESSAGE_ATTACH_FILES};
-            this.cooldown = 300;
+            this.cooldown = 90;
             this.cooldownKey = event -> event.getAuthor().getId()+"|serverplot";
         }
         @Override
