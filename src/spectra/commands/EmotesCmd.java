@@ -147,6 +147,7 @@ public class EmotesCmd extends Command {
             };
             this.requiredPermissions = new Permission[]{Permission.CREATE_INSTANT_INVITE};
             this.hidden = true;
+            this.whitelistCooldown = -1;
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
@@ -217,6 +218,9 @@ public class EmotesCmd extends Command {
                 new Argument("image_link",Argument.Type.SHORTSTRING,true)
             };
             this.requiredPermissions = new Permission[]{Permission.CREATE_INSTANT_INVITE};
+            this.whitelistCooldown = -1;
+            this.cooldown = 10;
+            this.cooldownKey = event -> event.getGuild().getId()+"|addemote";
             this.hidden = true;
         }
         @Override

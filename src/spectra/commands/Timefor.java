@@ -83,6 +83,7 @@ public class Timefor extends Command {
             this.command = "timezones";
             this.aliases = new String[]{"list"};
             this.help = "lists the valid timezones";
+            this.longhelp = "This command provides a list of all available timezones. Note that these are separated by spaces.";
             this.cooldown = 300;
             this.cooldownKey = event -> event.getAuthor().getId()+"|timezonelist";
         }

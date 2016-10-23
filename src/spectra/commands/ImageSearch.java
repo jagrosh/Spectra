@@ -41,7 +41,8 @@ public class ImageSearch extends Command {
             new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };
         this.cooldown = 200;
-        this.whitelistCooldown = 10;
+        this.whitelistCooldown = 60;
+        this.goldlistCooldown = 10;
         this.cooldownKey = event -> event.getAuthor().getId()+"|image";
         this.availableInDM = false;
     }

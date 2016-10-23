@@ -40,7 +40,8 @@ public class GoogleSearch extends Command {
             new Argument("query",Argument.Type.LONGSTRING,true,1,500)
         };
         this.cooldown = 200;
-        this.whitelistCooldown = 20;
+        this.whitelistCooldown = 50;
+        this.goldlistCooldown = 20;
         this.cooldownKey = event -> event.getAuthor().getId()+"|google";
     }
     @Override

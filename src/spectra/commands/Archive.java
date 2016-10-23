@@ -50,7 +50,9 @@ public class Archive extends Command{
         this.arguments= new Argument[]{
             new Argument("numposts",Argument.Type.INTEGER,true,1,1000), 
             new Argument("channel",Argument.Type.TEXTCHANNEL,false)};//<numposts> [channel]
-        this.cooldown=120;
+        this.cooldown=180;
+        this.whitelistCooldown=120;
+        this.goldlistCooldown=90;
         this.cooldownKey = event -> event.getAuthor().getId()+"|"+(event.isPrivate() ? "PC" : event.getTextChannel().getId())+"|archive";
         this.requiredPermissions = new Permission[]{
             Permission.MESSAGE_ATTACH_FILES
@@ -73,13 +75,13 @@ public class Archive extends Command{
             if(channel == null)
                 channel = event.getTextChannel();
             //check permission of user
-            if(!PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_HISTORY, channel) || !PermissionUtil.checkPermission(event.getAuthor(), Permission.MESSAGE_READ, channel))
+            if(!PermissionUtil.checkPermission(channel, event.getAuthor(), Permission.MESSAGE_HISTORY) || !PermissionUtil.checkPermission(channel, event.getAuthor(), Permission.MESSAGE_READ))
             {
                 Sender.sendResponse(SpConst.ERROR+"You can only archive channels in which you can see the Message History!",event);
                 return false;
             }
             //check permission of bot
-            if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_HISTORY, channel))
+            if(!PermissionUtil.checkPermission(channel, event.getJDA().getSelfInfo(), Permission.MESSAGE_HISTORY))
             {
                 Sender.sendResponse(String.format(SpConst.NEED_PERMISSION, Permission.MESSAGE_HISTORY), event);
                 return false;

@@ -52,12 +52,12 @@ public class Authorize extends Command {
         };
     }
 
-    @Override
+    /*@Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         //check if already authorized
         if(lists.isAuthorized(event.getGuild().getId()))
         {
-            Sender.sendResponse(SpConst.WARNING+"This server is already "+(lists.isWhitelisted(event.getGuild().getId()) ? "whitelisted" : "authorized")+"!", event);
+            Sender.sendResponse(SpConst.WARNING+"This server is already authorized or whitelisted!", event);
             return false;
         }
         String code = args[0]==null ? null : (String)args[0];
@@ -77,7 +77,7 @@ public class Authorize extends Command {
                 + event.getGuild().getVoiceChannels().size()
                 + event.getAuthor().getDiscriminator().substring(3)
                 + "5"
-                ;*/
+                ;* /
         
         if(code==null)
         {
@@ -100,6 +100,6 @@ public class Authorize extends Command {
                             +event.getGuild().getName()+"**__ (ID:"+event.getGuild().getId()+")");
             return true;
         }
-    }
+    }*/
     
 }

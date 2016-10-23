@@ -32,7 +32,7 @@ public class GlobalLists extends DataSource {
         this.generateKey = item -> item[ID];
     }
     
-    public boolean isBlacklisted(String id)
+    public boolean isUserBlacklisted(String id)
     {
         String[] entry = get(id);
         if(entry==null)
@@ -40,20 +40,39 @@ public class GlobalLists extends DataSource {
         return entry[LISTTYPE].equalsIgnoreCase("blacklist");
     }
     
-    public boolean isWhitelisted(String id)
+    /*public boolean isWhitelisted(String id)
     {
         String[] entry = get(id);
         if(entry==null)
             return false;
-        return entry[LISTTYPE].equalsIgnoreCase("whitelist");
+        return entry[LISTTYPE].equalsIgnoreCase("whitelist") || entry[LISTTYPE].equalsIgnoreCase("goldlist");
     }
     
-    public boolean isAuthorized(String id)
+    public boolean isGoldlisted(String id)
     {
         String[] entry = get(id);
         if(entry==null)
             return false;
-        return entry[LISTTYPE].equalsIgnoreCase("authorized") || entry[LISTTYPE].equalsIgnoreCase("whitelist");
+        return entry[LISTTYPE].equalsIgnoreCase("goldlist");
+    }*/
+    
+    /*public boolean isAuthorized(String id)
+    {
+        String[] entry = get(id);
+        if(entry==null)
+            return false;
+        return entry[LISTTYPE].equalsIgnoreCase("authorized") || entry[LISTTYPE].equalsIgnoreCase("whitelist") || entry[LISTTYPE].equalsIgnoreCase("goldlist");
+    }*/
+    
+    public ListState getState(String guildid)
+    {
+        String[] entry = get(guildid);
+        if(entry==null)
+            return ListState.NONE;
+        for(ListState state: ListState.values())
+            if(entry[LISTTYPE].equalsIgnoreCase(state.name()))
+                return state;
+        return ListState.NONE;
     }
     
     public String getBlacklistReason(String id)
@@ -66,34 +85,22 @@ public class GlobalLists extends DataSource {
         return entry[REASON];
     }
     
-    public List<String> getBlacklist()
+    public List<String> getList(ListState state)
     {
         ArrayList<String> list = new ArrayList<>();
         synchronized(data)
         {
-            data.values().stream().filter((entry) -> (entry[LISTTYPE].equalsIgnoreCase("blacklist"))).forEach((entry) -> {
-                list.add(entry[IDTYPE]+"`"+entry[ID]+"`");
+            data.values().stream().filter((entry) -> (entry[LISTTYPE].equalsIgnoreCase(state.name()))).forEach((entry) -> {
+                list.add(entry[IDTYPE]+" `"+entry[ID]+"` "+entry[REASON]);
             });
         }
         return list;
     }
     
-    public List<String> getWhitelist()
-    {
-        ArrayList<String> list = new ArrayList<>();
-        synchronized(data)
-        {
-            data.values().stream().filter((entry) -> (entry[LISTTYPE].equalsIgnoreCase("whitelist"))).forEach((entry) -> {
-                list.add(entry[IDTYPE]+"`"+entry[ID]+"` "+entry[REASON]);
-            });
-        }
-        return list;
-    }
-    
-    public void authorize(String id, String details)
+    /*public void authorize(String id, String details)
     {
         set(new String[]{id, "guild", "authorized", details});
-    }
+    }*/
     
     final public static int ID   = 0;
     final public static int IDTYPE = 1;
@@ -104,4 +111,8 @@ public class GlobalLists extends DataSource {
     //server blacklist - no commands by the server
     //user blacklist - no commands by the user
     //server whitelist - no pruning
+    
+    public enum ListState {
+        NONE, BLACKLIST, WHITELIST, GOLDLIST
+    }
 }

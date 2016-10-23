@@ -26,7 +26,6 @@ import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.MiscUtil;
 import spectra.Argument;
 import spectra.Command;
-import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.misc.SafeEmote;

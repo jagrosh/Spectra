@@ -35,6 +35,7 @@ import spectra.SpConst;
 import spectra.datasources.Settings;
 import spectra.misc.SafeEmote;
 import spectra.utils.FormatUtil;
+import spectra.utils.OtherUtil;
 
 /**
  *
@@ -53,6 +54,7 @@ public class Server extends Command {
         this.children = new Command[]{
             new ServerMods(),
             new ServerPlaying(),
+            new ServerPlot(),
             new ServerSettings()
         };
     }
@@ -60,10 +62,9 @@ public class Server extends Command {
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
         Guild guild = event.getGuild();
-        int onlineCount = 0;
-        onlineCount = guild.getUsers().stream().filter((u) -> 
+        long onlineCount = guild.getUsers().stream().filter((u) -> 
                 (u.getOnlineStatus()==OnlineStatus.ONLINE || u.getOnlineStatus()==OnlineStatus.AWAY))
-                .map((_item) -> 1).reduce(onlineCount, Integer::sum);
+                .count();
         String str = "\uD83D\uDDA5 Information about **"+guild.getName()+"**:\n"
                 +SpConst.LINESTART+"ID: **"+guild.getId()+"**\n"
                 +SpConst.LINESTART+"Owner: **"+guild.getOwner().getUsername()+"** #"+guild.getOwner().getDiscriminator()+"\n"
@@ -161,6 +162,29 @@ public class Server extends Command {
             }
         }
         
+    }
+    
+    private class ServerPlot extends Command
+    {
+        private ServerPlot()
+        {
+            this.command = "plot";
+            this.aliases = new String[]{"plotjoins"};
+            this.help = "plots the joins of the server";
+            this.longhelp = "This command shows a plot of the joins of the users currently on the server. "
+                    + "This is not accurate for a full history (since it only looks at current members), but is useful for showing trends.";
+            this.availableInDM = false;
+            this.requiredPermissions = new Permission[]{Permission.MESSAGE_ATTACH_FILES};
+            this.cooldown = 300;
+            this.cooldownKey = event -> event.getAuthor().getId()+"|serverplot";
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            Sender.sendFileResponse(() -> 
+                    new Pair<>(SpConst.SUCCESS+"Plot of joins to **"+event.getGuild().getName()+"**:",OtherUtil.drawPlot(event.getGuild(), event.getMessage().getTime())),
+                    event);
+            return true;
+        }
     }
     
     private class ServerMods extends Command

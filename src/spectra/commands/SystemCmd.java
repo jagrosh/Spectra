@@ -15,6 +15,7 @@
  */
 package spectra.commands;
 
+import net.dv8tion.jda.OnlineStatus;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.entities.User;
@@ -159,8 +160,8 @@ public class SystemCmd extends Command {
                 return false;
             }
             spectra.setIdling(true);
-            event.getJDA().getAccountManager().setIdle(true);
-            Sender.sendResponse("\uD83D\uDCF4 **"+SpConst.BOTNAME+"** is now `IDLING`", event);
+            event.getJDA().getAccountManager().setStatus(OnlineStatus.DO_NOT_DISTURB);
+            Sender.sendResponse("\uD83D\uDED1 **"+SpConst.BOTNAME+"** is now `IDLING`", event);
             return true;
         }
     }
@@ -182,7 +183,7 @@ public class SystemCmd extends Command {
                 return false;
             }
             spectra.setIdling(false);
-            event.getJDA().getAccountManager().setIdle(false);
+            event.getJDA().getAccountManager().setStatus(OnlineStatus.ONLINE);
             Sender.sendResponse(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now `READY`", event);
             return true;
         }

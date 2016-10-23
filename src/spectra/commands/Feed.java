@@ -39,6 +39,7 @@ public class Feed extends Command {
         this.command = "feed";
         this.aliases = new String[]{"log"};
         this.help = "sets or removes a feed";
+        this.longhelp = "This command sets up or removes feeds on the server.";
         this.level = PermLevel.ADMIN;
         this.arguments = new Argument[]{
             new Argument("feedtype",Argument.Type.SHORTSTRING,true)

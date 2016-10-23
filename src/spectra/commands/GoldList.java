@@ -28,63 +28,68 @@ import spectra.datasources.GlobalLists;
  *
  * @author John Grosh (jagrosh)
  */
-public class WhiteList extends Command {
+public class GoldList extends Command {
     private final GlobalLists lists;
-    public WhiteList(GlobalLists lists)
+    public GoldList(GlobalLists lists)
     {
         this.lists = lists;
-        this.command = "whitelist";
+        this.command = "goldlist";
         this.level = PermLevel.JAGROSH;
-        this.help = "modifies the whitelist";
+        this.help = "modifies the goldlist";
         this.children = new Command[]{
-            new WLAdd(),
+            new GLAdd(),
             //new WLCheck(),
-            new WLList(),
-            new WLRemove()
+            new GLList(),
+            new GLRemove()
         };
-        this.longhelp = "This command is used to whitelist servers";
+        this.longhelp = "This command is used to goldlist servers";
     }
     
-    private class WLAdd extends Command {
-        private WLAdd()
+    private class GLAdd extends Command {
+        private GLAdd()
         {
             this.command = "add";
             this.level = PermLevel.JAGROSH;
-            this.help = "adds a server to the whitelist";
-            this.longhelp = "This command adds a server to the whitelist. Being on the whitelist provides extra commands and shorter cooldowns.";
+            this.help = "adds a server to the goldlist";
+            this.longhelp = "This command adds a server to the goldlist. Being on the goldlist provides extra commands and shorter cooldowns.";
             this.arguments = new Argument[]{
                 new Argument("ID",Argument.Type.SHORTSTRING,true),
-                new Argument("details",Argument.Type.LONGSTRING,false)
+                //new Argument("reason",Argument.Type.LONGSTRING,true)
             };
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String id = (String)args[0];
-            String details = (String)args[1];
+            //String reason = (String)args[1];
             Guild guild = event.getJDA().getGuildById(id);
-            if(lists.getState(id)==GlobalLists.ListState.WHITELIST)
+            if(guild==null)
             {
-                Sender.sendResponse(SpConst.WARNING+"**"+guild.getName()+"** is already whitelisted!", event);
+                Sender.sendResponse(SpConst.ERROR+"Not a valid Guild ID", event);
+                return false;
+            }
+            if(lists.getState(id)==GlobalLists.ListState.GOLDLIST)
+            {
+                Sender.sendResponse(SpConst.WARNING+"**"+guild.getName()+"** is already goldlisted!", event);
                 return false;
             }
             String[] entry = new String[lists.getSize()];
             entry[GlobalLists.ID] = id;
-            entry[GlobalLists.LISTTYPE] = "WHITELIST";
-            entry[GlobalLists.REASON] = guild==null ? details : guild.getName();
+            entry[GlobalLists.LISTTYPE] = "GOLDLIST";
+            entry[GlobalLists.REASON] = guild.getName();
             entry[GlobalLists.IDTYPE] = "GUILD";
             lists.set(entry);
-            Sender.sendResponse(SpConst.SUCCESS+entry[GlobalLists.IDTYPE]+" with ID `"+id+"` ("+(guild==null ? "???" : guild.getName())+") added to whitelist", event);
+            Sender.sendResponse(SpConst.SUCCESS+entry[GlobalLists.IDTYPE]+" with ID `"+id+"` ("+guild.getName()+") added to goldlist", event);
             return true;
         }
     }
     
-    private class WLRemove extends Command {
-        private WLRemove()
+    private class GLRemove extends Command {
+        private GLRemove()
         {
             this.command = "remove";
             this.level = PermLevel.JAGROSH;
-            this.help = "removes a guild the whitelist";
-            this.longhelp = "This command removes a guild from the whitelist";
+            this.help = "removes a guild the goldlist";
+            this.longhelp = "This command removes a guild from the goldlist";
             this.arguments = new Argument[]{
                 new Argument("ID",Argument.Type.SHORTSTRING,true)
             };
@@ -93,30 +98,30 @@ public class WhiteList extends Command {
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String id = (String)args[0];
             Guild guild = event.getJDA().getGuildById(id);
-            if(lists.getState(id)!=GlobalLists.ListState.WHITELIST)
+            if(lists.getState(id)!=GlobalLists.ListState.GOLDLIST)
             {
-                Sender.sendResponse(SpConst.WARNING+"**ID `"+id+"` is not whitelisted!**:", event);
+                Sender.sendResponse(SpConst.WARNING+"**ID `"+id+"` is not goldlisted!**:", event);
                 return false;
             }
             String type = lists.get(id)[GlobalLists.IDTYPE];
             lists.remove(id);
-            Sender.sendResponse(SpConst.SUCCESS+type+" with ID `"+id+"` ("+(guild==null ? "[???]" : guild.getName())+") removed from whitelist", event);
+            Sender.sendResponse(SpConst.SUCCESS+type+" with ID `"+id+"` ("+(guild==null ? "[???]" : guild.getName())+") removed from goldlist", event);
             return true;
         }
     }
     
-    private class WLList extends Command {
-        private WLList()
+    private class GLList extends Command {
+        private GLList()
         {
             this.command = "list";
             this.level = PermLevel.JAGROSH;
-            this.help = "lists the whitelist";
-            this.longhelp = "This command lists the entities on the whitelist";
+            this.help = "lists the goldlist";
+            this.longhelp = "This command lists the entities on the goldlist";
         }
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
-            StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** whitelist:");
-            lists.getList(GlobalLists.ListState.WHITELIST).stream().forEach((str) -> {
+            StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** goldlist:");
+            lists.getList(GlobalLists.ListState.GOLDLIST).stream().forEach((str) -> {
                 builder.append("\n").append(str);
             });
             Sender.sendResponse(builder.toString(), event);

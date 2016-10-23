@@ -54,7 +54,7 @@ public class Clean extends Command {
             new Argument("username",Argument.Type.USER,false)};//<numposts> [channel]
         this.availableInDM = false;
         this.level = PermLevel.MODERATOR;
-        this.cooldown=10;
+        this.cooldown=8;
         this.cooldownKey = event -> event.getGuild().getId()+"|clean";
         this.requiredPermissions = new Permission[]{
             Permission.MESSAGE_HISTORY, Permission.MESSAGE_MANAGE

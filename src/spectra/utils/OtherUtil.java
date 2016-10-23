@@ -31,18 +31,25 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import javax.imageio.ImageIO;
+import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.entities.User;
+import net.dv8tion.jda.utils.MiscUtil;
 import spectra.Argument;
 import spectra.Command;
+import spectra.PermLevel;
 import spectra.SpConst;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
-public class OtherUtil {
+public class OtherUtil { 
     
     public static ArrayList<String> readFileLines(String filename)
     {
@@ -161,25 +168,93 @@ public class OtherUtil {
         return bi;
     }
     
+    public static File drawPlot(Guild guild, OffsetDateTime now)
+    {
+        long start = MiscUtil.getCreationTime(guild.getId()).toEpochSecond();
+        long end = now.toEpochSecond();
+        int width = 1000;
+        int height = 600;
+        List<User> joins = new ArrayList<>(guild.getUsers());
+        Collections.sort(joins, (User a, User b) -> guild.getJoinDateForUser(a).compareTo(guild.getJoinDateForUser(b)));
+        BufferedImage bi = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics2D g2d = bi.createGraphics();
+        g2d.setComposite(AlphaComposite.SrcOver);
+        g2d.setColor(Color.black);
+        g2d.fillRect(0, 0, width, height);
+        double lastX = 0;
+        int lastY = height;
+
+        for(int i=0; i<joins.size(); i++)
+        {
+            double x = (((guild.getJoinDateForUser(joins.get(i)).toEpochSecond() - start) * width) / (end-start));
+            int y = height - ((i * height) / joins.size());
+            double angle = (x==lastX) ? 1.0 : Math.tan((double)(lastY-y)/(x-lastX))/(Math.PI/2);
+            g2d.setColor(Color.getHSBColor((float)angle/4, 1.0f, 1.0f));
+            g2d.drawLine((int)x, y, (int)lastX, lastY);
+            lastX=x;
+            lastY=y;
+        }
+        g2d.setFont(g2d.getFont().deriveFont(24f));
+        g2d.setColor(Color.WHITE);
+        g2d.drawString("0 - "+joins.size()+" Users", 20, 26);
+        g2d.drawString(MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME), 20, 60);
+        g2d.drawString(now.format(DateTimeFormatter.RFC_1123_DATE_TIME), 20, 90);
+        File f = new File("plot.png");
+        try {
+            ImageIO.write(bi, "png", f);
+        } catch (IOException ex) {
+            System.out.println("[ERROR] An error occured drawing the plot.");
+        }
+        return f;
+    }
+    
     public static String compileCommands(Command[] commands)
     {
-        StringBuilder builder = new StringBuilder("Spectra Commands (v"+SpConst.VERSION+")");
-        for(Command cmd : commands)
+        StringBuilder builder = new StringBuilder("Spectra Commands (v"+SpConst.VERSION+")\n");
+        for(PermLevel level : PermLevel.values())
         {
-            builder.append("\n").append(compileCommand(cmd,""));
+            if(level==PermLevel.JAGROSH)
+                continue;
+            builder.append("\n# ").append(level==PermLevel.EVERYONE ? "User" : (level==PermLevel.MODERATOR ? "Moderator" : "Admin")).append(" Commands\n");
+            for(Command cmd : commands)
+            {
+                if(level.isAtLeast(cmd.getLevel()))
+                    builder.append(compileCommand(cmd,"","",level));
+            }
         }
         return builder.toString();
     }
     
-    private static String compileCommand(Command command, String lineStart)
+    private static String compileCommand(Command command, String lineStart, String parentchain, PermLevel level)
     {
+        String fullCommand = parentchain.length()==0 ? command.getName() : parentchain+" "+command.getName();
         StringBuilder builder = new StringBuilder();
-        builder.append("\n").append(lineStart).append(command.getName()).append(" - ").append(command.getHelp()).append(command.getAliases().length==0 ? "" : " (Aliases: "+Arrays.toString(command.getAliases())+")");
-        builder.append("\n").append(lineStart).append("├Level: ").append(command.getLevel()).append(" Usage:").append(Argument.arrayToString(command.getArguments()));
-        builder.append("\n").append(lineStart).append("├").append(command.getLongHelp());
+        if(lineStart.length()==0)
+            builder.append("<a name=\"").append(command.getName()).append("\">**").append(fullCommand).append("**</a><br>\n");
+        else
+            builder.append(lineStart).append("**").append(fullCommand).append("**<br>\n");
         
+        if(level == command.getLevel())
+        {
+            builder.append(lineStart).append("Usage: `").append(SpConst.PREFIX).append(fullCommand).append(Argument.arrayToString(command.getArguments())).append("`<br>\n");
+            if(command.getAliases().length>0)
+            {
+                builder.append("Aliases:");
+                for(String alias : command.getAliases())
+                    builder.append(" ").append(alias);
+                builder.append("<br>\n");
+            }
+            builder.append(lineStart).append("*").append(command.getLongHelp()).append("*\n\n");
+        }
+        else if(command.getChildren().length == 0)
+            return "";
+        
+        StringBuilder childBuilder = new StringBuilder();
         for(Command cmd: command.getChildren())
-            builder.append("\n│").append(compileCommand(cmd,lineStart+"│"));
-        return builder.toString();
+            if(level.isAtLeast(cmd.getLevel()))
+                childBuilder.append(compileCommand(cmd,lineStart+"> ",fullCommand,level));
+        if(level != command.getLevel() && childBuilder.length() == 0)
+            return "";
+        return builder.toString()+childBuilder.toString();
     }
 }

@@ -65,7 +65,7 @@ public class BlackList extends Command {
                 Sender.sendResponse(SpConst.ERROR+"Not a valid ID", event);
                 return false;
             }
-            if(lists.isBlacklisted(id))
+            if(lists.getState(id)==GlobalLists.ListState.BLACKLIST)
             {
                 Sender.sendResponse(SpConst.WARNING+"**ID `"+id+"` is already blacklisted!**:\n"+lists.getBlacklistReason(id), event);
                 return false;
@@ -105,7 +105,7 @@ public class BlackList extends Command {
                 Sender.sendResponse(SpConst.ERROR+"Not a valid ID", event);
                 return false;
             }
-            if(!lists.isBlacklisted(id))
+            if(lists.getState(id)!=GlobalLists.ListState.BLACKLIST)
             {
                 Sender.sendResponse(SpConst.WARNING+"**ID `"+id+"` is not blacklisted!**:\n"+lists.getBlacklistReason(id), event);
                 return false;
@@ -128,7 +128,7 @@ public class BlackList extends Command {
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             StringBuilder builder = new StringBuilder(SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** blacklist:");
-            lists.getBlacklist().stream().forEach((str) -> {
+            lists.getList(GlobalLists.ListState.BLACKLIST).stream().forEach((str) -> {
                 builder.append("\n").append(str);
             });
             Sender.sendResponse(builder.toString(), event);
@@ -155,7 +155,7 @@ public class BlackList extends Command {
                 Sender.sendResponse(SpConst.ERROR+"Not a valid ID", event);
                 return false;
             }
-            if(!lists.isBlacklisted(id))
+            if(lists.getState(id)!=GlobalLists.ListState.BLACKLIST)
             {
                 Sender.sendResponse(SpConst.WARNING+"**ID `"+id+"` is not blacklisted!**:\n"+lists.getBlacklistReason(id), event);
                 return false;

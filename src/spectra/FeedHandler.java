@@ -26,11 +26,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import javafx.util.Pair;
-import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.TextChannel;
-import net.dv8tion.jda.entities.impl.GuildImpl;
 import net.dv8tion.jda.entities.impl.JDAImpl;
 import spectra.datasources.Feeds;
 import spectra.datasources.GlobalLists;
@@ -75,7 +73,7 @@ public class FeedHandler {
             text = botlogFormat(text);
         for(Guild guild : guilds)
         {
-            if(lists.isBlacklisted(guild.getId()))
+            if(lists.getState(guild.getId())==GlobalLists.ListState.BLACKLIST)
                 continue;
             String[] matching = feeds.feedForGuild(guild, type);
             if(matching==null)
@@ -145,7 +143,7 @@ public class FeedHandler {
         String normal = null;
         for(Guild guild : guilds)
         {
-            if(lists.isBlacklisted(guild.getId()))
+            if(lists.getState(guild.getId())==GlobalLists.ListState.BLACKLIST)
                 continue;
             String[] matching = feeds.feedForGuild(guild, type);
             if(matching==null)

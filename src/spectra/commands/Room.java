@@ -158,7 +158,7 @@ public class Room extends Command
                     + "(and any users with the Administrator permission) can see. After creation, the "
                     + "owner can change the topic and settings for the channel.";
             this.availableInDM = false;
-            this.cooldown = 1200;
+            this.cooldown = 1000;
             this.cooldownKey = (event) -> {return event.getGuild().getId()+"|"+event.getAuthor().getId()+"|roomtext";};
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -222,7 +222,7 @@ public class Room extends Command
             this.longhelp = "This command creates a temporary voice channel. It will be "
                     + "automatically deleted when there are no users left in it.";
             this.availableInDM = false;
-            this.cooldown = 600;
+            this.cooldown = 300;
             this.cooldownKey = (event) -> {return event.getGuild().getId()+"|"+event.getAuthor().getId()+"|roomvoice";};
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,
@@ -639,7 +639,7 @@ public class Room extends Command
         {
             this.command = "join";
             this.help = "joins an unlocked a private text channel";
-            this.help = "This command is used to join a private room on the server.";
+            this.longhelp = "This command is used to join a private room on the server.";
             this.availableInDM = false;
             this.requiredPermissions = new Permission[]{
                 Permission.MANAGE_CHANNEL,

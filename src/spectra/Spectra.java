@@ -32,6 +32,7 @@ import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.*;
 import net.dv8tion.jda.JDA.Status;
 import net.dv8tion.jda.entities.*;
+import net.dv8tion.jda.entities.impl.JDAImpl;
 import net.dv8tion.jda.events.*;
 import net.dv8tion.jda.events.guild.*;
 import net.dv8tion.jda.events.guild.member.*;
@@ -43,6 +44,7 @@ import net.dv8tion.jda.events.voice.*;
 import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.managers.GuildManager;
 import net.dv8tion.jda.utils.*;
+import org.json.JSONObject;
 import spectra.commands.*;
 import spectra.datasources.*;
 import spectra.misc.*;
@@ -224,7 +226,7 @@ public class Spectra extends ListenerAdapter {
             new Unban(loginfo),
             new Unmute(handler,settings, mutes, feeds),
             
-            new Authorize(globallists, handler),
+            new Announce(),
             new CommandCmd(settings, this),
             new Feed(feeds),
             new Ignore(settings),
@@ -236,10 +238,11 @@ public class Spectra extends ListenerAdapter {
             new Welcome(settings),
             new WelcomeDM(guides),
                 
-            new Announce(handler,feeds),
+            new AnnounceFeed(handler,feeds),
             new BlackList(globallists),
             new Donator(donators),
             new Eval(this),
+            new GoldList(globallists),
             new SystemCmd(this,feeds,statistics),
             new WhiteList(globallists),
         };
@@ -261,7 +264,7 @@ public class Spectra extends ListenerAdapter {
     
     @Override
     public void onReady(ReadyEvent event) {
-        event.getJDA().getAccountManager().setGame("Type "+SpConst.PREFIX+"help");
+        event.getJDA().getAccountManager().setGame(SpConst.DEFAULT_GAME);
         
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
@@ -317,6 +320,19 @@ public class Spectra extends ListenerAdapter {
         
         sendStats();
     }
+
+    @Override
+    public void onStatusChange(StatusChangeEvent event) {
+        if(event.getStatus() == JDA.Status.LOADING_SUBSYSTEMS)
+        {
+            JSONObject content = new JSONObject()
+                .put("game", new JSONObject().put("name","loading..."))
+                .put("status", OnlineStatus.DO_NOT_DISTURB.getKey())
+                .put("since", System.currentTimeMillis())
+                .put("afk", true);
+            ((JDAImpl)event.getJDA()).getClient().send(new JSONObject().put("op", 3).put("d", content).toString());
+        }
+    }
     
     public void shutdown()
     {
@@ -366,6 +382,8 @@ public class Spectra extends ListenerAdapter {
                 SpConst.WARNING+"**"+SpConst.BOTNAME+"** has <@&196723905354924032>\n"
                         + (lastDisconnect==null ? "No disconnect time recorded." : 
                         "Downtime: "+FormatUtil.secondsToTime(lastDisconnect.until(OffsetDateTime.now(), ChronoUnit.SECONDS))) );
+        event.getJDA().getAccountManager().setStatus(OnlineStatus.ONLINE);
+        event.getJDA().getAccountManager().setGame(SpConst.DEFAULT_GAME);
         lastDisconnect = null;
     }
 
@@ -404,8 +422,8 @@ public class Spectra extends ListenerAdapter {
         //blacklist everyone while idling
         //blacklist users while not
         if((idling 
-                || globallists.isBlacklisted(event.getAuthor().getId()) 
-                || (!event.isPrivate() && globallists.isBlacklisted(event.getGuild().getId()))) 
+                || globallists.isUserBlacklisted(event.getAuthor().getId()) 
+                || (!event.isPrivate() && globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)) 
                 && !event.getAuthor().getId().equals(SpConst.JAGROSH_ID))
             return;
         //get the settings for the server
@@ -467,7 +485,7 @@ public class Spectra extends ListenerAdapter {
         
         if(strippedMessage!=null && !event.getAuthor().isBot())//potential command right here
         {
-            boolean whitelisted = event.isPrivate() ? false : globallists.isWhitelisted(event.getGuild().getId());
+            GlobalLists.ListState state = event.isPrivate() ? GlobalLists.ListState.NONE : globallists.getState(event.getGuild().getId());
             strippedMessage = strippedMessage.trim();
             if(strippedMessage.equalsIgnoreCase("help"))//send full help message (based on access level)
             {//we don't worry about ignores for help
@@ -478,9 +496,9 @@ public class Spectra extends ListenerAdapter {
                 {
                     if(com.hidden)
                         continue;
-                    if(com.whitelistOnly && !whitelisted)
+                    if(com.goldlistCooldown==-1 && state!=GlobalLists.ListState.GOLDLIST)
                         continue;
-                    if(!event.isPrivate() && com.command.equals("authorize") && globallists.isAuthorized(event.getGuild().getId()))
+                    if(com.whitelistCooldown==-1 && !(state==GlobalLists.ListState.WHITELIST || state==GlobalLists.ListState.GOLDLIST))
                         continue;
                     if( perm.isAtLeast(com.level) )
                     {
@@ -524,9 +542,9 @@ public class Spectra extends ListenerAdapter {
                         toRun = com;
                         break;
                     }
-                if(event.isPrivate() || globallists.isAuthorized(event.getGuild().getId()) || 
+                /*if(event.isPrivate() || globallists.isAuthorized(event.getGuild().getId()) || 
                         (toRun!=null && "authorize".equals(toRun.command)) || 
-                        event.getGuild().getJoinDateForUser(event.getJDA().getSelfInfo()).isBefore(SpConst.PUBLIC_DATE))
+                        event.getGuild().getJoinDateForUser(event.getJDA().getSelfInfo()).isBefore(SpConst.PUBLIC_DATE))*/
                 if(toRun!=null)
                 {
                     isCommand = true;
@@ -546,7 +564,7 @@ public class Spectra extends ListenerAdapter {
                         if(banned && event.getTextChannel().getTopic()!=null && event.getTextChannel().getTopic().contains("{"+toRun.command+"}"))
                             banned = false;
                     }
-                    successful = toRun.run(args[1], event, perm, ignore, banned, whitelisted);
+                    successful = toRun.run(args[1], event, perm, ignore, banned, state);
                     if(debugMode)
                         SimpleLog.getLog("Command").info(event.getGuild()+" "+event.getAuthor()+" "+event.getMessage().getContent());
                     statistics.ranCommand(event.isPrivate() ? "0" : event.getGuild().getId(), toRun.command, successful);
@@ -618,7 +636,7 @@ public class Spectra extends ListenerAdapter {
     
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         if(event.getAuthor()==null)
             return;
@@ -683,7 +701,7 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
         if(event.getAuthor()==null || event.getAuthor().getId().equals(event.getJDA().getSelfInfo().getId()))
             return;
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
@@ -707,7 +725,7 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
         CallDepend.getInstance().delete(event.getMessageId());
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
@@ -736,7 +754,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(), 
                 "\uD83D\uDCE5 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") joined the server."
@@ -797,7 +815,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberLeave(GuildMemberLeaveEvent event) {
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
@@ -825,7 +843,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberBan(GuildMemberBanEvent event) {
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
@@ -857,7 +875,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberUnban(GuildMemberUnbanEvent event) {
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.MODLOG);
         String[] info = loginfo.removeInfo(event.getUser().getId(), LogInfo.Type.UNBAN);
@@ -882,7 +900,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onMessageBulkDelete(MessageBulkDeleteEvent event) {
-        if(globallists.isBlacklisted(event.getChannel().getGuild().getId()))
+        if(globallists.getState(event.getChannel().getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         int size = event.getMessageIds().size();
         boolean servlogon = feeds.feedForGuild(event.getChannel().getGuild(), Feeds.Type.SERVERLOG)!=null;
@@ -918,7 +936,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onGuildMemberNickChange(GuildMemberNickChangeEvent event) {
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
@@ -1002,14 +1020,21 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
         Guild guild = event.getGuild();
-        double botPercent = (double)event.getGuild().getUsers().stream().filter(u -> u.isBot()).count() / event.getGuild().getUsers().size();
+        if(guild.getJoinDateForUser(event.getJDA().getSelfInfo()).plusHours(1).isBefore(OffsetDateTime.now()))
+        {
+            handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
+                    "\uD83D\uDCA2 Join event for "+FormatUtil.fullGuild(guild)+" but have been joined since "
+                            +guild.getJoinDateForUser(event.getJDA().getSelfInfo()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"!");
+            return;
+        }
+        boolean requirements = meetsRequirements(guild);
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID), 
                 "```diff\n+ JOINED : "+guild.getName()+" (ID:"+guild.getId()+")"
                 + "```Users : **"+guild.getUsers().size()
                 +  "**\nOwner : "+FormatUtil.fullUser(guild.getOwner())
                 +   "\nCreation : **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**"
-                +(botPercent>=SpConst.BOT_COLLECTION_PERCENT ? "\n"+SpConst.WARNING+"**Bot Collection Server Detected!**" : ""));
-        if(botPercent>=SpConst.BOT_COLLECTION_PERCENT)
+                +(requirements ? "" : "\n"+SpConst.WARNING+"**Server does not meet requirements!**"));
+        if(!requirements)
             event.getGuild().getManager().leave();
         else
             sendStats();
@@ -1028,7 +1053,7 @@ public class Spectra extends ListenerAdapter {
 
     @Override
     public void onVoiceJoin(VoiceJoinEvent event) {
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
@@ -1060,7 +1085,7 @@ public class Spectra extends ListenerAdapter {
                 rooms.remove(event.getOldChannel().getId());
             }
         }
-        if(globallists.isBlacklisted(event.getGuild().getId()))
+        if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
         String[] feed = feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG);
         if(feed!=null)
@@ -1084,12 +1109,25 @@ public class Spectra extends ListenerAdapter {
         }
     }
     
+    public boolean meetsRequirements(Guild guild)
+    {
+        if(globallists.getState(guild.getId())==GlobalLists.ListState.WHITELIST || globallists.getState(guild.getId())==GlobalLists.ListState.GOLDLIST)
+            return true;
+        if(guild.getRegion().name().toLowerCase().startsWith("vip"))
+            return true;
+        long botcount = guild.getUsers().stream().filter(User::isBot).count();
+        long usercount = guild.getUsers().stream().filter(u -> {
+            return u.getAvatarId()!=null && MiscUtil.getCreationTime(u.getId()).plusDays(7).isBefore(OffsetDateTime.now());
+        }).count();
+        return usercount >= 20 && ((double)botcount / guild.getUsers().size() < SpConst.BOT_COLLECTION_PERCENT);
+    }
+    
     private void pruneGuilds()
     {
         jda.getGuilds().stream().filter(g -> {
-                if(globallists.isAuthorized(g.getId()))
+                if(meetsRequirements(g))
                     return false;
-                if(globallists.isBlacklisted(g.getId()))
+                if(globallists.getState(g.getId())==GlobalLists.ListState.BLACKLIST)
                     return true;
                 double botPercent = (double)g.getUsers().stream().filter(u -> u.isBot()).count() / g.getUsers().size();
                 if(botPercent > SpConst.BOT_COLLECTION_PERCENT)

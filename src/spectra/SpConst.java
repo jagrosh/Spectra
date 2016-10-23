@@ -27,6 +27,7 @@ public class SpConst {
     final public static String VERSION = "3.2.2";
     final public static String PREFIX = "%";
     final public static String ALTPREFIX = "/";
+    final public static String DEFAULT_GAME = "Type "+PREFIX+"help";
     
     final public static OffsetDateTime PUBLIC_DATE = OffsetDateTime.parse("2016-09-18T04:00:00.000-04:00");
     final public static double BOT_COLLECTION_PERCENT = .85;
@@ -50,6 +51,7 @@ public class SpConst {
                                                                 + "Alternatively, add `{%s}` to a channel's topic to make it available there";
     final public static String NOT_VIA_DM               = ERROR + "**That command is not available via Direct Message!**";
     final public static String ONLY_WHITELIST           = ERROR + "**That command is only for whitelisted servers!**";
+    final public static String ONLY_GOLDLIST           = ERROR + "**That command is only for goldlisted servers!**";
     final public static String TOO_FEW_ARGS             = ERROR + "**Too few arguments provided**\nTry using `"+PREFIX.replace("%", "%%")+"%s help` for more information.";
     
     final private static String INVALID_VALUE            = ERROR + "**Invalid Value:**\n";

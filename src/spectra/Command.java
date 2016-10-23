@@ -21,6 +21,7 @@ import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.*;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.utils.PermissionUtil;
+import spectra.datasources.GlobalLists;
 import spectra.tempdata.Cooldowns;
 import spectra.utils.FinderUtil;
 import spectra.utils.FormatUtil;
@@ -40,11 +41,11 @@ public abstract class Command {
     protected Permission[] requiredPermissions = new Permission[0];
     protected PermLevel level = PermLevel.EVERYONE;
     protected boolean availableInDM = true;
-    protected int cooldown = 0; //seconds
-    protected int whitelistCooldown = 0; //seconds
+    protected int cooldown = 0; //the default command cooldown
+    protected int whitelistCooldown = 0; //cooldown for whitelisted servers, or -1 for whitelist-only with default
+    protected int goldlistCooldown = 0; //cooldown for goldlisted servers, or -1 for goldlist-only with default
     protected Function<MessageReceivedEvent,String> cooldownKey;
     protected boolean hidden = false;
-    protected boolean whitelistOnly = false;
     
     protected boolean execute(Object[] args, MessageReceivedEvent event)
     {
@@ -55,12 +56,12 @@ public abstract class Command {
         return false;
     }
     
-    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, boolean whitelisted)
+    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, GlobalLists.ListState state)
     {
-        return run(args, event, perm, ignore, banned, whitelisted, "");
+        return run(args, event, perm, ignore, banned, state, "");
     }
     
-    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, boolean whitelisted, String parentChain)
+    public boolean run(String args, MessageReceivedEvent event, PermLevel perm, boolean ignore, boolean banned, GlobalLists.ListState state, String parentChain)
     {
         if("help".equalsIgnoreCase(args))//display help text if applicable
         {
@@ -115,7 +116,7 @@ public abstract class Command {
             String[] argv = FormatUtil.cleanSplit(args);
             for(Command child: children)
                 if(child.isCommandFor(argv[0]))
-                    return child.run(argv[1], event, perm, ignore, banned, whitelisted, parentChain+command+" ");
+                    return child.run(argv[1], event, perm, ignore, banned, state, parentChain+command+" ");
         }
         if(!availableInDM && event.isPrivate())//can't use in dm
         {
@@ -128,13 +129,18 @@ public abstract class Command {
             return false;
         if(!event.isPrivate())
         {
-            if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE, event.getTextChannel()))
+            if(!PermissionUtil.checkPermission(event.getTextChannel(), event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE))
             {
                 Sender.sendPrivate(String.format(SpConst.CANT_SEND, event.getTextChannel().getAsMention()), event.getAuthor().getPrivateChannel());
                 return false;
             }
         }
-        if(whitelistOnly && !whitelisted)
+        if(goldlistCooldown==-1 && state!=GlobalLists.ListState.GOLDLIST)
+        {
+            Sender.sendResponse(SpConst.ONLY_GOLDLIST, event);
+            return false;
+        }
+        if(whitelistCooldown==-1 && !(state==GlobalLists.ListState.WHITELIST || state==GlobalLists.ListState.GOLDLIST))
         {
             Sender.sendResponse(SpConst.ONLY_WHITELIST, event);
             return false;
@@ -145,12 +151,12 @@ public abstract class Command {
             Sender.sendResponse(SpConst.BANNED_COMMAND + (perm.isAtLeast(PermLevel.ADMIN) ? String.format(SpConst.BANNED_COMMAND_IFADMIN, root, root) : ""), event);
             return false;
         }
-        if(!event.isPrivate() && !PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), Permission.ADMINISTRATOR, event.getGuild()))
+        if(!event.isPrivate() && !PermissionUtil.checkPermission(event.getGuild(),event.getJDA().getSelfInfo(), Permission.ADMINISTRATOR))
             for(Permission p : requiredPermissions)
             {
                 if(p.isChannel())
                 {
-                    if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), p, event.getTextChannel()))
+                    if(!PermissionUtil.checkPermission(event.getTextChannel(), event.getJDA().getSelfInfo(), p))
                     {
                         Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,p) ,event);
                         return false;
@@ -158,7 +164,7 @@ public abstract class Command {
                 }
                 else
                 {
-                    if(!PermissionUtil.checkPermission(event.getJDA().getSelfInfo(), p, event.getGuild()))
+                    if(!PermissionUtil.checkPermission(event.getGuild(), event.getJDA().getSelfInfo(), p))
                     {
                         Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,p) ,event);
                         return false;
@@ -452,7 +458,20 @@ public abstract class Command {
             }
         }
         
-        int actualCooldown = (whitelistCooldown==0 || !whitelisted) ? cooldown :whitelistCooldown;
+        int actualCooldown = cooldown;
+        if(state==GlobalLists.ListState.WHITELIST)
+        {
+            if(whitelistCooldown>0)
+                actualCooldown = whitelistCooldown;
+        }
+        else if(state==GlobalLists.ListState.GOLDLIST)
+        {
+            if(goldlistCooldown>0)
+                actualCooldown = goldlistCooldown;
+            else if (whitelistCooldown>0)
+                actualCooldown = whitelistCooldown;
+        }
+        
         seconds = Cooldowns.getInstance().checkAndApply(cdKey,actualCooldown);
         if(seconds > 0)
         {

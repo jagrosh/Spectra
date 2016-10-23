@@ -40,7 +40,7 @@ public class Imgur extends Command {
         this.longhelp = "This command uploads the given image URL or attachment to imgur, and returns the link of the new image.";
         this.cooldown = 60;
         this.cooldownKey = event -> event.getAuthor().getId()+"|imgur";
-        this.whitelistOnly = true;
+        this.goldlistCooldown = -1;
         this.arguments = new Argument[]{
             new Argument("url|attachment",Argument.Type.SHORTSTRING,true)
         };

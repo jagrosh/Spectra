@@ -18,10 +18,12 @@ package spectra;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javafx.util.Pair;
 import net.dv8tion.jda.MessageBuilder;
 import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
@@ -125,6 +127,19 @@ public class Sender {
         bits.stream().forEach((bit) -> {
             pchan.sendMessageAsync(bit, null);
         });
+    }
+    
+    //send automatic message with callback
+    public static boolean sendMsg(String message, TextChannel tchan, Consumer<Message> callback)
+    {
+        if(PermissionUtil.checkPermission(tchan, tchan.getJDA().getSelfInfo(), Permission.MESSAGE_READ, Permission.MESSAGE_WRITE))
+        {
+            ArrayList<String> bits = splitMessage(message);
+            for(int i=0; i<bits.size(); i++)
+                tchan.sendMessageAsync(bits.get(i), i+1==bits.size() ? callback : null);
+            return true;
+        }
+        return false;
     }
     
     //send automatic message

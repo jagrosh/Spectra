@@ -16,7 +16,6 @@
 package spectra.commands;
 
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.utils.ApplicationUtil;
 import spectra.Command;
 import spectra.Sender;
 import spectra.SpConst;
@@ -31,6 +30,7 @@ public class Invite extends Command {
         this.command = "invite";
         this.help = "invite "+SpConst.BOTNAME+" to your server";
         this.longhelp = "This command provides a link for inviting "+SpConst.BOTNAME+" to a server, as well providing an invite to jagrosh's bot server.";
+        this.hidden = true;
     }
 
     @Override

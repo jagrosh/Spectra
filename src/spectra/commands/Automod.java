@@ -50,7 +50,7 @@ public class Automod extends Command {
         this.longhelp = "This command is used to activate and modify automoderator settings "
                 + "for the current server. Please keep in mind that these features can potentially "
                 + "have unwanted effects, and the features are currently __in Beta__. Use at your own risk.";
-        this.whitelistOnly = true;
+        this.goldlistCooldown = -1; //gold-list only
         this.children = new Command[]{
             new AMSettings(),
         };
@@ -70,7 +70,7 @@ public class Automod extends Command {
             this.command = "settings";
             this.aliases = new String[]{"s","set"};
             this.availableInDM = false;
-            this.whitelistOnly = true;
+            this.goldlistCooldown = -1;
             this.level = PermLevel.ADMIN;
             this.help = "sets server-wide automod settings";
             this.longhelp = "This command sets settings that apply to all filters and actions taken by the automoderator.";
@@ -118,7 +118,7 @@ public class Automod extends Command {
             {
                 this.command = command;
                 this.availableInDM = false;
-                this.whitelistOnly = true;
+                this.goldlistCooldown = -1;
                 this.level = PermLevel.ADMIN;
                 this.help = help;
                 this.longhelp = longhelp;
@@ -150,7 +150,7 @@ public class Automod extends Command {
             this.availableInDM = false;
             this.help = "edits the anti-advertisement filter";
             this.longhelp = "This command is used to view or edit the anti-advertisement filter, that removes server invites.";
-            this.whitelistOnly = true;
+            this.goldlistCooldown = -1;
             this.children = new Command[]{
                 
             };

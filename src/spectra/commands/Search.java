@@ -44,7 +44,7 @@ public class Search extends Command {
         };
         this.cooldown = 30;
         this.cooldownKey = event -> event.getAuthor().getId()+"|find";
-        this.whitelistOnly = true;
+        this.whitelistCooldown = -1;
         this.requiredPermissions = new Permission[]{Permission.MESSAGE_HISTORY};
     }
 

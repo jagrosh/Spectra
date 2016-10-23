@@ -15,48 +15,70 @@
  */
 package spectra.commands;
 
-import java.util.ArrayList;
-import java.util.List;
-import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Role;
+import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.utils.PermissionUtil;
 import spectra.Argument;
 import spectra.Command;
-import spectra.FeedHandler;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
-import spectra.datasources.Feeds;
 
 /**
  *
  * @author John Grosh (jagrosh)
  */
 public class Announce extends Command {
-    private final FeedHandler handler;
-    private final Feeds feeds;
-    public Announce(FeedHandler handler, Feeds feeds)
+    public Announce()
     {
-        this.handler = handler;
-        this.feeds = feeds;
-        this.level = PermLevel.JAGROSH;
         this.command = "announce";
+        this.help = "makes an announcement to a role group";
+        this.longhelp = "This command makes an announcement that mentions all users with the provided role, "
+                + "even if the role is not normally mentionable. The message will be appended with the role mention, unless "
+                + "`{role}` is included, which will be replaced by the mention.";
+        this.level = PermLevel.ADMIN;
+        this.availableInDM = false;
         this.arguments = new Argument[]{
-            new Argument("text",Argument.Type.LONGSTRING,true)
+            new Argument("channel",Argument.Type.TEXTCHANNEL,true),
+            new Argument("rolename",Argument.Type.ROLE,true,"|"),
+            new Argument("announcement text",Argument.Type.LONGSTRING,true)
         };
-        this.help = "send to all announcements feeds";
-        this.longhelp = "This command sends a message to all existing announcements feeds (across all servers). "
-                + "Make sure to check for spelling mistakes first!";
+        this.requiredPermissions = new Permission[]{Permission.MANAGE_ROLES};
+        this.cooldown = 10;
+        this.cooldownKey = event -> event.getGuild().getId()+"|announce";
     }
 
     @Override
     protected boolean execute(Object[] args, MessageReceivedEvent event) {
-        String text = (String)args[0];
-        List<Guild> list = new ArrayList<>();
-        feeds.findGuildsForFeedType(Feeds.Type.ANNOUNCEMENTS).stream().filter((id) -> (event.getJDA().getGuildById(id)!=null)).forEach((id) -> {
-            list.add(event.getJDA().getGuildById(id));
+        TextChannel tc = (TextChannel)args[0];
+        Role role = (Role)args[1];
+        String content = (String)args[2];
+        if(!tc.checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_READ, Permission.MESSAGE_WRITE))
+        {
+            Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.MESSAGE_READ+", "+Permission.MESSAGE_WRITE), event);
+            return false;
+        }
+        boolean mentionable = role.isMentionable();
+        if(!mentionable)
+        {
+            if(!PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))
+            {
+                Sender.sendResponse(SpConst.ERROR+"I cannot make the role *"+role.getName()+"* mentionable because I cannot edit it. Make sure it is listed below my highest role.", event);
+                return false;
+            }
+            role.getManager().setMentionable(true).update();
+        }
+        if(content.contains("{role}"))
+            content = content.replace("{role}", role.getAsMention());
+        else
+            content = role.getAsMention()+": "+content;
+        Sender.sendMsg(content, tc, m -> {
+            if(!mentionable)
+                role.getManager().setMentionable(false).update();
+            Sender.sendResponse(SpConst.SUCCESS+"Announcement sent to <#"+tc.getId()+">!", event);
         });
-        handler.submitText(Feeds.Type.ANNOUNCEMENTS, list, text);
-        Sender.sendResponse(SpConst.SUCCESS+"Sent to **"+list.size()+"** guilds", event);
         return true;
     }
 }

@@ -976,7 +976,7 @@ public class Tag extends Command{
                 this.command = "list";
                 this.help = "lists tag mirrors on the current server";
                 this.longhelp = "This command shows the list of servers that have their tags mirrored onto the server.";
-                this.level = PermLevel.MODERATOR;
+                this.level = PermLevel.ADMIN;
                 this.availableInDM = false;
             }
             @Override
