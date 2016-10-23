@@ -202,8 +202,8 @@ public class Feed extends Command {
             String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.ANNOUNCEMENTS);
             if(current!=null)
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.ANNOUNCEMENTS+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
-            feeds.set(new String[]{event.getTextChannel().getId(),Feeds.Type.ANNOUNCEMENTS.toString(),event.getGuild().getId(),""});
-            str+=SpConst.SUCCESS+"Feed "+Feeds.Type.ANNOUNCEMENTS+" has been added to <#"+event.getTextChannel().getId()+">";
+            feeds.set(new String[]{tchan.getId(),Feeds.Type.ANNOUNCEMENTS.toString(),event.getGuild().getId(),""});
+            str+=SpConst.SUCCESS+"Feed "+Feeds.Type.ANNOUNCEMENTS+" has been added to <#"+tchan.getId()+">";
             Sender.sendResponse(str, event);
             return true;
         }
