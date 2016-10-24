@@ -1134,10 +1134,10 @@ public class Spectra extends ListenerAdapter {
         long usercount = guild.getUsers().stream().filter(u -> {
                 return !u.isBot() && u.getAvatarId()!=null && MiscUtil.getCreationTime(u.getId()).plusDays(7).isBefore(OffsetDateTime.now());
             }).count();
+        if((double)botcount / (usercount+botcount) > SpConst.BOT_COLLECTION_PERCENT)
+            return 2;
         if(usercount < 20)
             return 1;
-        if((double)botcount / guild.getUsers().size() < SpConst.BOT_COLLECTION_PERCENT)
-            return 2;
         return 0;
     }
     
@@ -1148,7 +1148,11 @@ public class Spectra extends ListenerAdapter {
                     return false;
                 if(globallists.getState(g.getId())==GlobalLists.ListState.BLACKLIST)
                     return true;
-                double botPercent = (double)g.getUsers().stream().filter(u -> u.isBot()).count() / g.getUsers().size();
+                long botcount = g.getUsers().stream().filter(User::isBot).count();
+                long usercount = g.getUsers().stream().filter(u -> {
+                        return !u.isBot() && u.getAvatarId()!=null && MiscUtil.getCreationTime(u.getId()).plusDays(7).isBefore(OffsetDateTime.now());
+                    }).count();
+                double botPercent = (double)botcount / (usercount+botcount);
                 if(botPercent > SpConst.BOT_COLLECTION_PERCENT)
                     return true;
             return false;}).forEach(g -> g.getManager().leave());
