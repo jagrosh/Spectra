@@ -15,7 +15,9 @@
  */
 package spectra;
 
+import com.mashape.unirest.http.Unirest;
 import java.io.File;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -23,6 +25,7 @@ import java.util.function.Supplier;
 import javafx.util.Pair;
 import net.dv8tion.jda.MessageBuilder;
 import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Emote;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.PrivateChannel;
 import net.dv8tion.jda.entities.TextChannel;
@@ -178,6 +181,25 @@ public class Sender {
         return false;
     }
     
+    //send reaction
+    public static void sendReaction(Message message, String encodedEmoji)
+    {
+        try{
+            Unirest.put("https://canary.discordapp.com/api/v6/channels/"+message.getChannelId()+"/messages/"+message.getId()+"/reactions/"+encodedEmoji+"/@me")
+                    .header("Authorization", message.getJDA().getAuthToken())
+                    .asJsonAsync();
+        }catch(Exception e){}
+    }
+    
+    public static void sendReaction(Message message, Emote emote)
+    {
+        try{
+            Unirest.put("https://canary.discordapp.com/api/v6/channels/"+message.getChannelId()+"/messages/"+message.getId()+"/reactions/"+emote.getName()+":"+emote.getId()+"/@me")
+                    .header("Authorization", message.getJDA().getAuthToken())
+                    .asJsonAsync();
+        }catch(Exception e){}
+    }
+    
     private static ArrayList<String> splitMessage(String stringtoSend)
     {
         ArrayList<String> msgs =  new ArrayList<>();
@@ -202,4 +224,5 @@ public class Sender {
         }
         return msgs;
     }
+    
 }

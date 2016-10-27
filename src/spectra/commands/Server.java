@@ -65,6 +65,7 @@ public class Server extends Command {
         long onlineCount = guild.getUsers().stream().filter((u) -> 
                 (u.getOnlineStatus()==OnlineStatus.ONLINE || u.getOnlineStatus()==OnlineStatus.AWAY))
                 .count();
+        long botCount = guild.getUsers().stream().filter(User::isBot).count();
         String str = "\uD83D\uDDA5 Information about **"+guild.getName()+"**:\n"
                 +SpConst.LINESTART+"ID: **"+guild.getId()+"**\n"
                 +SpConst.LINESTART+"Owner: **"+guild.getOwner().getUsername()+"** #"+guild.getOwner().getDiscriminator()+"\n"
@@ -72,7 +73,7 @@ public class Server extends Command {
                 +SpConst.LINESTART+"Location: **"+guild.getRegion().getName()+"**\n"
                 +SpConst.LINESTART+"Creation: **"+MiscUtil.getCreationTime(guild.getId()).format(DateTimeFormatter.RFC_1123_DATE_TIME)+"**\n"
             
-                +SpConst.LINESTART+"Users: **"+guild.getUsers().size()+"** ("+onlineCount+" online)\n"
+                +SpConst.LINESTART+"Users: **"+guild.getUsers().size()+"** ("+onlineCount+" online, "+botCount+" bots)\n"
                 +SpConst.LINESTART+"Channels: **"+guild.getTextChannels().size()+"** Text, **"+guild.getVoiceChannels().size()+"** Voice\n"
                 +SpConst.LINESTART+"Verification: **"+(guild.getVerificationLevel().equals(VerificationLevel.HIGH)?"(╯°□°）╯︵ ┻━┻":guild.getVerificationLevel())+"**";
         if(guild.getIconUrl()!=null)

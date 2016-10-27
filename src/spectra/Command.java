@@ -107,7 +107,8 @@ public abstract class Command {
                             .append("` - ").append(child.help);
                 }
             }
-            Sender.sendHelp(builder.toString(), event.getAuthor().getPrivateChannel(), event); 
+            Sender.sendHelp(builder.toString(), event.getAuthor().getPrivateChannel(), event);
+            Sender.sendReaction(event.getMessage(), "%E2%9C%85");
             return true;
         }
         

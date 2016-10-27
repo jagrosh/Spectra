@@ -243,6 +243,7 @@ public class Spectra extends ListenerAdapter {
             new Donator(donators),
             new Eval(this),
             new GoldList(globallists),
+            new RestCmd(),
             new SystemCmd(this,feeds,statistics),
             new WhiteList(globallists),
         };
@@ -265,6 +266,7 @@ public class Spectra extends ListenerAdapter {
     @Override
     public void onReady(ReadyEvent event) {
         event.getJDA().getAccountManager().setGame(SpConst.DEFAULT_GAME);
+        event.getJDA().getAccountManager().setStatus(OnlineStatus.ONLINE);
         
         handler.submitText(Feeds.Type.BOTLOG, event.getJDA().getGuildById(SpConst.JAGZONE_ID),
                 SpConst.SUCCESS+"**"+SpConst.BOTNAME+"** is now <@&182294060382289921>\n"
@@ -393,6 +395,8 @@ public class Spectra extends ListenerAdapter {
                 SpConst.WARNING+"**"+SpConst.BOTNAME+"** has <@&196723649061847040>\n"
                         + (lastDisconnect==null ? "No disconnect time recorded." : 
                         "Downtime: "+FormatUtil.secondsToTime(lastDisconnect.until(OffsetDateTime.now(), ChronoUnit.SECONDS))) );
+        event.getJDA().getAccountManager().setStatus(OnlineStatus.ONLINE);
+        event.getJDA().getAccountManager().setGame(SpConst.DEFAULT_GAME);
         lastDisconnect = null;
     }
 
@@ -525,6 +529,7 @@ public class Spectra extends ListenerAdapter {
                 helpmsg+="\nDo not add <> or [] to your arguments, nor quotation marks";
                 helpmsg+="\nFor more help, contact **@jagrosh**, check the wiki (<https://github.com/jagrosh/Spectra/wiki>), or join "+SpConst.JAGZONE_INVITE;
                 Sender.sendHelp(helpmsg, event.getAuthor().getPrivateChannel(), event);
+                Sender.sendReaction(event.getMessage(), "%E2%9C%85");
             }
             else//wasn't base help command
             {
@@ -828,7 +833,12 @@ public class Spectra extends ListenerAdapter {
             TextChannel channel = parts[0]==null ? event.getGuild().getPublicChannel() : event.getJDA().getTextChannelById(parts[0]);
             if(channel==null || !channel.getGuild().equals(event.getGuild()))
                 channel = event.getGuild().getPublicChannel();
-            String toSend = JagTag.convertText(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()), "", event.getUser(),event.getGuild(), channel).trim();
+            boolean isBan = false;
+            try {
+                Thread.sleep(200);
+                isBan = event.getGuild().getManager().getBans().contains(event.getUser());
+            } catch(Exception e){}
+            String toSend = JagTag.convertText(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()), isBan ? "ban" : "", event.getUser(),event.getGuild(), channel).trim();
             if(!toSend.equals(""))
                 Sender.sendMsg(toSend, channel);
         }
@@ -1136,7 +1146,7 @@ public class Spectra extends ListenerAdapter {
             }).count();
         if((double)botcount / (usercount+botcount) > SpConst.BOT_COLLECTION_PERCENT)
             return 2;
-        if(usercount < 20)
+        if(usercount < 15)
             return 1;
         return 0;
     }

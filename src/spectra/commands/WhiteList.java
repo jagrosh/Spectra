@@ -64,7 +64,7 @@ public class WhiteList extends Command {
             Guild guild = event.getJDA().getGuildById(id);
             if(lists.getState(id)==GlobalLists.ListState.WHITELIST)
             {
-                Sender.sendResponse(SpConst.WARNING+"**"+guild.getName()+"** is already whitelisted!", event);
+                Sender.sendResponse(SpConst.WARNING+(guild==null?"[???]":"**"+guild.getName()+"**")+" is already whitelisted!", event);
                 return false;
             }
             String[] entry = new String[lists.getSize()];

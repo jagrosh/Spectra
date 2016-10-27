@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
 public class SpConst {
     //bot items
     final public static String BOTNAME = "Spectra";
-    final public static String VERSION = "3.2.2";
+    final public static String VERSION = "3.2.3";
     final public static String PREFIX = "%";
     final public static String ALTPREFIX = "/";
     final public static String DEFAULT_GAME = "Type "+PREFIX+"help";
@@ -41,6 +41,8 @@ public class SpConst {
     final public static String SUCCESS = (char)9989+" ";
     final public static String WARNING = (char)9888+" ";
     final public static String ERROR   = (char)9940+" ";
+    
+    
     
     final public static String LINESTART = "  ➣  ";
     
