@@ -120,6 +120,11 @@ public class Ban extends Command {
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String id = (String)(args[0]);
+            if(!id.matches("\\d+"))
+            {
+                Sender.sendResponse(SpConst.ERROR+"`"+id+"` is not a valid ID.", event);
+                return false;
+            }
             String reason = args[1]==null?null:(String)(args[1]);
             if(reason==null)
                 reason = "[no reason specified]";

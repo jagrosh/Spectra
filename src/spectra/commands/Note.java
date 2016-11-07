@@ -49,7 +49,7 @@ public class Note extends Command {
         this.longhelp = "This command adds a note (tied to a user) to the modlog.";
         this.arguments = new Argument[]{
             new Argument("username",Argument.Type.LOCALUSER,true,"for"),
-            new Argument("reason",Argument.Type.LONGSTRING,false)
+            new Argument("reason",Argument.Type.LONGSTRING,true)
         };
         this.availableInDM=false;
         this.level = PermLevel.MODERATOR;

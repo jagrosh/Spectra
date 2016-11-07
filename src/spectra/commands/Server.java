@@ -95,9 +95,11 @@ public class Server extends Command {
         @Override
         protected boolean execute(Object[] args, MessageReceivedEvent event) {
             String[] current = settings.getSettingsForGuild(event.getGuild().getId());
+            Role autorole = (current[Settings.AUTOROLE]!=null ? event.getGuild().getRoleById(current[Settings.AUTOROLE].split("\\|")[0]) : null);
             StringBuilder builder = new StringBuilder("\u2699 Settings on **"+event.getGuild().getName()+"**:\n"
                     + SpConst.LINESTART+"**Welcome**: "+current[Settings.WELCOMEMSG]+"\n"
                     + SpConst.LINESTART+"**Leave**: "+current[Settings.LEAVEMSG]+"\n"
+                    + (autorole==null ? "" : SpConst.LINESTART+"**Auto Role**: "+autorole.getName()+"\n")
                     + SpConst.LINESTART+"**Prefixes**:");
             for(String prfx: Settings.prefixesFromList(current[Settings.PREFIXES]))
                 builder.append(" `").append(prfx).append("`");

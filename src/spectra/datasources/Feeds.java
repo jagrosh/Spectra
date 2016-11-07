@@ -80,6 +80,6 @@ public class Feeds extends DataSource {
     final public static int DETAILS   = 3;
     
     public enum Type {
-        MODLOG, SERVERLOG, TAGLOG, ANNOUNCEMENTS, BOTLOG
+        MODLOG, SERVERLOG, TAGLOG, ANNOUNCEMENTS, BOTLOG, TWITCH
     }
 }

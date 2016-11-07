@@ -57,6 +57,7 @@ public class RoleMe extends Command {
             Permission.MANAGE_ROLES
         };
         this.cooldown = 10;
+        this.goldlistCooldown = 2;
         this.cooldownKey = event -> event.getAuthor().getId()+"|roleme";
     }
 

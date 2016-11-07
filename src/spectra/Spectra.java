@@ -32,6 +32,8 @@ import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.*;
 import net.dv8tion.jda.JDA.Status;
 import net.dv8tion.jda.entities.*;
+import net.dv8tion.jda.entities.Game.GameType;
+import net.dv8tion.jda.entities.Guild.VerificationLevel;
 import net.dv8tion.jda.entities.impl.JDAImpl;
 import net.dv8tion.jda.events.*;
 import net.dv8tion.jda.events.guild.*;
@@ -41,6 +43,7 @@ import net.dv8tion.jda.events.message.guild.*;
 import net.dv8tion.jda.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.events.user.*;
 import net.dv8tion.jda.events.voice.*;
+import net.dv8tion.jda.exceptions.PermissionException;
 import net.dv8tion.jda.hooks.ListenerAdapter;
 import net.dv8tion.jda.managers.GuildManager;
 import net.dv8tion.jda.utils.*;
@@ -292,7 +295,7 @@ public class Spectra extends ListenerAdapter {
                 ArrayList<Role> modifiable = new ArrayList<>();
                 for(Guild g: jda.getGuilds())
                 {
-                    if(!g.isAvailable())
+                    if(!g.isAvailable() || g.getId().equals(SpecialCase.DISCORD_BOTS_ID))
                         continue;
                     if(!PermissionUtil.checkPermission(g, jda.getSelfInfo(), Permission.MANAGE_ROLES))
                         continue;
@@ -581,7 +584,7 @@ public class Spectra extends ListenerAdapter {
                         if(cmd.equalsIgnoreCase(args[0]))
                         {
                             isCommand=true;
-                            boolean nsfw = JagTag.isNSFWAllowed(event);
+                            boolean nsfw = TagUtil.isNSFWAllowed(event);
                             String[] tag = findTag(cmd, event.getGuild(), false, nsfw);
                             if(tag==null)
                             {
@@ -589,8 +592,10 @@ public class Spectra extends ListenerAdapter {
                                 successful = false;
                             }
                             else
-                            {
-                                Sender.sendResponse("\u200B"+JagTag.convertText(JagTag.getContents(tag), args[1], event.getAuthor(), event.getGuild(), event.getChannel()), event);
+                            { 
+                                Sender.sendResponse("\u200B"
+                                        +TagUtil.parser.clear().put("args", args[1]).put("user", event.getAuthor()).put("channel", event.getTextChannel()).parse(TagUtil.getContents(tag)), 
+                                        event);
                                 successful = true;
                                 
                             }
@@ -652,41 +657,54 @@ public class Spectra extends ListenerAdapter {
         if(!event.getAuthor().equals(event.getJDA().getSelfInfo()) && feeds.feedForGuild(event.getGuild(), Feeds.Type.SERVERLOG)!=null)
             messagecache.addMessage(event.getGuild().getId(), event.getMessage());
         statistics.sentMessage(event.getGuild().getId());
-        String[] currsettings = settings.getSettingsForGuild(event.getGuild().getId());
+        assignAutoRole(event.getGuild(), event.getAuthor(), event.getMessage());
+    }
+
+    private void assignAutoRole(Guild guild, User user, Message message)
+    {
+        String[] currsettings = settings.getSettingsForGuild(guild.getId());
         if(currsettings!=null)
         {
             String autorole = currsettings[Settings.AUTOROLE];
             if(autorole!=null)
             {
                 String[] parts = autorole.split("\\|");
-                Role role = event.getGuild().getRoleById(parts[0]);
-                if(role!=null && PermissionUtil.canInteract(event.getJDA().getSelfInfo(), role))
+                Role role = guild.getRoleById(parts[0]);
+                if(role!=null && PermissionUtil.canInteract(guild.getJDA().getSelfInfo(), role))
                 {
-                    if(parts.length<2 || parts[1].equals(""))
+                    if(parts.length<2 || parts[1].equals("")) //auto
                     {
-                        if(event.getMessage().getTime().isBefore(event.getGuild().getJoinDateForUser(event.getAuthor()).plusMinutes(30)))
+                        if(message==null) //guildjoin
                         {
-                            if(!event.getGuild().getRolesForUser(event.getAuthor()).contains(role))
+                            if(guild.getVerificationLevel()==VerificationLevel.NONE && !guild.getRolesForUser(user).contains(role))
                             {
-                                event.getGuild().getManager().addRoleToUser(event.getAuthor(), role).update();
+                                guild.getManager().addRoleToUser(user, role).update();
+                            }
+                        }
+                        else if(message.getTime().isBefore(guild.getJoinDateForUser(user).plusMinutes(30)))
+                        {
+                            if(!guild.getRolesForUser(user).contains(role))
+                            {
+                                guild.getManager().addRoleToUser(user, role).update();
                             }
                         }
                     }
-                    else if(event.getMessage().getRawContent().equalsIgnoreCase(parts[1]))
+                    else if(message!=null && message.getRawContent().equalsIgnoreCase(parts[1])) //phrase
                     {
-                        if(!event.getGuild().getRolesForUser(event.getAuthor()).contains(role))
+                        if(!guild.getRolesForUser(user).contains(role))
                         {
-                            if(event.getChannel().checkPermission(event.getJDA().getSelfInfo(), Permission.MESSAGE_MANAGE))
-                                event.getMessage().deleteMessage();
-                            event.getGuild().getManager().addRoleToUser(event.getAuthor(), role).update();
-                            Sender.sendPrivate(SpConst.SUCCESS+"I have given you the role *"+role.getName()+"* on **"+event.getGuild().getName()+"**", event.getAuthor().getPrivateChannel());
+                            try {
+                                message.deleteMessage();
+                            }catch(PermissionException ex){}
+                            guild.getManager().addRoleToUser(user, role).update();
+                            Sender.sendPrivate(SpConst.SUCCESS+"I have given you the role *"+role.getName()+"* on **"+guild.getName()+"**", user.getPrivateChannel());
                         }
                     }
                 }
             }
         }
     }
-
+    
     @Override
     public void onPrivateMessageReceived(PrivateMessageReceivedEvent event) {
         SpecialCase.giveMonsterHunterRole(event);
@@ -807,10 +825,18 @@ public class Spectra extends ListenerAdapter {
             TextChannel channel = parts[0]==null ? event.getGuild().getPublicChannel() : event.getJDA().getTextChannelById(parts[0]);
             if(channel==null || !channel.getGuild().equals(event.getGuild()))
                 channel = event.getGuild().getPublicChannel();
-            String toSend = JagTag.convertText(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()), "", event.getUser(),event.getGuild(), channel).trim();
+            String toSend = TagUtil.parser.clear()
+                    .put("args", "")
+                    .put("user", event.getUser())
+                    .put("channel", channel)
+                    .parse(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()))
+                    .trim();
             if(!toSend.equals(""))
                 Sender.sendMsg(toSend, channel);
         }
+        
+        assignAutoRole(event.getGuild(), event.getUser(), null);
+        
         String[] guide = guides.get(event.getGuild().getId());
         if(guide!=null)
             for(int i=1; i<guide.length; i++)
@@ -822,9 +848,15 @@ public class Spectra extends ListenerAdapter {
     public void onGuildMemberLeave(GuildMemberLeaveEvent event) {
         if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)
             return;
-        
+        String rolelist = "";
+        if(event.getOldRoles()!=null && !event.getOldRoles().isEmpty())
+        {
+            rolelist = "\nRoles: "+event.getOldRoles().get(0).getName();
+            for(int i=1; i<event.getOldRoles().size(); i++)
+                rolelist+=", "+event.getOldRoles().get(i).getName();
+        }
         handler.submitText(Feeds.Type.SERVERLOG, event.getGuild(),
-                "\uD83D\uDCE4 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") left or was kicked from the server.");
+                "\uD83D\uDCE4 **"+event.getUser().getUsername()+"** (ID:"+event.getUser().getId()+") left or was kicked from the server."+rolelist);
         String[] currentsettings = settings.getSettingsForGuild(event.getGuild().getId());
         String current = currentsettings==null ? null : currentsettings[Settings.LEAVEMSG];
         if(current!=null && !current.equals(""))
@@ -838,7 +870,12 @@ public class Spectra extends ListenerAdapter {
                 Thread.sleep(200);
                 isBan = event.getGuild().getManager().getBans().contains(event.getUser());
             } catch(Exception e){}
-            String toSend = JagTag.convertText(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()), isBan ? "ban" : "", event.getUser(),event.getGuild(), channel).trim();
+            String toSend = TagUtil.parser.clear()
+                    .put("user", event.getUser())
+                    .put("channel", channel)
+                    .put("args", isBan ? "ban" : "")
+                    .parse(parts[1].replace("%user%", event.getUser().getUsername()).replace("%atuser%", event.getUser().getAsMention()))
+                    .trim();
             if(!toSend.equals(""))
                 Sender.sendMsg(toSend, channel);
         }
@@ -944,6 +981,44 @@ public class Spectra extends ListenerAdapter {
             
     }
 
+    @Override
+    public void onUserGameUpdate(UserGameUpdateEvent event) {
+        String message=null;
+        if(!event.getUser().isBot())
+        {
+            if(event.getUser().getCurrentGame()!=null && event.getUser().getCurrentGame().getType() == GameType.TWITCH)
+            {
+                Game game = event.getUser().getCurrentGame();
+                if(Game.isValidStreamingUrl(game.getUrl()))
+                {
+                    message = SafeEmote.STREAMING.get(event.getJDA())+" "+FormatUtil.shortUser(event.getUser())
+                            +" is now streaming **"+game.getName()+"**!\n"+SpConst.LINESTART+game.getUrl();
+                }
+            }
+            if(message==null && event.getPreviousGame()!=null && event.getPreviousGame().getType() == GameType.TWITCH)
+            {
+                message = SafeEmote.map(event.getUser().getOnlineStatus()).get(event.getJDA())+" "+FormatUtil.shortUser(event.getUser())
+                        +" has stopped streaming **"+event.getPreviousGame().getName()+"**.";
+            }
+            if(message!=null)
+            {
+                List<Guild> list = new ArrayList<>();
+                event.getJDA().getGuilds().stream()
+                        .filter(g -> g.isMember(event.getUser()) && globallists.getState(g.getId())!=GlobalLists.ListState.BLACKLIST)
+                        .forEach(g -> {
+                            String[] feed = feeds.feedForGuild(g, Feeds.Type.TWITCH);
+                            if(feed!=null)
+                            {
+                                String details = feed[Feeds.DETAILS];
+                                if(details==null || !details.contains("+s") || details.contains("+s"+event.getUser().getId()))
+                                    list.add(g);
+                            }
+                        });
+                handler.submitText(Feeds.Type.TWITCH, list, message);
+            }
+        }
+    }
+    
     @Override
     public void onGuildMemberNickChange(GuildMemberNickChangeEvent event) {
         if(globallists.getState(event.getGuild().getId())==GlobalLists.ListState.BLACKLIST)

@@ -76,7 +76,7 @@ public class Imgur extends Command {
             return true;
         }catch(Exception e)
         {
-            Sender.sendResponse(SpConst.ERROR+"And invalid status was returned.", event);
+            Sender.sendResponse(SpConst.ERROR+"An invalid status was returned.", event);
             return false;
         }
     }

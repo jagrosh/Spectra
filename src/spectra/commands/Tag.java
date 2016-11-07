@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.User;
@@ -27,7 +26,6 @@ import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Argument;
 import spectra.Command;
 import spectra.FeedHandler;
-import spectra.JagTag;
 import spectra.PermLevel;
 import spectra.Sender;
 import spectra.SpConst;
@@ -37,6 +35,7 @@ import spectra.datasources.LocalTags;
 import spectra.datasources.Overrides;
 import spectra.datasources.Settings;
 import spectra.datasources.Tags;
+import spectra.utils.TagUtil;
 
 /**
  *
@@ -63,7 +62,7 @@ public class Tag extends Command{
         this.longhelp = "This command is used to create, edit, and view \"tags\". "
                 + "Tags are a method of storing text for easy recollection later. "
                 + "Additionally, some scripting-esque elements can be used to provide "
-                + "extra functionality. See <"+JagTag.URL+"> for available elements.";
+                + "extra functionality. See <"+TagUtil.URL+"> for available elements.";
         this.arguments = new Argument[]{
             new Argument("tagname",Argument.Type.SHORTSTRING,true),
             new Argument("tag arguments",Argument.Type.LONGSTRING,false)
@@ -98,7 +97,7 @@ public class Tag extends Command{
         String tagname = (String)(args[0]);
         String tagargs = args[1]==null ? null :(String)(args[1]);
         boolean local = false;
-        boolean nsfw = JagTag.isNSFWAllowed(event);
+        boolean nsfw = TagUtil.isNSFWAllowed(event);
         if(!event.isPrivate())
             local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
         String[] tag = spectra.findTag(tagname,event.getGuild(),local,nsfw);
@@ -107,7 +106,11 @@ public class Tag extends Command{
             Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
             return false;
         }
-        Sender.sendResponse("\u200B"+JagTag.convertText(JagTag.getContents(tag), tagargs, event.getAuthor(), event.getGuild(), event.getChannel()), event);
+        Sender.sendResponse("\u200B"+TagUtil.parser.clear()
+                                        .put("args",tagargs)
+                                        .put("user", event.getAuthor())
+                                        .put("channel", event.getTextChannel())
+                                        .parse(TagUtil.getContents(tag)), event);
         return true;
     }
     
@@ -156,7 +159,7 @@ public class Tag extends Command{
             }
             else
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+JagTag.getTagname(tag)+"\" already exists.", event);
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+TagUtil.getTagname(tag)+"\" already exists.", event);
                 return false;
             }
         }
@@ -206,7 +209,7 @@ public class Tag extends Command{
             }
             else
             {
-                Sender.sendResponse(SpConst.ERROR+"Tag \""+JagTag.getTagname(tag)+"\" already exists.", event);
+                Sender.sendResponse(SpConst.ERROR+"Tag \""+TagUtil.getTagname(tag)+"\" already exists.", event);
                 return false;
             }
         }
@@ -237,7 +240,7 @@ public class Tag extends Command{
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            else if(JagTag.getOwnerId(tag).equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
+            else if(TagUtil.getOwnerId(tag).equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
                 boolean global = tag.length==3;
                 if(global)
@@ -246,7 +249,7 @@ public class Tag extends Command{
                 {
                     localtags.removeTag(tag[LocalTags.TAGNAME],tag[LocalTags.GUILDID]);
                 }
-                Sender.sendResponse(SpConst.SUCCESS+(global ? "Global tag" : "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)")+" \""+JagTag.getTagname(tag)+"\" deleted successfully.", event);
+                Sender.sendResponse(SpConst.SUCCESS+(global ? "Global tag" : "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)")+" \""+TagUtil.getTagname(tag)+"\" deleted successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 if(global)
                     event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
@@ -256,14 +259,14 @@ public class Tag extends Command{
                     guildlist.add(event.getJDA().getGuildById(tag[LocalTags.GUILDID]));
                 
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 
-                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted "+(tag.length==3 ? "global" : "local")+" tag **"+JagTag.getTagname(tag)+"** "
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted "+(tag.length==3 ? "global" : "local")+" tag **"+TagUtil.getTagname(tag)+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
             else
             {
                 String owner;
-                String ownerid = JagTag.getOwnerId(tag);
+                String ownerid = TagUtil.getOwnerId(tag);
                 User u = event.getJDA().getUserById(ownerid);
                 if(u!=null)
                     owner = "**"+u.getUsername()+"**";
@@ -271,7 +274,7 @@ public class Tag extends Command{
                     owner = "the server *"+event.getJDA().getGuildById(ownerid.substring(1)).getName()+"*";
                 else
                     owner = "an unknown user (ID:"+tag[Tags.OWNERID]+")";
-                Sender.sendResponse(SpConst.ERROR+"You cannot delete tag \""+JagTag.getTagname(tag)+"\" because it belongs to "+owner, event);
+                Sender.sendResponse(SpConst.ERROR+"You cannot delete tag \""+TagUtil.getTagname(tag)+"\" because it belongs to "+owner, event);
                 return false;
             }
         }
@@ -303,7 +306,7 @@ public class Tag extends Command{
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            else if(JagTag.getOwnerId(tag).equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
+            else if(TagUtil.getOwnerId(tag).equals(event.getAuthor().getId()) || SpConst.JAGROSH_ID.equals(event.getAuthor().getId()))
             {
                 boolean global = tag.length==3;
                 if(global)
@@ -326,7 +329,7 @@ public class Tag extends Command{
                     });
                 }
                 
-                Sender.sendResponse(SpConst.SUCCESS+(global ? "Global tag" : "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)")+" \""+JagTag.getTagname(tag)+"\" edited successfully.", event);
+                Sender.sendResponse(SpConst.SUCCESS+(global ? "Global tag" : "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)")+" \""+TagUtil.getTagname(tag)+"\" edited successfully.", event);
                 ArrayList<Guild> guildlist = new ArrayList<>();
                 if(global)
                     event.getJDA().getGuilds().stream().filter((g) -> (g.isMember(event.getAuthor()) || g.getId().equals(SpConst.JAGZONE_ID))).forEach((g) -> {
@@ -335,14 +338,14 @@ public class Tag extends Command{
                 else
                     guildlist.add(event.getJDA().getGuildById(tag[LocalTags.GUILDID]));
                 handler.submitText(Feeds.Type.TAGLOG, guildlist, 
-                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") edited "+(tag.length==3 ? "global" : "local")+" tag **"+JagTag.getTagname(tag)+"** "
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") edited "+(tag.length==3 ? "global" : "local")+" tag **"+TagUtil.getTagname(tag)+"** "
                                 +(event.isPrivate() ? "in a Direct Message":("on **"+event.getGuild().getName()+"**")));
                 return true;
             }
             else
             {
                 String owner;
-                String ownerid = JagTag.getOwnerId(tag);
+                String ownerid = TagUtil.getOwnerId(tag);
                 User u = event.getJDA().getUserById(ownerid);
                 if(u!=null)
                     owner = "**"+u.getUsername()+"**";
@@ -350,7 +353,7 @@ public class Tag extends Command{
                     owner = "the server *"+event.getJDA().getGuildById(ownerid.substring(1)).getName()+"*";
                 else
                     owner = "an unknown user (ID:"+ownerid+")";
-                Sender.sendResponse(SpConst.ERROR+"You cannot edit tag \""+JagTag.getTagname(tag)+"\" because it belongs to "+owner, event);
+                Sender.sendResponse(SpConst.ERROR+"You cannot edit tag \""+TagUtil.getTagname(tag)+"\" because it belongs to "+owner, event);
                 return false;
             }
         }
@@ -377,7 +380,7 @@ public class Tag extends Command{
             User user = (User)(args[0]);
             if(user==null)
                 user = event.getAuthor();
-            boolean nsfw = JagTag.isNSFWAllowed(event);
+            boolean nsfw = TagUtil.isNSFWAllowed(event);
             ArrayList<String> taglist = tags.findTagsByOwner(user, nsfw);
             Collections.sort(taglist);
             StringBuilder builder1;
@@ -439,7 +442,7 @@ public class Tag extends Command{
                 return false;
             }
             String owner;
-            String ownerid = JagTag.getOwnerId(tag);
+            String ownerid = TagUtil.getOwnerId(tag);
             User u = event.getJDA().getUserById(ownerid);
             if(u!=null)
                 owner = "**"+u.getUsername()+"** #"+u.getDiscriminator();
@@ -450,7 +453,7 @@ public class Tag extends Command{
             String tagtype = "Global tag";
             if(tag.length==4)
                 tagtype = "Local tag (*"+event.getJDA().getGuildById(tag[LocalTags.GUILDID]).getName()+"*)";
-            Sender.sendResponse(tagtype+" \""+JagTag.getTagname(tag)+"\" belongs to "+owner, event);
+            Sender.sendResponse(tagtype+" \""+TagUtil.getTagname(tag)+"\" belongs to "+owner, event);
             return true;
         }
     }
@@ -473,7 +476,7 @@ public class Tag extends Command{
         {
             String tagargs = args[0]==null?null:(String)(args[0]);
             boolean local = false;
-            boolean nsfw = JagTag.isNSFWAllowed(event);
+            boolean nsfw = TagUtil.isNSFWAllowed(event);
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             List<String[]> taglist = tags.findTags(null, event.getGuild(), local, nsfw);
@@ -489,8 +492,12 @@ public class Tag extends Command{
             }
             int num = (int)( Math.random() * (taglist.size()+taglist2.size()) );
             String[] tag = num<taglist.size() ? taglist.get(num) : taglist2.get(num - taglist.size());
-            Sender.sendResponse("Tag \""+JagTag.getTagname(tag)+"\":\n"
-                    +JagTag.convertText(JagTag.getContents(tag), tagargs, event.getAuthor(), event.getGuild(), event.getChannel()),
+            Sender.sendResponse("Tag \""+TagUtil.getTagname(tag)+"\":\n"
+                    +TagUtil.parser.clear()
+                            .put("args", tagargs)
+                            .put("user", event.getAuthor())
+                            .put("channel", event.getTextChannel())
+                            .parse(TagUtil.getContents(tag)),
                     event);
             return true;
         }
@@ -514,7 +521,7 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             boolean local = false;
-            boolean nsfw = JagTag.isNSFWAllowed(event);
+            boolean nsfw = TagUtil.isNSFWAllowed(event);
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             String[] tag = spectra.findTag(tagname,event.getGuild(),local,nsfw);
@@ -523,7 +530,7 @@ public class Tag extends Command{
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            Sender.sendResponse("\u200B"+JagTag.getContents(tag), event);
+            Sender.sendResponse("\u200B"+TagUtil.getContents(tag), event);
             return true;
         }
     }
@@ -548,7 +555,7 @@ public class Tag extends Command{
         {
             String tagname = (String)(args[0]);
             boolean local = false;
-            boolean nsfw = JagTag.isNSFWAllowed(event);
+            boolean nsfw = TagUtil.isNSFWAllowed(event);
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             String[] tag = spectra.findTag(tagname,event.getGuild(),local,nsfw);
@@ -557,7 +564,7 @@ public class Tag extends Command{
                 Sender.sendResponse(SpConst.ERROR+"Tag \""+tagname+"\" could not be found", event);
                 return false;
             }
-            Sender.sendResponse("```\n"+JagTag.getContents(tag)+"```", event);
+            Sender.sendResponse("```\n"+TagUtil.getContents(tag)+"```", event);
             return true;
         }
     }
@@ -583,7 +590,7 @@ public class Tag extends Command{
         {
             String query = args[0]==null?null:(String)(args[0]);
             boolean local = false;
-            boolean nsfw = JagTag.isNSFWAllowed(event);
+            boolean nsfw = TagUtil.isNSFWAllowed(event);
             if(!event.isPrivate())
                 local = "local".equalsIgnoreCase(settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGMODE]);
             List<String> tagnames = tags.findTags(query, event.getGuild(), local, nsfw).stream().map(tag -> tag[Tags.TAGNAME]).collect(Collectors.toList());
@@ -662,9 +669,9 @@ public class Tag extends Command{
                     newtag[LocalTags.TAGNAME] = tagname;
                     newtag[LocalTags.CONTENTS] = contents;
                     localtags.set(newtag);
-                    Sender.sendResponse(SpConst.SUCCESS+"Global tag \""+JagTag.getTagname(tag)+"\" overriden successfully.", event);
+                    Sender.sendResponse(SpConst.SUCCESS+"Global tag \""+TagUtil.getTagname(tag)+"\" overriden successfully.", event);
                     handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
-                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode global tag **"+JagTag.getTagname(tag)+"**");
+                        "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode global tag **"+TagUtil.getTagname(tag)+"**");
                     return true;
                 }
                 else
@@ -672,9 +679,9 @@ public class Tag extends Command{
                     if(tag[LocalTags.GUILDID].equals(event.getGuild().getId()) && args[1]==null)//delete
                     {
                         localtags.removeTag(tagname, event.getGuild().getId());
-                        Sender.sendResponse(SpConst.SUCCESS+"Local tag \""+JagTag.getTagname(tag)+"\" deleted.", event);
+                        Sender.sendResponse(SpConst.SUCCESS+"Local tag \""+TagUtil.getTagname(tag)+"\" deleted.", event);
                         handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
-                            "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted local tag **"+JagTag.getTagname(tag)+"**");
+                            "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") deleted local tag **"+TagUtil.getTagname(tag)+"**");
                         return true;
                     }
                     else
@@ -685,9 +692,9 @@ public class Tag extends Command{
                         newtag[LocalTags.TAGNAME] = tag[LocalTags.TAGNAME];
                         newtag[LocalTags.CONTENTS] = contents;
                         localtags.set(newtag);
-                        Sender.sendResponse(SpConst.SUCCESS+"Local tag \""+JagTag.getTagname(tag)+"\" overriden successfully.", event);
+                        Sender.sendResponse(SpConst.SUCCESS+"Local tag \""+TagUtil.getTagname(tag)+"\" overriden successfully.", event);
                         handler.submitText(Feeds.Type.TAGLOG, event.getGuild(), 
-                            "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode local tag **"+JagTag.getTagname(tag)+"**");
+                            "\uD83C\uDFF7 **"+event.getAuthor().getUsername()+"** (ID:"+event.getAuthor().getId()+") overrode local tag **"+TagUtil.getTagname(tag)+"**");
                         return true;
                     }
                 }
@@ -828,7 +835,7 @@ public class Tag extends Command{
                 }
                 else
                 {
-                    tagname = JagTag.getTagname(tag);
+                    tagname = TagUtil.getTagname(tag);
                     String cmds = settings.getSettingsForGuild(event.getGuild().getId())[Settings.TAGIMPORTS];
                     if(cmds==null || cmds.equals(""))
                         cmds = tagname;

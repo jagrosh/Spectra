@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.User;
 import spectra.DataSource;
-import spectra.JagTag;
+import spectra.utils.TagUtil;
 
 /**
  *
@@ -41,7 +41,7 @@ public class Tags extends DataSource{
             String[] tag = data.get(name.toLowerCase());
             if(tag!=null)
             {
-                if(!nsfw && JagTag.isNSFWTag(tag))
+                if(!nsfw && TagUtil.isNSFWTag(tag))
                     return new String[]{tag[OWNERID],tag[TAGNAME],"\uD83D\uDD1E This tag has been marked as **Not Safe For Work** and is not available in this channel."};
                 if(local && guild!=null)
                 {
@@ -67,7 +67,7 @@ public class Tags extends DataSource{
         {
             for(String[] tag: data.values())
             {
-                if(tag[TAGNAME].toLowerCase().contains(search) && (nsfw || !JagTag.isNSFWTag(tag)))
+                if(tag[TAGNAME].toLowerCase().contains(search) && (nsfw || !TagUtil.isNSFWTag(tag)))
                 {
                     if(local && guild!=null)
                     {
@@ -88,7 +88,7 @@ public class Tags extends DataSource{
         ArrayList<String> results = new ArrayList<>();
         synchronized(data)
         {
-            data.values().stream().filter((tag) -> (tag[OWNERID].equals(owner.getId()) && (nsfw || !JagTag.isNSFWTag(tag))))
+            data.values().stream().filter((tag) -> (tag[OWNERID].equals(owner.getId()) && (nsfw || !TagUtil.isNSFWTag(tag))))
                 .forEach((tag) -> {
                 results.add(tag[TAGNAME]);
             });

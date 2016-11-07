@@ -24,13 +24,13 @@ import java.time.OffsetDateTime;
 public class SpConst {
     //bot items
     final public static String BOTNAME = "Spectra";
-    final public static String VERSION = "3.2.3";
+    final public static String VERSION = "3.2.4";
     final public static String PREFIX = "%";
     final public static String ALTPREFIX = "/";
     final public static String DEFAULT_GAME = "Type "+PREFIX+"help";
     
     final public static OffsetDateTime PUBLIC_DATE = OffsetDateTime.parse("2016-09-18T04:00:00.000-04:00");
-    final public static double BOT_COLLECTION_PERCENT = .85;
+    final public static double BOT_COLLECTION_PERCENT = .80;
     
     //discord items
     final public static String JAGROSH_ID = "113156185389092864";
@@ -41,7 +41,9 @@ public class SpConst {
     final public static String SUCCESS = (char)9989+" ";
     final public static String WARNING = (char)9888+" ";
     final public static String ERROR   = (char)9940+" ";
-    
+    final public static String SUCCESS_E = "%E2%9C%85";
+    final public static String WARNING_E = "%E2%9A%A0";
+    final public static String ERROR_E = "%E2%9B%94";
     
     
     final public static String LINESTART = "  ➣  ";

@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import net.dv8tion.jda.entities.Guild;
 import net.dv8tion.jda.entities.User;
 import spectra.DataSource;
-import spectra.JagTag;
+import spectra.utils.TagUtil;
 
 /**
  *
@@ -41,7 +41,7 @@ public class LocalTags extends DataSource{
             String[] tag = data.get(guild.getId()+"|"+name.toLowerCase());
             if(tag!=null)
             {
-                if(!nsfw && JagTag.isNSFWTag(tag))
+                if(!nsfw && TagUtil.isNSFWTag(tag))
                     return new String[]{tag[OWNERID],tag[GUILDID],tag[TAGNAME],"\uD83D\uDD1E This tag has been marked as **Not Safe For Work** and is not available in this channel."};
                 return tag.clone();
             }
@@ -58,7 +58,7 @@ public class LocalTags extends DataSource{
         synchronized(data)
         {
             for(String[] tag: data.values())
-                if(tag[TAGNAME].toLowerCase().contains(search) && tag[GUILDID].equals(guild.getId()) && (nsfw || !JagTag.isNSFWTag(tag)))
+                if(tag[TAGNAME].toLowerCase().contains(search) && tag[GUILDID].equals(guild.getId()) && (nsfw || !TagUtil.isNSFWTag(tag)))
                     results.add(tag.clone());
         }
         return results;
@@ -69,7 +69,7 @@ public class LocalTags extends DataSource{
         ArrayList<String> results = new ArrayList<>();
         synchronized(data)
         {
-            data.values().stream().filter((tag) -> (tag[OWNERID].equals(owner.getId()) && (guild==null || tag[GUILDID].equals(guild.getId())) && (nsfw || !JagTag.isNSFWTag(tag))))
+            data.values().stream().filter((tag) -> (tag[OWNERID].equals(owner.getId()) && (guild==null || tag[GUILDID].equals(guild.getId())) && (nsfw || !TagUtil.isNSFWTag(tag))))
                 .forEach((tag) -> {
                 results.add(tag[TAGNAME]);
             });
@@ -83,7 +83,7 @@ public class LocalTags extends DataSource{
         String ownerId = "g"+guild.getId();
         synchronized(data)
         {
-            data.values().stream().filter((tag) -> (tag[OWNERID].equals(ownerId) && tag[GUILDID].equals(guild.getId()) && (nsfw || !JagTag.isNSFWTag(tag))))
+            data.values().stream().filter((tag) -> (tag[OWNERID].equals(ownerId) && tag[GUILDID].equals(guild.getId()) && (nsfw || !TagUtil.isNSFWTag(tag))))
                 .forEach((tag) -> {
                 results.add(tag[TAGNAME]);
             });

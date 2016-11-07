@@ -111,7 +111,11 @@ public class RestCmd extends Command {
                     request.body(body);
                 response = request.asJson();
             }
-            Sender.sendResponse("\uD83D\uDCC7 `"+response.getStatus()+"` "+response.getStatusText()+"\n```json\n"+response.getBody().getObject().toString(2), event);
+            String rbody = null;
+            try{
+            rbody = response.getBody().getObject().toString(2);
+            }catch(Exception e){}
+            Sender.sendResponse("\uD83D\uDCC7 `"+response.getStatus()+"` "+response.getStatusText()+(rbody==null ? "" : "\n```json\n"+rbody+" ```"), event);
             return true;
         }catch(UnirestException e){
             Sender.sendResponse(SpConst.ERROR+"Unirest exception",event);

@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import net.dv8tion.jda.entities.Guild;
 import spectra.DataSource;
-import spectra.JagTag;
+import spectra.utils.TagUtil;
 
 /**
  *
@@ -42,7 +42,7 @@ public class Overrides extends DataSource{
             String[] tag = data.get("g"+guild.getId()+"|"+name.toLowerCase());
             if(tag==null)
                 return null;
-            if(!nsfw && JagTag.isNSFWTag(tag))
+            if(!nsfw && TagUtil.isNSFWTag(tag))
                 return new String[]{tag[OWNERID],tag[TAGNAME],"\uD83D\uDD1E This tag has been marked as **Not Safe For Work** and is not available in this channel."};
             return tag.clone();
         }

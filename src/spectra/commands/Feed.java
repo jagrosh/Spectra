@@ -50,7 +50,8 @@ public class Feed extends Command {
             new FeedModlog(),
             new FeedRemove(),
             new FeedServerlog(),
-            new FeedTaglog()
+            new FeedTaglog(),
+            new FeedTwitch()
         };
         this.availableInDM = false;
     }
@@ -132,6 +133,46 @@ public class Feed extends Command {
                 str+=SpConst.WARNING+"Feed "+Feeds.Type.SERVERLOG+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
             feeds.set(new String[]{tchan.getId(),Feeds.Type.SERVERLOG.toString(),event.getGuild().getId(),options});
             str+=SpConst.SUCCESS+"Feed "+Feeds.Type.SERVERLOG+" has been added to <#"+tchan.getId()+">";
+            Sender.sendResponse(str, event);
+            return true;
+        }
+    }
+    
+    private class FeedTwitch extends Command {
+        private FeedTwitch()
+        {
+            this.command = "twitch";
+            this.help = "sets the `twitch` feed, which shows when users begin/end streaming";
+            this.longhelp = "This command sets the `twitch` feed, which displays when users on the server begin or end "
+                    + "streaming sessions on twitch. To only show streams for some users, insert their IDs in the feed "
+                    + "options in the form +sID. Example: `+s113156185389092864`";
+            this.level = PermLevel.ADMIN;
+            this.arguments = new Argument[]{
+                new Argument("channel",Argument.Type.TEXTCHANNEL,false),
+                new Argument("options",Argument.Type.LONGSTRING,false)
+            };
+            this.availableInDM = false;
+            this.whitelistCooldown = -1;
+        }
+        @Override
+        protected boolean execute(Object[] args, MessageReceivedEvent event) {
+            TextChannel tchan = (TextChannel)(args[0]);
+            String options = args[1]==null ? "" : (String)args[1];
+            if(tchan==null)
+                tchan = event.getTextChannel();
+            //check bot permissions for channel
+            if(!PermissionUtil.checkPermission(tchan, event.getJDA().getSelfInfo(), Permission.MESSAGE_WRITE) || !PermissionUtil.checkPermission(tchan, event.getJDA().getSelfInfo(), Permission.MESSAGE_READ))
+            {
+                Sender.sendResponse(String.format(SpConst.NEED_PERMISSION,Permission.MESSAGE_READ+", "+Permission.MESSAGE_WRITE+
+                        ", and preferably "+Permission.MESSAGE_ATTACH_FILES), event);
+                return false;
+            }
+            String str = "";
+            String[] current = feeds.feedForGuild(event.getGuild(), Feeds.Type.TWITCH);
+            if(current!=null)
+                str+=SpConst.WARNING+"Feed "+Feeds.Type.TWITCH+" has been removed from <#"+current[Feeds.CHANNELID]+">\n";
+            feeds.set(new String[]{tchan.getId(),Feeds.Type.TWITCH.toString(),event.getGuild().getId(),options});
+            str+=SpConst.SUCCESS+"Feed "+Feeds.Type.TWITCH+" has been added to <#"+tchan.getId()+">";
             Sender.sendResponse(str, event);
             return true;
         }

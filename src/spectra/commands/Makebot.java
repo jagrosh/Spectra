@@ -25,13 +25,13 @@ import javafx.util.Pair;
 import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
 import spectra.Command;
-import spectra.JagTag;
 import spectra.Sender;
 import spectra.SpConst;
 import spectra.datasources.LocalTags;
 import spectra.datasources.Tags;
 import spectra.utils.FormatUtil;
 import spectra.utils.OtherUtil;
+import spectra.utils.TagUtil;
 
 /**
  *
@@ -83,7 +83,7 @@ public class Makebot extends Command{
         {
             int num = (int)( Math.random() * (taglist.size()+taglist2.size()) );
             String[] tag = num<taglist.size() ? taglist.get(num) : taglist2.get(num - taglist.size());
-            customs.add((i==0?"":",")+"\"\"\""+JagTag.getTagname(tag)+"\"\"\" : \"\"\""+JagTag.getContents(tag)+"\"\"\"");
+            customs.add((i==0?"":",")+"\"\"\""+TagUtil.getTagname(tag)+"\"\"\" : \"\"\""+TagUtil.getContents(tag)+" \"\"\"");
         }
         customs.add("}");
         

@@ -101,7 +101,7 @@ public class Room extends Command
         else if (invalidcommand.equalsIgnoreCase("create"))
         {
             str = SpConst.WARNING+"There are two types of rooms that can be made:\n"
-                    + "Use `"+SpConst.PREFIX+"room text <room-name-here>` to create a private text room.\n"
+                    + "Use `"+SpConst.PREFIX+"room text <room_name_here>` to create a private text room.\n"
                     + "Use `"+SpConst.PREFIX+"room voice <Room Name Here>` to create a temporary voice room.";
         }
         else str = SpConst.ERROR+"That is not a valid room command!";

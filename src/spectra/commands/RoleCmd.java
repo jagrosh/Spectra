@@ -17,6 +17,8 @@ package spectra.commands;
 
 import java.awt.Color;
 import net.dv8tion.jda.Permission;
+import net.dv8tion.jda.entities.Guild;
+import net.dv8tion.jda.entities.Guild.VerificationLevel;
 import net.dv8tion.jda.entities.Role;
 import net.dv8tion.jda.entities.User;
 import net.dv8tion.jda.events.message.MessageReceivedEvent;
@@ -68,7 +70,8 @@ public class RoleCmd extends Command {
             this.help = "sets a role to be automatically given when a user sends a message";
             this.longhelp = "This command is used to set a role that can automatically be given to users. "
                     + "If no phrase is assigned, the role will be given the first time they send any message "
-                    + "(within 30 minutes of joining). If a phrase is provided, they will be given the role "
+                    + "(within 30 minutes of joining). If the server's verification is set to None, the role "
+                    + "will be given right when they join. If a phrase is provided, they will be given the role "
                     + "when they type that exact phrase. Only 1 auto role can be set; any new auto role will "
                     + "override the previous.";
             this.requiredPermissions = new Permission[]{
@@ -88,8 +91,9 @@ public class RoleCmd extends Command {
             String phrase = args[1]==null ? null : (String)args[1];
             String str = role.getId()+(phrase==null ? "" : "|"+phrase);
             settings.setSetting(event.getGuild().getId(), Settings.AUTOROLE, str);
+            boolean verifOff = event.getGuild().getVerificationLevel()==VerificationLevel.NONE;
             Sender.sendResponse(SpConst.SUCCESS+"I will give the role *"+role.getName()
-                    +"* to users when they "+(phrase==null ? "type or send any message" : "type `"+phrase+"`"), event);
+                    +"* to users when they "+(phrase==null ? (verifOff ? "join the server." : "send any message.") : "type `"+phrase+"`"), event);
             return true;
         }
         

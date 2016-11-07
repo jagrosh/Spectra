@@ -40,6 +40,12 @@ public class SpecialCase {
     public static String JDA_GUILD_GENERAL_ID = "125227483518861312";
     
     /*
+        This bot (at present) can Manage Roles to assign a role to opt-out of a 
+        channel, but it should not change it's role's color.
+    */
+    public static String DISCORD_BOTS_ID = "110373943822540800";
+    
+    /*
         This special case is to provide roles to users on the Monster Hunter
         Gathering Hall, via the ranks they give to Neko (Means "Cat") Bot.
     */
